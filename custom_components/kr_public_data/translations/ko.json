@@ -1,0 +1,248 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "서비스 선택",
+        "menu_options": {
+          "weather_warning": "기상특보 (기상청)",
+          "transit": "대중교통 (지하철/버스)",
+          "fuel": "유가정보 (Opinet)",
+          "school": "학교정보 (NEIS)",
+          "disaster": "재난정보 (긴급재난문자)",
+          "safety_alert": "안전알림 (행정안전부)",
+          "kepco": "한전 (한국전력공사)",
+          "gasapp": "가스앱 (한국가스공사)",
+          "arisu": "아리수 (서울 상수도)",
+          "pharmacy": "약국 운영정보",
+          "airkorea": "에어코리아 (대기질)",
+          "kma_weather": "기상청 날씨예보",
+          "earthquake": "지진 정보"
+        }
+      },
+      "weather_warning": {
+        "title": "기상특보 설정",
+        "data": {
+          "api_key": "공공데이터포털 서비스 키",
+          "area_codes": "지역 선택"
+        }
+      },
+      "transit": {
+        "title": "대중교통 API 키",
+        "data": {
+          "seoul_api_key": "서울 열린데이터광장 인증키 (지하철)",
+          "bus_api_key": "공공데이터포털 서비스 키 (버스)"
+        }
+      },
+      "transit_add": {
+        "title": "항목 추가",
+        "menu_options": {
+          "transit_subway": "지하철 역 추가",
+          "transit_bus_search": "버스 노선 추가",
+          "transit_done": "완료"
+        }
+      },
+      "transit_subway": {
+        "title": "지하철 역",
+        "data": {
+          "station": "역 이름",
+          "direction": "방향",
+          "line_id": "호선 필터"
+        }
+      },
+      "transit_bus_search": {
+        "title": "버스 정류장 추가",
+        "description": "카카오맵에서 정류장 검색 후 URL의 busstopid 값을 입력하세요 (예: 03171, BS09013700 등)",
+        "data": {
+          "kakao_stop_id": "카카오맵 정류장 ID"
+        }
+      },
+      "fuel": {
+        "title": "유가정보 설정",
+        "data": {
+          "api_key": "Opinet API 키",
+          "sido_codes": "지역",
+          "fuel_codes": "유종"
+        }
+      },
+      "school": {
+        "title": "학교정보 설정",
+        "data": {
+          "api_key": "NEIS Open API 키",
+          "school_level": "학교 급"
+        }
+      },
+      "school_search": {
+        "title": "학교 검색",
+        "data": {
+          "school_search": "학교 이름",
+          "selected_school": "학교 선택"
+        }
+      },
+      "school_class": {
+        "title": "학년/반 선택 (복수 선택 가능)",
+        "data": {
+          "grade_classes": "학년-반"
+        }
+      },
+      "school_periods": {
+        "title": "교시 시간 설정",
+        "data": {
+          "period_1": "1교시",
+          "period_2": "2교시",
+          "period_3": "3교시",
+          "period_4": "4교시",
+          "period_5": "5교시",
+          "period_6": "6교시",
+          "period_7": "7교시",
+          "lunch_start": "점심 시작",
+          "lunch_end": "점심 종료"
+        }
+      },
+      "disaster": {
+        "title": "재난정보 설정",
+        "data": {
+          "api_key": "재난안전데이터 API 키",
+          "region_filter": "수신 지역 (광역)",
+          "sub_region": "세부 지역 (시군구명, 선택)"
+        }
+      },
+      "safety_alert": {
+        "title": "안전알림 설정",
+        "data": {
+          "area_code": "지역 코드",
+          "area_name": "지역 이름"
+        }
+      },
+      "kepco": {
+        "title": "한전 설정",
+        "data": {
+          "username": "아이디",
+          "password": "비밀번호"
+        }
+      },
+      "gasapp": {
+        "title": "가스앱 설정",
+        "data": {
+          "token": "토큰",
+          "member_id": "회원 ID",
+          "contract_num": "사용계약번호"
+        }
+      },
+      "arisu": {
+        "title": "아리수 설정",
+        "data": {
+          "customer_number": "수용가번호",
+          "customer_name": "고객명"
+        }
+      },
+      "pharmacy": {
+        "title": "약국 운영정보 설정",
+        "data": {
+          "api_key": "공공데이터포털 서비스 키",
+          "q0": "시도",
+          "q1": "시군구 (선택)"
+        }
+      },
+      "transit_bus_select": {
+        "title": "버스 노선 선택",
+        "data": {
+          "buses": "추적할 버스 노선"
+        }
+      },
+      "airkorea": {
+        "title": "에어코리아 - 광역시도 선택",
+        "data": {
+          "api_key": "공공데이터포털 서비스 키 (Decoding)",
+          "sido": "광역시도",
+          "living_api_key": "생활기상지수 서비스 키 (비워두면 동일키 사용)"
+        }
+      },
+      "airkorea_select": {
+        "title": "측정소 선택 (복수 가능)",
+        "data": {
+          "stations": "측정소"
+        }
+      },
+      "kma_weather": {
+        "title": "기상청 날씨예보 - 광역시도 선택",
+        "data": {
+          "api_key": "공공데이터포털 서비스 키",
+          "sido": "광역시도"
+        }
+      },
+      "earthquake": {
+        "title": "지진 정보 설정",
+        "data": {
+          "api_key": "공공데이터포털 서비스 키",
+          "latitude": "위도",
+          "longitude": "경도",
+          "radius_km": "반경 (km)",
+          "min_magnitude": "최소 진도"
+        }
+      },
+      "kma_weather_sgg": {
+        "title": "기초자치단체 선택 (복수 가능)",
+        "data": {
+          "regions": "시군구",
+          "air_station": "대기질 측정소 (O₃/UV/체감온도 포함)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "API에 연결할 수 없습니다.",
+      "invalid_api_key": "API 키가 유효하지 않습니다.",
+      "no_schools_found": "학교를 찾을 수 없습니다.",
+      "no_selection": "하나 이상 선택하세요.",
+      "no_stops_found": "정류장을 찾을 수 없습니다.",
+      "no_stations_found": "측정소를 찾을 수 없습니다."
+    },
+    "abort": {
+      "already_configured": "이미 설정되어 있습니다.",
+      "no_options": "수정 가능한 옵션이 없습니다."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "설정 수정"
+      }
+    }
+  },
+  "entity": {
+    "event": {
+      "weather_warning": {
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "advisory": "주의보",
+              "warning": "경보",
+              "pre_advisory": "곧 주의보",
+              "pre_warning": "곧 경보",
+              "cancelled": "해제",
+              "none": "없음"
+            }
+          }
+        }
+      }
+    },
+    "sensor": {
+      "school_lunch": {
+        "name": "급식"
+      },
+      "school_info": {
+        "name": "학교 정보"
+      },
+      "disaster_message": {
+        "name": "최신 재난문자"
+      }
+    },
+    "calendar": {
+      "school_academic": {
+        "name": "학사일정"
+      },
+      "school_class": {
+        "name": "시간표"
+      }
+    }
+  }
+}

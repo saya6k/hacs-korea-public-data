@@ -1,0 +1,182 @@
+"""한국 공공데이터 - unified Korean public data integration."""
+from __future__ import annotations
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import Platform
+from homeassistant.core import HomeAssistant
+from .const import *
+from .llm_api import async_cleanup_llm_api, async_setup_llm_api
+
+PLATFORM_MAP = {
+    ENTRY_WEATHER: [Platform.EVENT, Platform.CALENDAR, Platform.BINARY_SENSOR],
+    ENTRY_TRANSIT: [Platform.SENSOR],
+    ENTRY_FUEL: [Platform.SENSOR],
+    ENTRY_SCHOOL: [Platform.SENSOR, Platform.CALENDAR],
+    ENTRY_DISASTER: [Platform.SENSOR, Platform.EVENT],
+    ENTRY_SAFETY_ALERT: [Platform.BINARY_SENSOR, Platform.SENSOR, Platform.EVENT],
+    ENTRY_KEPCO: [Platform.SENSOR],
+    ENTRY_GASAPP: [Platform.SENSOR],
+    ENTRY_ARISU: [Platform.SENSOR],
+    ENTRY_PHARMACY: [Platform.SENSOR],
+    ENTRY_AIRKOREA: [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.EVENT, Platform.CALENDAR],
+    ENTRY_KMA_WEATHER: [Platform.WEATHER],
+    ENTRY_EARTHQUAKE: [Platform.EVENT],
+}
+
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    hass.data.setdefault(DOMAIN, {})
+    etype = entry.data[CONF_ENTRY_TYPE]
+    store: dict = {}
+
+    if etype == ENTRY_WEATHER:
+        from .weather.coordinator import WeatherWarningCoordinator
+        api_key = entry.data["api_key"]
+        c = WeatherWarningCoordinator(hass, api_key, entry.data.get("area_codes", []))
+        await c.async_config_entry_first_refresh()
+        store = {"coordinator": c, "area_codes": entry.data.get("area_codes", [])}
+
+    elif etype == ENTRY_TRANSIT:
+        from .transit.subway_coordinator import SubwayCoordinator
+        from .transit.bus_coordinator import BusCoordinator
+        from .transit.services import async_register_services
+        seoul_key = entry.data.get("seoul_api_key", "")
+        bus_key = entry.data.get("bus_api_key", "")
+        sg: dict[str, list] = {}
+        for item in entry.data.get("subway_items", []):
+            sg.setdefault(item["station"], []).append(item)
+        sc = {}
+        for station, subs in sg.items():
+            c = SubwayCoordinator(hass, seoul_key, station, subs)
+            await c.async_config_entry_first_refresh()
+            sc[station] = c
+        bus_coords = {}
+        for stop in entry.data.get("bus_stops", []):
+            bc = BusCoordinator(hass, stop["stop_id"], stop["stop_name"])
+            await bc.async_config_entry_first_refresh()
+            bus_coords[stop["stop_id"]] = bc
+        store = {"subway_coords": sc, "bus_coords": bus_coords,
+                 "subway_items": entry.data.get("subway_items", []),
+                 "bus_stops": entry.data.get("bus_stops", [])}
+        if bus_key:
+            async_register_services(hass, bus_key)
+
+    elif etype == ENTRY_FUEL:
+        from .fuel.coordinator import FuelCoordinator
+        api_key = entry.data["api_key"]
+        configs = entry.data.get("configs", [])
+        if not configs and "sido_code" in entry.data:
+            configs = [{"sido_code": entry.data["sido_code"], "fuel_code": entry.data["fuel_code"]}]
+        c = FuelCoordinator(hass, api_key, configs)
+        await c.async_config_entry_first_refresh()
+        store = {"coordinator": c, "configs": configs}
+
+    elif etype == ENTRY_SCHOOL:
+        from .school.coordinator import SchoolCoordinator
+        c = SchoolCoordinator(hass, entry)
+        await c.async_config_entry_first_refresh()
+        store = {"coordinator": c}
+
+    elif etype == ENTRY_DISASTER:
+        from .disaster.coordinator import DisasterCoordinator
+        api_key = entry.data["api_key"]
+        region = entry.data.get("region_filter", "")
+        c = DisasterCoordinator(hass, api_key, region)
+        await c.async_config_entry_first_refresh()
+        store = {"coordinator": c, "region": region}
+
+    elif etype == ENTRY_SAFETY_ALERT:
+        from .safety_alert.coordinator import SafetyAlertCoordinator
+        regions = entry.data.get("regions", [])
+        if not regions and entry.data.get("area_code"):
+            regions = [{"code": entry.data["area_code"], "name": entry.data.get("area_name", "")}]
+        coordinators = {}
+        for region in regions:
+            c = SafetyAlertCoordinator(hass, region["code"])
+            await c.async_config_entry_first_refresh()
+            coordinators[region["code"]] = c
+        store = {"coordinators": coordinators, "regions": regions}
+
+    elif etype == ENTRY_KEPCO:
+        from .kepco.coordinator import KepcoCoordinator
+        c = KepcoCoordinator(hass, entry.data["username"], entry.data["password"])
+        try:
+            await c.async_login()
+        except Exception:
+            pass
+        await c.async_config_entry_first_refresh()
+        store = {"coordinator": c}
+
+    elif etype == ENTRY_GASAPP:
+        from .gasapp.coordinator import GasAppCoordinator
+        c = GasAppCoordinator(hass, entry.data["token"],
+                               entry.data["member_id"], entry.data["contract_num"])
+        await c.async_config_entry_first_refresh()
+        store = {"coordinator": c}
+
+    elif etype == ENTRY_ARISU:
+        from .arisu.coordinator import ArisuCoordinator
+        c = ArisuCoordinator(hass, entry.data["customer_number"], entry.data["customer_name"])
+        await c.async_config_entry_first_refresh()
+        store = {"coordinator": c}
+
+    elif etype == ENTRY_PHARMACY:
+        from .pharmacy.coordinator import PharmacyCoordinator
+        from .pharmacy.services import async_register_pharmacy_service
+        api_key = entry.data["api_key"]
+        c = PharmacyCoordinator(hass, api_key,
+                                 entry.data["q0"], entry.data.get("q1", ""))
+        await c.async_config_entry_first_refresh()
+        store = {"coordinator": c}
+        async_register_pharmacy_service(hass, api_key)
+
+    elif etype == ENTRY_AIRKOREA:
+        from .airkorea.coordinator import AirKoreaCoordinator
+        api_key = entry.data["api_key"]
+        living_key = entry.data.get("living_api_key", "") or api_key
+        stations = entry.data.get("stations", [])
+        sido = entry.data.get("sido", "서울")
+        c = AirKoreaCoordinator(hass, api_key, stations,
+                                 living_api_key=living_key, sido=sido)
+        await c.async_config_entry_first_refresh()
+        store = {"coordinator": c, "stations": stations}
+        from .airkorea.services import async_register_airkorea_services
+        async_register_airkorea_services(hass, api_key, living_key, sido)
+
+    elif etype == ENTRY_KMA_WEATHER:
+        from .kma_weather.coordinator import KMAWeatherCoordinator
+        api_key = entry.data["api_key"]
+        regions = entry.data.get("regions", [])
+        c = KMAWeatherCoordinator(
+            hass, api_key, regions,
+            air_api_key=api_key,
+            air_station=entry.data.get("air_station", ""),
+            living_api_key=api_key,
+            area_no=entry.data.get("area_no", ""),
+        )
+        await c.async_config_entry_first_refresh()
+        store = {"coordinator": c, "regions": regions}
+
+    elif etype == ENTRY_EARTHQUAKE:
+        from .earthquake.coordinator import EarthquakeCoordinator
+        api_key = entry.data["api_key"]
+        c = EarthquakeCoordinator(hass, api_key)
+        await c.async_config_entry_first_refresh()
+        store = {"coordinator": c}
+
+    hass.data[DOMAIN][entry.entry_id] = store
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORM_MAP.get(etype, []))
+    store["unregister_llm"] = await async_setup_llm_api(hass, entry, etype)
+    entry.async_on_unload(entry.add_update_listener(_async_update_listener))
+    return True
+
+
+async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    await hass.config_entries.async_reload(entry.entry_id)
+
+
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    etype = entry.data.get(CONF_ENTRY_TYPE)
+    store = hass.data.get(DOMAIN, {}).get(entry.entry_id, {}) or {}
+    async_cleanup_llm_api(store.get("unregister_llm"))
+    if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORM_MAP.get(etype, [])):
+        hass.data[DOMAIN].pop(entry.entry_id, None)
+    return unload_ok

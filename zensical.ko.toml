@@ -1,0 +1,21 @@
+[project]
+site_name = "한국 공공데이터"
+site_url = "https://saya6k.github.io/ha-korea-public-data/ko/"
+site_description = "기상특보, 교통, 유가, 학교, 재난문자, KEPCO, 가스, 수도, 대기질, 지진 등 한국 공공 API를 통합한 Home Assistant 커스텀 통합."
+docs_dir = "docs/ko"
+site_dir = "site/ko"
+repo_url = "https://github.com/saya6k/ha-korea-public-data"
+edit_uri = "edit/main/docs/ko/"
+
+[project.theme]
+language = "ko"
+
+[[project.extra.alternate]]
+name = "English"
+link = "https://saya6k.github.io/ha-korea-public-data/en/"
+lang = "en"
+
+[[project.extra.alternate]]
+name = "한국어"
+link = "https://saya6k.github.io/ha-korea-public-data/ko/"
+lang = "ko"
