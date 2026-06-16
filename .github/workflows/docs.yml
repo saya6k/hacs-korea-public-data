@@ -1,10 +1,12 @@
 name: Docs
 
 # Reusable: build + deploy the bilingual Zensical site to Pages. Called by
-# ci.yml only when a version is released.
+# ci.yml only when a version is released; also runnable on demand to
+# re-deploy the docs without cutting a release.
 # yamllint disable-line rule:truthy
 on:
   workflow_call:
+  workflow_dispatch:
 
 jobs:
   docs:
