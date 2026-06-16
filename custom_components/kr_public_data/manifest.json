@@ -1,11 +1,12 @@
 {
   "domain": "kr_public_data",
   "name": "한국 공공데이터",
-  "codeowners": [],
+  "codeowners": ["@saya6k"],
   "config_flow": true,
   "dependencies": ["conversation"],
-  "documentation": "",
+  "documentation": "https://github.com/saya6k/ha-korea-public-data",
   "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/saya6k/ha-korea-public-data/issues",
   "requirements": ["curl_cffi>=0.7.0", "beautifulsoup4>=4.12.0"],
   "version": "4.2.1"
 }
