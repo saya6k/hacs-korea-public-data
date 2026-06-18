@@ -1,5 +1,17 @@
 # Changelog
 
+## [4.2.3](https://github.com/saya6k/ha-korea-public-data/compare/kr_public_data-v4.2.2...kr_public_data-v4.2.3) (2026-06-18)
+
+
+### Bug Fixes
+
+* **coordinator:** harden error handling across 6 coordinator/api modules ([71aa20b](https://github.com/saya6k/ha-korea-public-data/commit/71aa20b7e1639fe8d3f5078c0284cd23a79286da))
+
+
+### CI
+
+* **docs:** allow manual docs deploy via workflow_dispatch ([3ff9019](https://github.com/saya6k/ha-korea-public-data/commit/3ff9019517f12b58dd26b30f0dc41a1c9c38e0f5))
+
 ## [4.2.2](https://github.com/saya6k/ha-korea-public-data/compare/kr_public_data-v4.2.1...kr_public_data-v4.2.2) (2026-06-16)
 
 
