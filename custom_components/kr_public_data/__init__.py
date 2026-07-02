@@ -43,16 +43,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         sg: dict[str, list] = {}
         for item in entry.data.get("subway_items", []):
             sg.setdefault(item["station"], []).append(item)
-        sc = {}
-        for station, subs in sg.items():
-            c = SubwayCoordinator(hass, seoul_key, station, subs)
-            await c.async_config_entry_first_refresh()
-            sc[station] = c
-        bus_coords = {}
-        for stop in entry.data.get("bus_stops", []):
-            bc = BusCoordinator(hass, stop["stop_id"], stop["stop_name"])
-            await bc.async_config_entry_first_refresh()
-            bus_coords[stop["stop_id"]] = bc
+        from .resilience import async_first_refresh_all
+        sc = {station: SubwayCoordinator(hass, seoul_key, station, subs)
+              for station, subs in sg.items()}
+        bus_coords = {stop["stop_id"]: BusCoordinator(hass, stop["stop_id"], stop["stop_name"])
+                      for stop in entry.data.get("bus_stops", [])}
+        await async_first_refresh_all([*sc.values(), *bus_coords.values()], "transit")
         store = {"subway_coords": sc, "bus_coords": bus_coords,
                  "subway_items": entry.data.get("subway_items", []),
                  "bus_stops": entry.data.get("bus_stops", [])}
