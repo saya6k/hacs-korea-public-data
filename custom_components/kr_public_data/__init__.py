@@ -84,11 +84,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         regions = entry.data.get("regions", [])
         if not regions and entry.data.get("area_code"):
             regions = [{"code": entry.data["area_code"], "name": entry.data.get("area_name", "")}]
-        coordinators = {}
-        for region in regions:
-            c = SafetyAlertCoordinator(hass, region["code"])
-            await c.async_config_entry_first_refresh()
-            coordinators[region["code"]] = c
+        from .resilience import async_first_refresh_all
+        coordinators = {region["code"]: SafetyAlertCoordinator(hass, region["code"])
+                        for region in regions}
+        await async_first_refresh_all(list(coordinators.values()), "safety_alert")
         store = {"coordinators": coordinators, "regions": regions}
 
     elif etype == ENTRY_KEPCO:

@@ -2,16 +2,18 @@
 from __future__ import annotations
 import logging
 from datetime import timedelta
-from typing import Any
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from . import KEPCO_SCAN_INTERVAL
 from .exceptions import KepcoAuthError
+from ..exceptions import KrAuthError
+from ..resilience import ResilientCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class KepcoCoordinator(DataUpdateCoordinator[dict[str, Any]]):
+class KepcoCoordinator(ResilientCoordinator):
+    stale_tolerance = 4
+
     def __init__(self, hass: HomeAssistant, username: str, password: str):
         super().__init__(hass, _LOGGER, name="kepco",
                          update_interval=timedelta(seconds=KEPCO_SCAN_INTERVAL))
@@ -35,18 +37,21 @@ class KepcoCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         await self._ensure_client()
         return await self._client.async_login(self._username, self._password)
 
-    async def _async_update_data(self):
+    async def _fetch(self):
         await self._ensure_client()
         try:
             recent = await self._client.async_get_recent_usage()
             usage = await self._client.async_get_usage_info()
             return {"recent_usage": recent, "usage_info": usage}
         except Exception as e:
+            # Session may have expired: one re-login attempt before giving up.
             try:
                 if await self.async_login():
                     recent = await self._client.async_get_recent_usage()
                     usage = await self._client.async_get_usage_info()
                     return {"recent_usage": recent, "usage_info": usage}
+            except KepcoAuthError as auth_err:
+                raise KrAuthError(f"KEPCO login rejected: {auth_err}") from auth_err
             except Exception as retry_err:
                 _LOGGER.debug("KEPCO retry failed: %s", retry_err)
-            raise UpdateFailed(f"KEPCO error: {e}") from e
+            raise

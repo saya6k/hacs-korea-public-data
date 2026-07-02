@@ -3,9 +3,9 @@ from __future__ import annotations
 import logging
 from datetime import timedelta, datetime, date
 from zoneinfo import ZoneInfo
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from ..const import DOMAIN
+from ..resilience import ResilientCoordinator
 from .api import NeisApiClient
 from .parser import parse_lunch_menu, parse_school_calendar, parse_timetable
 
@@ -26,7 +26,9 @@ def _school_year_mondays(ref=None):
     return mondays
 
 
-class SchoolCoordinator(DataUpdateCoordinator):
+class SchoolCoordinator(ResilientCoordinator):
+    stale_tolerance = 2  # 6h interval: two misses already cover half a day
+
     def __init__(self, hass, entry):
         self.entry = entry
         self.client = NeisApiClient(async_get_clientsession(hass), entry.data["api_key"])
@@ -44,45 +46,42 @@ class SchoolCoordinator(DataUpdateCoordinator):
         super().__init__(hass, _LOGGER, name=f"{DOMAIN}_school_{entry.entry_id}",
                          update_interval=timedelta(hours=6))
 
-    async def _async_update_data(self):
-        try:
-            mondays = _school_year_mondays()
-            sy_start = mondays[0]
-            sy_end = mondays[-1] + timedelta(days=6)
+    async def _fetch(self):
+        mondays = _school_year_mondays()
+        sy_start = mondays[0]
+        sy_end = mondays[-1] + timedelta(days=6)
 
-            lunch = await self.client.get_meal(self.rc, self.sc, sy_start, sy_end)
+        lunch = await self.client.get_meal(self.rc, self.sc, sy_start, sy_end)
 
-            cal = []
-            cur = sy_start
-            while cur <= sy_end:
+        cal = []
+        cur = sy_start
+        while cur <= sy_end:
+            try:
+                cal.extend(await self.client.get_schedule_month(
+                    self.rc, self.sc, cur.year, cur.month))
+            except Exception:
+                pass
+            cur = date(cur.year + (1 if cur.month == 12 else 0),
+                       1 if cur.month == 12 else cur.month + 1, 1)
+
+        # Timetable per grade-class combo
+        timetables = {}
+        for gc in self.grade_classes:
+            g, cl = gc.split("-")
+            tt = []
+            for mon in mondays:
                 try:
-                    cal.extend(await self.client.get_schedule_month(
-                        self.rc, self.sc, cur.year, cur.month))
+                    tt.extend(await self.client.get_timetable(
+                        self.rc, self.sc, self.level, int(g), cl,
+                        mon, mon + timedelta(days=6)))
                 except Exception:
                     pass
-                cur = date(cur.year + (1 if cur.month == 12 else 0),
-                           1 if cur.month == 12 else cur.month + 1, 1)
+            timetables[gc] = parse_timetable(tt)
 
-            # Timetable per grade-class combo
-            timetables = {}
-            for gc in self.grade_classes:
-                g, cl = gc.split("-")
-                tt = []
-                for mon in mondays:
-                    try:
-                        tt.extend(await self.client.get_timetable(
-                            self.rc, self.sc, self.level, int(g), cl,
-                            mon, mon + timedelta(days=6)))
-                    except Exception:
-                        pass
-                timetables[gc] = parse_timetable(tt)
-
-            # Use first grade for calendar filtering
-            first_grade = int(self.grades[0]) if self.grades else 1
-            return {
-                "lunch": parse_lunch_menu(lunch),
-                "timetable": timetables,
-                "calendar": parse_school_calendar(cal, user_grade=first_grade),
-            }
-        except Exception as e:
-            raise UpdateFailed(f"학교 데이터 갱신 실패: {e}") from e
+        # Use first grade for calendar filtering
+        first_grade = int(self.grades[0]) if self.grades else 1
+        return {
+            "lunch": parse_lunch_menu(lunch),
+            "timetable": timetables,
+            "calendar": parse_school_calendar(cal, user_grade=first_grade),
+        }
