@@ -37,9 +37,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if etype == ENTRY_WEATHER:
         from .weather.coordinator import WeatherWarningCoordinator
         api_key = entry.data["api_key"]
-        c = WeatherWarningCoordinator(hass, api_key, entry.data.get("area_codes", []))
+        # 특보구역 per subentry; legacy entries keep area_codes in entry data.
+        areas = {sub_id: sub.data["area_code"]
+                 for sub_id, sub in entry.subentries.items()}
+        area_codes = list(areas.values()) or entry.data.get("area_codes", [])
+        c = WeatherWarningCoordinator(hass, api_key, area_codes)
         await c.async_config_entry_first_refresh()
-        store = {"coordinator": c, "area_codes": entry.data.get("area_codes", [])}
+        store = {"coordinator": c, "area_codes": area_codes, "areas": areas}
 
     elif etype == ENTRY_TRANSIT:
         from .transit.subway_coordinator import SubwayCoordinator
@@ -152,12 +156,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         from .airkorea.coordinator import AirKoreaCoordinator
         api_key = entry.data["api_key"]
         living_key = entry.data.get("living_api_key", "") or api_key
-        stations = entry.data.get("stations", [])
+        # 측정소 per subentry; legacy entries keep stations in entry data.
+        station_subs = {sub_id: dict(sub.data)
+                        for sub_id, sub in entry.subentries.items()}
+        stations = list(station_subs.values()) or entry.data.get("stations", [])
         sido = entry.data.get("sido", "서울")
         c = AirKoreaCoordinator(hass, api_key, stations,
                                  living_api_key=living_key, sido=sido)
         await c.async_config_entry_first_refresh()
-        store = {"coordinator": c, "stations": stations}
+        store = {"coordinator": c, "stations": stations,
+                 "station_subs": station_subs}
         from .airkorea.services import async_register_airkorea_services
         async_register_airkorea_services(hass, api_key, living_key, sido)
 
@@ -166,7 +174,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         from .airkorea import SIDO_AREA_CODE
         from .utils import sido_short_name
         api_key = entry.data["api_key"]
-        regions = entry.data.get("regions", [])
+        # 시군구 region per subentry; legacy entries keep regions in entry data.
+        region_subs = {sub_id: dict(sub.data)
+                       for sub_id, sub in entry.subentries.items()}
+        regions = list(region_subs.values()) or entry.data.get("regions", [])
         # Entries created while the config flow looked SIDO_AREA_CODE up by
         # full sido name stored area_no="" — recompute from the stored sido.
         area_no = entry.data.get("area_no", "") or SIDO_AREA_CODE.get(
@@ -179,7 +190,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             area_no=area_no,
         )
         await c.async_config_entry_first_refresh()
-        store = {"coordinator": c, "regions": regions}
+        store = {"coordinator": c, "regions": regions,
+                 "region_subs": region_subs}
 
     elif etype == ENTRY_EARTHQUAKE:
         from .earthquake.coordinator import EarthquakeCoordinator

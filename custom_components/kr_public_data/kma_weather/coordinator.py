@@ -4,7 +4,7 @@ import logging
 from datetime import timedelta
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from . import KMA_SCAN_INTERVAL
+from . import KMA_SCAN_INTERVAL, region_key
 from .api import fetch_vilage_forecast, parse_weather
 from ..exceptions import KrTransientError
 from ..resilience import ResilientCoordinator
@@ -36,7 +36,7 @@ class KMAWeatherCoordinator(ResilientCoordinator):
         session = self._session
         # 1. Fetch weather forecast per region
         for reg in self._regions:
-            name = reg["name"]
+            name = region_key(reg)
             try:
                 items = await fetch_vilage_forecast(
                     session, self._api_key, reg["nx"], reg["ny"])

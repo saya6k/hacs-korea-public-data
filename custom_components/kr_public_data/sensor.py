@@ -103,13 +103,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
     elif etype == ENTRY_AIRKOREA:
         from .airkorea.sensor import AirQualitySensor, POLLUTANTS, UVIndexSensor, AirStagnationSensor
         c = store["coordinator"]
-        for st in store.get("stations", []):
-            name = st["stationName"]
-            for field, label, unit in POLLUTANTS:
-                entities.append(AirQualitySensor(c, name, field, label, unit))
+
+        def _station_sensors(name):
+            sensors = [AirQualitySensor(c, name, field, label, unit)
+                       for field, label, unit in POLLUTANTS]
             # Living index sensors per station (same data, different device)
-            entities.append(UVIndexSensor(c, name))
-            entities.append(AirStagnationSensor(c, name))
+            sensors += [UVIndexSensor(c, name), AirStagnationSensor(c, name)]
+            return sensors
+
+        station_subs = store.get("station_subs") or {}
+        for sub_id, st in station_subs.items():
+            async_add_entities(_station_sensors(st["stationName"]),
+                               config_subentry_id=sub_id)
+        if not station_subs:
+            for st in store.get("stations", []):
+                entities += _station_sensors(st["stationName"])
 
     if entities:
         async_add_entities(entities)

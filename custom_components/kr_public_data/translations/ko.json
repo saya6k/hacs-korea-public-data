@@ -262,6 +262,46 @@
       "abort": {
         "already_configured": "이미 설정되어 있습니다."
       }
+    },
+    "area": {
+      "entry_type": "특보구역",
+      "initiate_flow": {
+        "user": "특보구역 추가"
+      },
+      "step": {
+        "user": {
+          "title": "특보구역",
+          "data": {
+            "area_code": "특보구역"
+          }
+        }
+      },
+      "abort": {
+        "already_configured": "이미 설정되어 있습니다."
+      }
+    },
+    "station": {
+      "entry_type": "측정소",
+      "initiate_flow": {
+        "user": "측정소 추가"
+      },
+      "step": {
+        "user": {
+          "title": "광역시도",
+          "data": {
+            "sido": "광역시도"
+          }
+        },
+        "station": {
+          "title": "측정소",
+          "data": {
+            "station": "측정소"
+          }
+        }
+      },
+      "abort": {
+        "already_configured": "이미 설정되어 있습니다."
+      }
     }
   },
   "options": {

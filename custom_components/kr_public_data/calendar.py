@@ -11,8 +11,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
 
     if etype == ENTRY_WEATHER:
         from .weather.calendar import KMAWeatherCalendar
-        async_add_entities([KMAWeatherCalendar(store["coordinator"], ac)
-                            for ac in store["area_codes"]])
+        c = store["coordinator"]
+        areas = store.get("areas") or {}
+        for sub_id, ac in areas.items():
+            async_add_entities([KMAWeatherCalendar(c, ac)],
+                               config_subentry_id=sub_id)
+        if not areas:
+            async_add_entities([KMAWeatherCalendar(c, ac)
+                                for ac in store["area_codes"]])
 
     elif etype == ENTRY_SCHOOL:
         from .school.calendar import SchoolCalendar, SchoolClassCalendar
@@ -25,6 +31,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
         from .airkorea.sensor import AirForecastCalendar
         c = store["coordinator"]
         sido = entry.data.get("sido", "")
-        entities = [AirForecastCalendar(c, st["stationName"], sido)
-                    for st in store.get("stations", [])]
-        async_add_entities(entities)
+        station_subs = store.get("station_subs") or {}
+        for sub_id, st in station_subs.items():
+            async_add_entities(
+                [AirForecastCalendar(c, st["stationName"], st.get("sido") or sido)],
+                config_subentry_id=sub_id)
+        if not station_subs:
+            async_add_entities([AirForecastCalendar(c, st["stationName"], sido)
+                                for st in store.get("stations", [])])

@@ -107,8 +107,12 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             elif await validate_kma_api(api_key, areas[0]):
                 return self.async_create_entry(
                     title="기상특보",
-                    data={CONF_ENTRY_TYPE: ENTRY_WEATHER,
-                          "api_key": api_key, "area_codes": areas})
+                    data={CONF_ENTRY_TYPE: ENTRY_WEATHER, "api_key": api_key},
+                    subentries=[
+                        {"subentry_type": "area", "title": AREA_CODES.get(c, c),
+                         "data": {"area_code": c}, "unique_id": c}
+                        for c in areas
+                    ])
             else:
                 errors["base"] = "cannot_connect"
         return self.async_show_form(
@@ -590,9 +594,16 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         from .airkorea import STATIONS_BY_SIDO
         if user_input is not None:
             selected = user_input.get("stations", [])
-            self._data["stations"] = [{"stationName": s} for s in selected]
             self._data["sido"] = self._air_sido
-            return self.async_create_entry(title="에어코리아", data=self._data)
+            return self.async_create_entry(
+                title="에어코리아", data=self._data,
+                subentries=[
+                    {"subentry_type": "station",
+                     "title": f"{self._air_sido} {s}",
+                     "data": {"sido": self._air_sido, "stationName": s},
+                     "unique_id": f"{self._air_sido}_{s}"}
+                    for s in selected
+                ])
         station_list = STATIONS_BY_SIDO.get(self._air_sido, [])
         labels = {s: s for s in station_list}
         return self.async_show_form(step_id="airkorea_select", data_schema=vol.Schema({
@@ -625,17 +636,22 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         sgg_map = SIDO_LIST.get(self._kma_sido, {})
         if user_input is not None:
             selected = user_input.get("regions", [])
-            regions = [{"name": r,
-                        "nx": sgg_map[r][0], "ny": sgg_map[r][1]}
-                       for r in selected if r in sgg_map]
-            self._data["regions"] = regions
             station = user_input.get("air_station") or "none"
             self._data["air_station"] = "" if station == "none" else station
             # 에어코리아 테이블은 축약 시도명("서울")이 키다.
             self._data["area_no"] = SIDO_AREA_CODE.get(
                 sido_short_name(self._kma_sido), "")
             self._data["sido"] = self._kma_sido
-            return self.async_create_entry(title="기상청 날씨예보", data=self._data)
+            return self.async_create_entry(
+                title="기상청 날씨예보", data=self._data,
+                subentries=[
+                    {"subentry_type": "region",
+                     "title": f"{self._kma_sido} {r}",
+                     "data": {"sido": self._kma_sido, "name": r,
+                              "nx": sgg_map[r][0], "ny": sgg_map[r][1]},
+                     "unique_id": f"{self._kma_sido}_{r}"}
+                    for r in selected if r in sgg_map
+                ])
         labels = {k: k for k in sgg_map.keys()}
         air_stations = STATIONS_BY_SIDO.get(sido_short_name(self._kma_sido), [])
         # "" is not usable as a select value in the frontend (it reads as
@@ -712,8 +728,15 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @classmethod
     @callback
     def async_get_supported_subentry_types(cls, config_entry):
-        if config_entry.data.get(CONF_ENTRY_TYPE) in (ENTRY_PHARMACY, ENTRY_DISASTER):
+        etype = config_entry.data.get(CONF_ENTRY_TYPE)
+        if etype in (ENTRY_PHARMACY, ENTRY_DISASTER):
             return {"region": RegionSubentryFlowHandler}
+        if etype == ENTRY_KMA_WEATHER:
+            return {"region": KmaRegionSubentryFlowHandler}
+        if etype == ENTRY_WEATHER:
+            return {"area": WarningAreaSubentryFlowHandler}
+        if etype == ENTRY_AIRKOREA:
+            return {"station": StationSubentryFlowHandler}
         return {}
 
 
@@ -757,6 +780,110 @@ class RegionSubentryFlowHandler(config_entries.ConfigSubentryFlow):
         }))
 
 
+class KmaRegionSubentryFlowHandler(config_entries.ConfigSubentryFlow):
+    """Add one 시군구 forecast region to a kma_weather entry."""
+
+    def __init__(self):
+        self._sido = ""
+
+    async def async_step_user(self, user_input=None):
+        from .kma_weather import SIDO_LIST
+        if user_input is not None:
+            self._sido = user_input["sido"]
+            return await self.async_step_sgg()
+        sido_opts = [SelectOptionDict(value=k, label=k) for k in SIDO_LIST]
+        return self.async_show_form(step_id="user", data_schema=vol.Schema({
+            vol.Required("sido", default="서울특별시"): SelectSelector(
+                SelectSelectorConfig(options=sido_opts,
+                                     mode=SelectSelectorMode.DROPDOWN)),
+        }))
+
+    async def async_step_sgg(self, user_input=None):
+        from .kma_weather import SIDO_LIST
+        sgg_map = SIDO_LIST.get(self._sido, {})
+        if user_input is not None:
+            name = user_input["sgg"]
+            entry = self._get_entry()
+            for sub in entry.subentries.values():
+                if (sub.data.get("sido") == self._sido
+                        and sub.data.get("name") == name):
+                    return self.async_abort(reason="already_configured")
+            nx, ny = sgg_map[name]
+            return self.async_create_entry(
+                title=f"{self._sido} {name}",
+                data={"sido": self._sido, "name": name, "nx": nx, "ny": ny},
+                unique_id=f"{self._sido}_{name}")
+        sgg_opts = [SelectOptionDict(value=s, label=s) for s in sgg_map]
+        return self.async_show_form(step_id="sgg", data_schema=vol.Schema({
+            vol.Required("sgg"): SelectSelector(
+                SelectSelectorConfig(options=sgg_opts,
+                                     mode=SelectSelectorMode.DROPDOWN)),
+        }))
+
+
+class WarningAreaSubentryFlowHandler(config_entries.ConfigSubentryFlow):
+    """Add one 특보구역 to a weather_warning entry."""
+
+    async def async_step_user(self, user_input=None):
+        from .weather import AREA_CODES
+        if user_input is not None:
+            code = user_input["area_code"]
+            entry = self._get_entry()
+            for sub in entry.subentries.values():
+                if sub.data.get("area_code") == code:
+                    return self.async_abort(reason="already_configured")
+            return self.async_create_entry(
+                title=AREA_CODES.get(code, code),
+                data={"area_code": code},
+                unique_id=code)
+        area_opts = [SelectOptionDict(value=c, label=n)
+                     for c, n in AREA_CODES.items()]
+        return self.async_show_form(step_id="user", data_schema=vol.Schema({
+            vol.Required("area_code"): SelectSelector(
+                SelectSelectorConfig(options=area_opts,
+                                     mode=SelectSelectorMode.DROPDOWN)),
+        }))
+
+
+class StationSubentryFlowHandler(config_entries.ConfigSubentryFlow):
+    """Add one 측정소 to an airkorea entry."""
+
+    def __init__(self):
+        self._sido = ""
+
+    async def async_step_user(self, user_input=None):
+        from .airkorea import STATIONS_BY_SIDO
+        if user_input is not None:
+            self._sido = user_input["sido"]
+            return await self.async_step_station()
+        sido_opts = [SelectOptionDict(value=k, label=k) for k in STATIONS_BY_SIDO]
+        return self.async_show_form(step_id="user", data_schema=vol.Schema({
+            vol.Required("sido", default="서울"): SelectSelector(
+                SelectSelectorConfig(options=sido_opts,
+                                     mode=SelectSelectorMode.DROPDOWN)),
+        }))
+
+    async def async_step_station(self, user_input=None):
+        from .airkorea import STATIONS_BY_SIDO
+        if user_input is not None:
+            station = user_input["station"]
+            entry = self._get_entry()
+            for sub in entry.subentries.values():
+                if sub.data.get("stationName") == station:
+                    return self.async_abort(reason="already_configured")
+            return self.async_create_entry(
+                title=f"{self._sido} {station}",
+                data={"sido": self._sido, "stationName": station},
+                unique_id=f"{self._sido}_{station}")
+        station_opts = [SelectOptionDict(value=s, label=s)
+                        for s in STATIONS_BY_SIDO.get(self._sido, [])]
+        return self.async_show_form(step_id="station", data_schema=vol.Schema({
+            vol.Required("station"): SelectSelector(
+                SelectSelectorConfig(options=station_opts,
+                                     mode=SelectSelectorMode.DROPDOWN)),
+        }))
+
+
 class KRPublicDataOptionsFlow(config_entries.OptionsFlow):
     """Handle options for reconfiguration."""
 
@@ -785,6 +912,11 @@ class KRPublicDataOptionsFlow(config_entries.OptionsFlow):
         d = self._entry.data
 
         if etype == ENTRY_WEATHER:
+            if self._entry.subentries:
+                # 특보구역은 subentry로 관리 — 여기서는 키만 편집.
+                return vol.Schema({
+                    vol.Required("api_key", default=d.get("api_key", "")): str,
+                })
             from .weather import AREA_CODES
             area_options = [SelectOptionDict(value=c, label=n) for c, n in AREA_CODES.items()]
             return vol.Schema({

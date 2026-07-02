@@ -262,6 +262,46 @@
       "abort": {
         "already_configured": "Already configured."
       }
+    },
+    "area": {
+      "entry_type": "Warning area",
+      "initiate_flow": {
+        "user": "Add warning area"
+      },
+      "step": {
+        "user": {
+          "title": "Warning area",
+          "data": {
+            "area_code": "Warning area"
+          }
+        }
+      },
+      "abort": {
+        "already_configured": "Already configured."
+      }
+    },
+    "station": {
+      "entry_type": "Station",
+      "initiate_flow": {
+        "user": "Add station"
+      },
+      "step": {
+        "user": {
+          "title": "Province",
+          "data": {
+            "sido": "Province"
+          }
+        },
+        "station": {
+          "title": "Station",
+          "data": {
+            "station": "Station"
+          }
+        }
+      },
+      "abort": {
+        "already_configured": "Already configured."
+      }
     }
   },
   "options": {

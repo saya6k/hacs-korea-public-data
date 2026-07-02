@@ -14,9 +14,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
         from .weather import WARNING_TYPES
         from .weather.event import KMAWeatherEvent
         c = store["coordinator"]
-        for ac in store["area_codes"]:
-            for wc, (wid, wn, icon) in WARNING_TYPES.items():
-                entities.append(KMAWeatherEvent(c, ac, wc, wid, wn, icon))
+        areas = store.get("areas") or {}
+        for sub_id, ac in areas.items():
+            async_add_entities(
+                [KMAWeatherEvent(c, ac, wc, wid, wn, icon)
+                 for wc, (wid, wn, icon) in WARNING_TYPES.items()],
+                config_subentry_id=sub_id)
+        if not areas:
+            for ac in store["area_codes"]:
+                for wc, (wid, wn, icon) in WARNING_TYPES.items():
+                    entities.append(KMAWeatherEvent(c, ac, wc, wid, wn, icon))
 
     elif etype == ENTRY_DISASTER:
         from .disaster.sensor import DisasterEvent
@@ -40,8 +47,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
         from .airkorea.sensor import AirAlertEvent
         c = store["coordinator"]
         sido = entry.data.get("sido", "")
-        for st in store.get("stations", []):
-            entities.append(AirAlertEvent(c, st["stationName"], sido))
+        station_subs = store.get("station_subs") or {}
+        for sub_id, st in station_subs.items():
+            async_add_entities(
+                [AirAlertEvent(c, st["stationName"], st.get("sido") or sido)],
+                config_subentry_id=sub_id)
+        if not station_subs:
+            for st in store.get("stations", []):
+                entities.append(AirAlertEvent(c, st["stationName"], sido))
 
     elif etype == ENTRY_EARTHQUAKE:
         from .earthquake.sensor import EarthquakeEvent
