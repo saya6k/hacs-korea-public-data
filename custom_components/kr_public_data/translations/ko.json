@@ -186,6 +186,23 @@
           "regions": "시군구",
           "air_station": "대기질 측정소 (O₃/UV/체감온도 포함)"
         }
+      },
+      "reauth_kepco": {
+        "title": "한전 재인증",
+        "description": "저장된 한전 계정 정보가 거부되었습니다. 다시 입력해 주세요.",
+        "data": {
+          "username": "아이디",
+          "password": "비밀번호"
+        }
+      },
+      "reauth_gasapp": {
+        "title": "가스앱 재인증",
+        "description": "가스앱 토큰이 거부되었습니다. 앱에서 새 토큰을 확보해 다시 입력해 주세요.",
+        "data": {
+          "token": "토큰",
+          "member_id": "회원 ID",
+          "contract_num": "계약 번호"
+        }
       }
     },
     "error": {
@@ -198,7 +215,9 @@
     },
     "abort": {
       "already_configured": "이미 설정되어 있습니다.",
-      "no_options": "수정 가능한 옵션이 없습니다."
+      "no_options": "수정 가능한 옵션이 없습니다.",
+      "reauth_successful": "재인증이 완료되었습니다.",
+      "reauth_not_supported": "이 항목 유형은 재인증을 지원하지 않습니다."
     }
   },
   "options": {

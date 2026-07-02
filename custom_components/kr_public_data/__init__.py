@@ -91,11 +91,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         store = {"coordinators": coordinators, "regions": regions}
 
     elif etype == ENTRY_KEPCO:
+        from homeassistant.exceptions import ConfigEntryAuthFailed
         from .kepco.coordinator import KepcoCoordinator
+        from .kepco.exceptions import KepcoAuthError
         c = KepcoCoordinator(hass, entry.data["username"], entry.data["password"])
         try:
             await c.async_login()
+        except KepcoAuthError as err:
+            raise ConfigEntryAuthFailed(str(err)) from err
         except Exception:
+            # Network flakiness must not block the entry: it loads with stale
+            # data and the coordinator retries on schedule.
             pass
         await c.async_config_entry_first_refresh()
         store = {"coordinator": c}

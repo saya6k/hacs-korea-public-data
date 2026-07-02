@@ -186,6 +186,23 @@
           "regions": "Districts",
           "air_station": "Air Station (O₃/UV)"
         }
+      },
+      "reauth_kepco": {
+        "title": "KEPCO re-authentication",
+        "description": "KEPCO rejected the stored credentials. Enter them again.",
+        "data": {
+          "username": "Username",
+          "password": "Password"
+        }
+      },
+      "reauth_gasapp": {
+        "title": "GasApp re-authentication",
+        "description": "The GasApp token was rejected. Capture a fresh token from the app and enter it again.",
+        "data": {
+          "token": "Token",
+          "member_id": "ID",
+          "contract_num": "Contract"
+        }
       }
     },
     "error": {
@@ -198,7 +215,9 @@
     },
     "abort": {
       "already_configured": "Already configured.",
-      "no_options": "No options available."
+      "no_options": "No options available.",
+      "reauth_successful": "Re-authentication was successful.",
+      "reauth_not_supported": "This entry type does not support re-authentication."
     }
   },
   "options": {

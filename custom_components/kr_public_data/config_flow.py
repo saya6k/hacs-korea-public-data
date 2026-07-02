@@ -591,6 +591,40 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Optional("min_magnitude", default=3.0): vol.Coerce(float),
         }), errors=errors)
 
+    # ══════════ 재인증 (reauth) ══════════
+
+    async def async_step_reauth(self, entry_data) -> FlowResult:
+        etype = entry_data.get(CONF_ENTRY_TYPE)
+        if etype == ENTRY_KEPCO:
+            return await self.async_step_reauth_kepco()
+        if etype == ENTRY_GASAPP:
+            return await self.async_step_reauth_gasapp()
+        return self.async_abort(reason="reauth_not_supported")
+
+    async def async_step_reauth_kepco(self, user_input=None) -> FlowResult:
+        if user_input is not None:
+            return self.async_update_reload_and_abort(
+                self._get_reauth_entry(),
+                data_updates={"username": user_input["username"],
+                              "password": user_input["password"]})
+        return self.async_show_form(step_id="reauth_kepco", data_schema=vol.Schema({
+            vol.Required("username"): str,
+            vol.Required("password"): str,
+        }))
+
+    async def async_step_reauth_gasapp(self, user_input=None) -> FlowResult:
+        if user_input is not None:
+            return self.async_update_reload_and_abort(
+                self._get_reauth_entry(),
+                data_updates={"token": user_input["token"],
+                              "member_id": user_input["member_id"],
+                              "contract_num": user_input["contract_num"]})
+        return self.async_show_form(step_id="reauth_gasapp", data_schema=vol.Schema({
+            vol.Required("token"): str,
+            vol.Required("member_id"): str,
+            vol.Required("contract_num"): str,
+        }))
+
         # ══════════ Options Flow =════════
 
     @staticmethod

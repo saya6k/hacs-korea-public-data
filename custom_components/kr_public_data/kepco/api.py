@@ -83,12 +83,15 @@ class KepcoApiClient:
                 return False
             body = response.text or ""
             if any(marker in body for marker in _LOGIN_FAIL_BODY_MARKERS):
-                _LOGGER.debug("KEPCO login failed (body marker matched)")
-                return False
+                # Definite credential rejection — distinct from network flakiness
+                # so callers can trigger a reauth flow instead of retrying.
+                raise KepcoAuthError("KEPCO rejected the username/password")
             if any(marker in str(response.url) for marker in _LOGIN_OK_URL_MARKERS):
                 return True
             _LOGGER.warning("Unknown KEPCO login response: %s", body[:200])
             return False
+        except KepcoAuthError:
+            raise
         except Exception as e:
             _LOGGER.error("Login failed: %s", e)
             return False
