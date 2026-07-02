@@ -19,6 +19,7 @@
     ".": {
       "package-name": "kr_public_data",
       "changelog-path": "CHANGELOG.md",
+      "draft": true,
       "extra-files": [
         {"type": "json", "path": "custom_components/kr_public_data/manifest.json", "jsonpath": "$.version"}
       ]
