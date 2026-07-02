@@ -2,7 +2,7 @@
 from __future__ import annotations
 import logging
 from datetime import timedelta
-import aiohttp
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from . import SCAN_INTERVAL
 from .api import fetch_earthquakes
 from ..resilience import ResilientCoordinator
@@ -16,7 +16,7 @@ class EarthquakeCoordinator(ResilientCoordinator):
         super().__init__(hass, _LOGGER, name="earthquake",
                          update_interval=timedelta(seconds=SCAN_INTERVAL))
         self._api_key = api_key
+        self._session = async_get_clientsession(hass)
 
     async def _fetch(self):
-        async with aiohttp.ClientSession() as session:
-            return await fetch_earthquakes(session, self._api_key)
+        return await fetch_earthquakes(self._session, self._api_key)

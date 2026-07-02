@@ -7,7 +7,7 @@ from typing import Any
 from zoneinfo import ZoneInfo
 import aiohttp
 from . import STATION_URL, REALTIME_URL, FORECAST_URL
-from ..exceptions import KrTransientError
+from ..exceptions import KrTransientError, raise_for_result_code
 
 _LOGGER = logging.getLogger(__name__)
 KST = ZoneInfo("Asia/Seoul")
@@ -53,6 +53,7 @@ async def fetch_realtime(session, api_key, station_name) -> dict[str, Any]:
     if rc == "03":  # NO_DATA
         return {}
     if rc != "00":
+        raise_for_result_code(rc, header.get("resultMsg", ""))
         raise KrTransientError(
             f"AirKorea realtime resultCode {rc}: {header.get('resultMsg', '')}")
     items = data.get("response", {}).get("body", {}).get("items", [])
@@ -78,6 +79,7 @@ async def fetch_forecast(session, api_key) -> list[dict]:
     if rc == "03":  # NO_DATA
         return []
     if rc != "00":
+        raise_for_result_code(rc, header.get("resultMsg", ""))
         raise KrTransientError(
             f"AirKorea forecast resultCode {rc}: {header.get('resultMsg', '')}")
     items = data.get("response", {}).get("body", {}).get("items", [])

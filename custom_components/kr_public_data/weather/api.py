@@ -7,7 +7,7 @@ import aiohttp
 from . import (KMA_API_BASE, EVENT_TYPE_ADVISORY, EVENT_TYPE_CANCELLED,
                EVENT_TYPE_NONE, EVENT_TYPE_PRE_ADVISORY, EVENT_TYPE_PRE_WARNING,
                EVENT_TYPE_WARNING)
-from ..exceptions import KrTransientError
+from ..exceptions import KrTransientError, raise_for_result_code
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -63,6 +63,7 @@ async def fetch_warning(session: aiohttp.ClientSession, api_key: str,
     if rc == "03":  # NO_DATA — no warning active for this area/type
         return {"event_type": EVENT_TYPE_NONE, "raw": None}
     if rc != "00":
+        raise_for_result_code(rc, hdr.get("resultMsg", ""))
         raise KrTransientError(
             f"기상특보 resultCode {rc}: {hdr.get('resultMsg', '')}")
     try:

@@ -7,6 +7,7 @@ import xml.etree.ElementTree as ET
 from typing import Any
 import aiohttp
 from . import EQ_URL
+from ..exceptions import raise_for_result_code
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -24,6 +25,8 @@ async def fetch_earthquakes(session, api_key, count=20) -> list[dict]:
         text = await r.text()
     try:
         data = json.loads(text)
+        header = data.get("response", {}).get("header", {})
+        raise_for_result_code(header.get("resultCode"), header.get("resultMsg", ""))
         total = data.get("response", {}).get("body", {}).get("totalCount", 0)
         if total == 0:
             return []

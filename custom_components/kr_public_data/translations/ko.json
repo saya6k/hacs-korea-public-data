@@ -1,4 +1,10 @@
 {
+  "issues": {
+    "quota_exceeded": {
+      "title": "일일 API 호출 한도 초과",
+      "description": "`{name}`의 일일 호출 한도가 소진되었습니다. 자정(KST)까지 폴링을 중단하고 마지막 데이터를 유지합니다. data.go.kr에서 활용량 상향을 신청하거나 별도 서비스 키 추가를 고려하세요."
+    }
+  },
   "config": {
     "step": {
       "user": {

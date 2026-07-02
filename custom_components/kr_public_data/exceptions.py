@@ -21,3 +21,16 @@ class KrQuotaError(KrApiError):
 
 class KrTransientError(KrApiError):
     """Intermittent failure (TLS reset, timeout, 5xx, bad payload)."""
+
+
+def raise_for_result_code(code: str | None, msg: str = "") -> None:
+    """Map 공공데이터포털 standard result codes to typed errors.
+
+    22 = LIMITED_NUMBER_OF_SERVICE_REQUESTS_EXCEEDS (daily quota),
+    30/31/32 = service key unregistered / expired / wrong domain.
+    Anything else (including 00/03) is left to the caller.
+    """
+    if code == "22":
+        raise KrQuotaError(f"daily quota exceeded: {msg}")
+    if code in ("30", "31", "32"):
+        raise KrAuthError(f"service key rejected (code {code}): {msg}")

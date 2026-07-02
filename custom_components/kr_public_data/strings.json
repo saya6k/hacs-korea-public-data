@@ -1,4 +1,10 @@
 {
+  "issues": {
+    "quota_exceeded": {
+      "title": "Daily API quota exceeded",
+      "description": "The daily request quota for `{name}` has been exhausted. Polling is paused until midnight (KST) and the last known data is served in the meantime. Consider requesting a higher quota on data.go.kr or adding a second service key."
+    }
+  },
   "config": {
     "step": {
       "user": {

@@ -22,6 +22,13 @@ PLATFORM_MAP = {
     ENTRY_EARTHQUAKE: [Platform.EVENT],
 }
 
+# Globally registered actions, removed when the last entry of the type unloads.
+SERVICES_BY_ETYPE = {
+    ENTRY_TRANSIT: ["search_location", "search_transit_path"],
+    ENTRY_PHARMACY: ["search_pharmacy"],
+    ENTRY_AIRKOREA: ["get_living_index_forecast"],
+}
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
     etype = entry.data[CONF_ENTRY_TYPE]
@@ -180,4 +187,21 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     async_cleanup_llm_api(store.get("unregister_llm"))
     if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORM_MAP.get(etype, [])):
         hass.data[DOMAIN].pop(entry.entry_id, None)
+        _async_remove_orphan_services(hass, entry, etype)
     return unload_ok
+
+
+def _async_remove_orphan_services(hass: HomeAssistant, entry: ConfigEntry, etype: str) -> None:
+    """Remove global actions once no loaded entry of this type remains."""
+    from homeassistant.config_entries import ConfigEntryState
+    names = SERVICES_BY_ETYPE.get(etype)
+    if not names:
+        return
+    for other in hass.config_entries.async_entries(DOMAIN):
+        if (other.entry_id != entry.entry_id
+                and other.data.get(CONF_ENTRY_TYPE) == etype
+                and other.state is ConfigEntryState.LOADED):
+            return
+    for name in names:
+        if hass.services.has_service(DOMAIN, name):
+            hass.services.async_remove(DOMAIN, name)

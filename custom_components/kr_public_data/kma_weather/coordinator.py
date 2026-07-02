@@ -2,8 +2,8 @@
 from __future__ import annotations
 import logging
 from datetime import timedelta
-import aiohttp
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from . import KMA_SCAN_INTERVAL
 from .api import fetch_vilage_forecast, parse_weather
 from ..exceptions import KrTransientError
@@ -26,65 +26,66 @@ class KMAWeatherCoordinator(ResilientCoordinator):
         self._air_station = air_station
         self._living_key = living_api_key or api_key
         self._area_no = area_no
+        self._session = async_get_clientsession(hass)
 
     async def _fetch(self):
         result = {}
         previous = self.data or {}
         region_failures = 0
         last_err: Exception | None = None
-        async with aiohttp.ClientSession() as session:
-            # 1. Fetch weather forecast per region
-            for reg in self._regions:
-                name = reg["name"]
-                try:
-                    items = await fetch_vilage_forecast(
-                        session, self._api_key, reg["nx"], reg["ny"])
-                    result[name] = parse_weather(items)
-                except Exception as e:
-                    region_failures += 1
-                    last_err = e
-                    _LOGGER.warning("KMA weather %s: %s", name, e)
-                    # Keep the previous forecast for this region instead of
-                    # blanking the weather entity.
-                    result[name] = previous.get(name, {})
+        session = self._session
+        # 1. Fetch weather forecast per region
+        for reg in self._regions:
+            name = reg["name"]
+            try:
+                items = await fetch_vilage_forecast(
+                    session, self._api_key, reg["nx"], reg["ny"])
+                result[name] = parse_weather(items)
+            except Exception as e:
+                region_failures += 1
+                last_err = e
+                _LOGGER.warning("KMA weather %s: %s", name, e)
+                # Keep the previous forecast for this region instead of
+                # blanking the weather entity.
+                result[name] = previous.get(name, {})
 
-            if self._regions and region_failures == len(self._regions):
-                raise KrTransientError(f"KMA: all region forecasts failed: {last_err}")
+        if self._regions and region_failures == len(self._regions):
+            raise KrTransientError(f"KMA: all region forecasts failed: {last_err}")
 
-            # 2. Fetch O3 from AirKorea (same session, same update cycle)
-            if self._air_station:
-                try:
-                    from ..airkorea.api import fetch_realtime
-                    air = await fetch_realtime(session, self._air_key, self._air_station)
-                    if air:
-                        o3 = air.get("o3Value")
-                        if o3 and o3 != "-":
-                            for name in result:
-                                result[name]["ozone"] = float(o3)
-                except Exception as e:
-                    _LOGGER.debug("KMA O3 fetch: %s", e)
+        # 2. Fetch O3 from AirKorea (same session, same update cycle)
+        if self._air_station:
+            try:
+                from ..airkorea.api import fetch_realtime
+                air = await fetch_realtime(session, self._air_key, self._air_station)
+                if air:
+                    o3 = air.get("o3Value")
+                    if o3 and o3 != "-":
+                        for name in result:
+                            result[name]["ozone"] = float(o3)
+            except Exception as e:
+                _LOGGER.debug("KMA O3 fetch: %s", e)
 
-            # 3. Fetch UV index from Living Weather V4 (same session)
-            if self._area_no:
-                try:
-                    from ..airkorea.api import fetch_uv_index
-                    uv = await fetch_uv_index(session, self._living_key, self._area_no)
-                    if uv:
-                        from datetime import datetime
-                        from zoneinfo import ZoneInfo
-                        now = datetime.now(ZoneInfo("Asia/Seoul"))
-                        h = (now.hour // 3) * 3
-                        for field in [f"h{h}", "h0"]:
-                            val = uv.get(field)
-                            if val and str(val).strip():
-                                try:
-                                    uv_val = float(val)
-                                    for name in result:
-                                        result[name]["uv_index"] = uv_val
-                                    break
-                                except (ValueError, TypeError):
-                                    pass
-                except Exception as e:
-                    _LOGGER.debug("KMA UV fetch: %s", e)
+        # 3. Fetch UV index from Living Weather V4 (same session)
+        if self._area_no:
+            try:
+                from ..airkorea.api import fetch_uv_index
+                uv = await fetch_uv_index(session, self._living_key, self._area_no)
+                if uv:
+                    from datetime import datetime
+                    from zoneinfo import ZoneInfo
+                    now = datetime.now(ZoneInfo("Asia/Seoul"))
+                    h = (now.hour // 3) * 3
+                    for field in [f"h{h}", "h0"]:
+                        val = uv.get(field)
+                        if val and str(val).strip():
+                            try:
+                                uv_val = float(val)
+                                for name in result:
+                                    result[name]["uv_index"] = uv_val
+                                break
+                            except (ValueError, TypeError):
+                                pass
+            except Exception as e:
+                _LOGGER.debug("KMA UV fetch: %s", e)
 
         return result

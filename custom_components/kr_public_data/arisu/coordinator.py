@@ -2,8 +2,8 @@
 from __future__ import annotations
 import logging
 from datetime import timedelta
-import aiohttp
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from . import ARISU_SCAN_INTERVAL
 from .api import ArisuApiClient
 from ..resilience import ResilientCoordinator
@@ -16,8 +16,7 @@ class ArisuCoordinator(ResilientCoordinator):
     def __init__(self, hass, customer_number, customer_name):
         super().__init__(hass, _LOGGER, name="arisu",
                          update_interval=timedelta(seconds=ARISU_SCAN_INTERVAL))
-        self._session = aiohttp.ClientSession()
-        self.client = ArisuApiClient(self._session)
+        self.client = ArisuApiClient(async_get_clientsession(hass))
         self._num = customer_number
         self._name = customer_name
 

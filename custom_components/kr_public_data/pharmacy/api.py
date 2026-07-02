@@ -5,6 +5,7 @@ import xml.etree.ElementTree as ET
 from typing import Any
 import aiohttp
 from . import PHARMACY_URL
+from ..exceptions import raise_for_result_code
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -16,6 +17,10 @@ async def fetch_pharmacies(session, api_key, q0, q1="", page=1, num=20):
                            timeout=aiohttp.ClientTimeout(total=15)) as r:
         text = await r.text()
     root = ET.fromstring(text)
+    # data.go.kr error envelopes carry returnReasonCode (quota/key problems)
+    raise_for_result_code(
+        root.findtext(".//returnReasonCode") or root.findtext(".//resultCode"),
+        root.findtext(".//returnAuthMsg") or root.findtext(".//resultMsg") or "")
     results = []
     for item in root.findall(".//item"):
         duty_time = {}

@@ -14,9 +14,11 @@ from datetime import datetime, timedelta
 from typing import Any
 
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
+from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
+from .const import DOMAIN
 from .exceptions import KrAuthError, KrQuotaError
 from .utils import TZ_ASIA_SEOUL
 
@@ -39,6 +41,7 @@ class ResilientCoordinator(DataUpdateCoordinator):
         super().__init__(*args, **kwargs)
         self._consecutive_failures = 0
         self._quota_blocked_until: datetime | None = None
+        self._quota_issue_active = False
         self.last_success_time: datetime | None = None
 
     async def _fetch(self):
@@ -64,6 +67,7 @@ class ResilientCoordinator(DataUpdateCoordinator):
             _LOGGER.warning(
                 "%s: daily API quota exceeded, pausing polls until %s: %s",
                 self.name, self._quota_blocked_until, err)
+            self._set_quota_issue(True)
             return self._stale_or_fail(str(err))
         except Exception as err:
             self._consecutive_failures += 1
@@ -76,7 +80,24 @@ class ResilientCoordinator(DataUpdateCoordinator):
 
         self._consecutive_failures = 0
         self.last_success_time = dt_util.utcnow()
+        self._set_quota_issue(False)
         return data
+
+    def _set_quota_issue(self, active: bool) -> None:
+        if active == self._quota_issue_active:
+            return
+        self._quota_issue_active = active
+        issue_id = f"quota_exceeded_{self.name}"
+        if active:
+            ir.async_create_issue(
+                self.hass, DOMAIN, issue_id,
+                is_fixable=False,
+                severity=ir.IssueSeverity.WARNING,
+                translation_key="quota_exceeded",
+                translation_placeholders={"name": self.name},
+            )
+        else:
+            ir.async_delete_issue(self.hass, DOMAIN, issue_id)
 
     def _stale_or_fail(self, reason: str):
         if self.data is not None:

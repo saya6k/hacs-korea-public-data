@@ -2,8 +2,8 @@
 from __future__ import annotations
 import logging
 from datetime import timedelta
-import aiohttp
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from . import PHARMACY_SCAN_INTERVAL
 from .api import fetch_pharmacies
 from ..resilience import ResilientCoordinator
@@ -19,7 +19,7 @@ class PharmacyCoordinator(ResilientCoordinator):
         self._api_key = api_key
         self._q0 = q0
         self._q1 = q1
+        self._session = async_get_clientsession(hass)
 
     async def _fetch(self):
-        async with aiohttp.ClientSession() as session:
-            return await fetch_pharmacies(session, self._api_key, self._q0, self._q1)
+        return await fetch_pharmacies(self._session, self._api_key, self._q0, self._q1)
