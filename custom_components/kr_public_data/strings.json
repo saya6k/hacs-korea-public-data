@@ -369,6 +369,52 @@
       "abort": {
         "already_configured": "Already configured."
       }
+    },
+    "intercity_bus_route": {
+      "entry_type": "Route",
+      "initiate_flow": {
+        "user": "Add route"
+      },
+      "step": {
+        "user": {
+          "title": "Search Departure Terminal",
+          "data": {
+            "dep_name": "Departure terminal name"
+          }
+        },
+        "dep_select": {
+          "title": "Select Departure Terminal",
+          "data": {
+            "dep_name": "Terminal"
+          }
+        },
+        "arr_search": {
+          "title": "Search Arrival Terminal",
+          "data": {
+            "arr_name": "Arrival terminal name"
+          }
+        },
+        "arr_select": {
+          "title": "Select Arrival Terminal",
+          "data": {
+            "arr_name": "Terminal"
+          }
+        },
+        "grades": {
+          "title": "Grades (detected grades preselected)",
+          "data": {
+            "grades": "Grades"
+          }
+        }
+      },
+      "error": {
+        "no_selection": "Select one.",
+        "no_stations_found": "No terminals found.",
+        "no_dispatch_found": "No dispatches found for that route — try a different arrival terminal."
+      },
+      "abort": {
+        "already_configured": "Already configured."
+      }
     }
   },
   "options": {

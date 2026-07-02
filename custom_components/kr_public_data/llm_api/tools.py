@@ -34,7 +34,7 @@ def _factory(cls: type) -> ToolFactory:
 
 def _build() -> dict[str, list[ToolFactory]]:
     from .airkorea_tool import GetAirQualityTool
-    from .bus_tool import GetCityBusArrivalsTool
+    from .bus_tool import GetCityBusArrivalsTool, GetIntercityBusDeparturesTool
     from .disaster_tool import GetDisasterMessagesTool
     from .earthquake_tool import GetRecentEarthquakesTool
     from .fuel_tool import GetFuelPricesTool
@@ -55,7 +55,7 @@ def _build() -> dict[str, list[ToolFactory]]:
         ENTRY_WEATHER: [_factory(GetWeatherWarningsTool)],
         ENTRY_AIRKOREA: [_factory(GetAirQualityTool)],
         ENTRY_TRANSIT: [_factory(GetSubwayArrivalsTool)],
-        ENTRY_BUS: [_factory(GetCityBusArrivalsTool)],
+        ENTRY_BUS: [_factory(GetCityBusArrivalsTool), _factory(GetIntercityBusDeparturesTool)],
         ENTRY_FUEL: [_factory(GetFuelPricesTool)],
         ENTRY_SCHOOL: [
             _factory(GetSchoolMealTool),

@@ -369,6 +369,52 @@
       "abort": {
         "already_configured": "이미 설정되어 있습니다."
       }
+    },
+    "intercity_bus_route": {
+      "entry_type": "구간",
+      "initiate_flow": {
+        "user": "구간 추가"
+      },
+      "step": {
+        "user": {
+          "title": "출발터미널 검색",
+          "data": {
+            "dep_name": "출발터미널명"
+          }
+        },
+        "dep_select": {
+          "title": "출발터미널 선택",
+          "data": {
+            "dep_name": "터미널"
+          }
+        },
+        "arr_search": {
+          "title": "도착터미널 검색",
+          "data": {
+            "arr_name": "도착터미널명"
+          }
+        },
+        "arr_select": {
+          "title": "도착터미널 선택",
+          "data": {
+            "arr_name": "터미널"
+          }
+        },
+        "grades": {
+          "title": "등급 선택 (감지된 등급이 기본값)",
+          "data": {
+            "grades": "등급"
+          }
+        }
+      },
+      "error": {
+        "no_selection": "하나 이상 선택하세요.",
+        "no_stations_found": "터미널을 찾을 수 없습니다.",
+        "no_dispatch_found": "이 구간엔 오늘 배차가 없습니다 — 도착터미널을 다시 검색해보세요."
+      },
+      "abort": {
+        "already_configured": "이미 설정되어 있습니다."
+      }
     }
   },
   "options": {

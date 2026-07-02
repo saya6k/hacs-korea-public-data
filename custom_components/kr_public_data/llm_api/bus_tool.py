@@ -138,3 +138,89 @@ class GetCityBusArrivalsTool(BaseKRTool):
                 "entry only has one bus currently tracked — don't invent one."
             ),
         )
+
+
+class GetIntercityBusDeparturesTool(BaseKRTool):
+    service = ENTRY_BUS
+    name = "get_intercity_bus_departures"
+    description = (
+        "Return the next scheduled departures for a configured intercity "
+        "or express bus route (고속버스/시외버스), today's dispatch "
+        "timetable only. Returns up to the next two departures per "
+        "configured grade (등급)."
+    )
+    parameters = vol.Schema(
+        {
+            vol.Optional(
+                "route",
+                description=(
+                    "Route as '출발터미널→도착터미널' (Korean, e.g. "
+                    "'동서울→춘천'). Omit to use the first configured route."
+                ),
+            ): str,
+        }
+    )
+
+    async def async_call(
+        self,
+        hass: HomeAssistant,
+        tool_input: llm.ToolInput,
+        llm_context: llm.LLMContext,
+    ) -> dict[str, Any]:
+        store = self.store
+        by_name: dict[str, Any] = store.get("intercity_bus_by_name") or {}
+        if not by_name:
+            return self.error("등록된 시외/고속버스 구간이 없습니다.")
+
+        wanted = tool_input.tool_args.get("route")
+        if wanted is None:
+            route = next(iter(by_name.keys()))
+        elif wanted in by_name:
+            route = wanted
+        else:
+            return self.error(f"'{wanted}' 구간이 등록되어 있지 않습니다.")
+
+        info = by_name[route]
+        coord = info["coordinator"]
+        if coord.data is None:
+            return self.error("배차 데이터가 아직 준비되지 않았습니다.")
+
+        # grade_key는 "source:gradeNm" — 고속버스/시외버스는 결제 플랫폼이
+        # 달라 사용자에게 계속 구분해서 보여줘야 한다.
+        departures = []
+        for grade_key in info["grades"]:
+            source, grade = grade_key.split(":", 1)
+            bus_type = "고속버스" if source == "express" else "시외버스"
+            for idx, (dt, raw) in enumerate(coord.data.get(grade_key, [])):
+                departures.append({
+                    "type": bus_type,
+                    "grade": grade,
+                    "order": "다음" if idx == 0 else "다다음",
+                    "departure_time": dt.strftime("%H:%M"),
+                    "fare": raw.get("charge"),
+                })
+
+        rows = [[d["type"], d["grade"], d["order"], d["departure_time"],
+                f"{d['fare']}원" if d.get("fare") is not None else ""]
+               for d in departures]
+        featured = svg_table(
+            "버스 배차 정보",
+            ["종류", "등급", "구분", "출발시각", "요금"],
+            rows,
+            subtitle=route,
+            accent=_BUS_ACCENT,
+            empty_message="오늘 남은 배차가 없습니다.",
+        )
+
+        return self.envelope(
+            route=route,
+            departures=departures,
+            featured_image=featured,
+            instruction=(
+                "Summarise the next scheduled departures naturally. The "
+                "user is already shown a table; keep your reply short. "
+                "This is today's timetable, not a live countdown. Mention "
+                "the 'type' (고속버스/시외버스) since they're booked on "
+                "different platforms."
+            ),
+        )

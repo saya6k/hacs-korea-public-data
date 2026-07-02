@@ -124,6 +124,8 @@ API_PROMPTS: dict[str, str] = {
         "Use get_city_bus_arrivals for city bus arrivals at configured "
         "stops (nationwide TAGO data plus Seoul via TOPIS). Pick the first "
         "configured stop if the user doesn't name one. Convert "
-        "arrival_in_seconds to minutes."
+        "arrival_in_seconds to minutes. Use get_intercity_bus_departures "
+        "for configured 고속버스/시외버스 routes — today's scheduled "
+        "departures, not a live countdown."
     ),
 }

@@ -860,7 +860,8 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if etype == ENTRY_TRANSIT:
             return {"subway_station": SubwayStationSubentryFlowHandler}
         if etype == ENTRY_BUS:
-            return {"city_bus_stop": CityBusStopSubentryFlowHandler}
+            return {"city_bus_stop": CityBusStopSubentryFlowHandler,
+                    "intercity_bus_route": IntercityBusRouteSubentryFlowHandler}
         return {}
 
 
@@ -1182,6 +1183,154 @@ class CityBusStopSubentryFlowHandler(config_entries.ConfigSubentryFlow):
                     unique_id=self._node_id)
         return self.async_show_form(step_id="routes", data_schema=vol.Schema({
             vol.Required("routes", default=list(route_map)): cv.multi_select(route_map),
+        }), errors=errors)
+
+
+class IntercityBusRouteSubentryFlowHandler(config_entries.ConfigSubentryFlow):
+    """Add one 시외/고속버스 구간(출발-도착 터미널)을 bus entry에 추가.
+
+    고속버스/시외버스는 별도 선택지로 노출하지 않는다 — 터미널 이름으로
+    검색하면 두 시스템을 모두 능동적으로 조회해 실제 배차가 있는 조합만
+    사용한다("동서울"이 고속버스 쪽엔 4개, 시외버스 쪽엔 1개 있어도
+    사용자는 그 차이를 알 필요가 없다는 피드백 반영).
+    """
+
+    def __init__(self):
+        self._dep_names: list[str] = []
+        self._arr_names: list[str] = []
+        self._dep_name = ""
+        self._arr_name = ""
+        self._queries: list[dict] = []
+        self._grades_found: list[str] = []
+        self._retry_error: str | None = None
+
+    async def async_step_user(self, user_input=None):
+        """출발터미널 검색 (고속/시외 구분 없이 양쪽 다 검색)."""
+        from .bus.intercity_api import search_terminals
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            name = user_input["dep_name"].strip()
+            entry = self._get_entry()
+            session = async_get_clientsession(self.hass)
+            names: set[str] = set()
+            for source in ("express", "intercity"):
+                try:
+                    candidates = await search_terminals(session, entry.data["service_key"],
+                                                         source, name)
+                except Exception as e:
+                    _LOGGER.warning("Terminal search failed (%s): %s", source, e)
+                    candidates = []
+                names.update(c["terminalNm"] for c in candidates)
+            self._dep_names = sorted(names)
+            if not self._dep_names:
+                errors["base"] = "no_stations_found"
+            else:
+                return await self.async_step_dep_select()
+        return self.async_show_form(step_id="user", data_schema=vol.Schema({
+            vol.Required("dep_name"): str,
+        }), errors=errors)
+
+    async def async_step_dep_select(self, user_input=None):
+        """출발터미널 선택 → 도착터미널 검색."""
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            self._dep_name = user_input["dep_name"]
+            return await self.async_step_arr_search()
+        if self._retry_error:
+            errors["base"] = self._retry_error
+            self._retry_error = None
+        opts = [SelectOptionDict(value=n, label=n) for n in self._dep_names]
+        return self.async_show_form(step_id="dep_select", data_schema=vol.Schema({
+            vol.Required("dep_name"): SelectSelector(
+                SelectSelectorConfig(options=opts, mode=SelectSelectorMode.DROPDOWN)),
+        }), errors=errors)
+
+    async def async_step_arr_search(self, user_input=None):
+        """도착터미널 검색 (고속/시외 구분 없이 양쪽 다 검색)."""
+        from .bus.intercity_api import search_terminals
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            name = user_input["arr_name"].strip()
+            entry = self._get_entry()
+            session = async_get_clientsession(self.hass)
+            names: set[str] = set()
+            for source in ("express", "intercity"):
+                try:
+                    candidates = await search_terminals(session, entry.data["service_key"],
+                                                         source, name)
+                except Exception as e:
+                    _LOGGER.warning("Terminal search failed (%s): %s", source, e)
+                    candidates = []
+                names.update(c["terminalNm"] for c in candidates)
+            self._arr_names = sorted(names)
+            if not self._arr_names:
+                errors["base"] = "no_stations_found"
+            else:
+                return await self.async_step_arr_select()
+        if self._retry_error:
+            errors["base"] = self._retry_error
+            self._retry_error = None
+        return self.async_show_form(step_id="arr_search", data_schema=vol.Schema({
+            vol.Required("arr_name"): str,
+        }), errors=errors)
+
+    async def async_step_arr_select(self, user_input=None):
+        """도착터미널 선택 → 고속/시외 양쪽에서 실제 배차·등급 자동 감지."""
+        from .bus.intercity_api import discover_queries
+        if user_input is not None:
+            arr_name = user_input["arr_name"]
+            entry = self._get_entry()
+            for sub in entry.subentries.values():
+                if (sub.data.get("depTerminalName") == self._dep_name
+                        and sub.data.get("arrTerminalName") == arr_name):
+                    return self.async_abort(reason="already_configured")
+            self._arr_name = arr_name
+            session = async_get_clientsession(self.hass)
+            try:
+                self._queries, dispatches = await discover_queries(
+                    session, entry.data["service_key"], self._dep_name, arr_name)
+            except Exception as e:
+                _LOGGER.warning("Dispatch discovery failed: %s", e)
+                self._queries, dispatches = [], []
+            # "source:gradeNm" composite — 고속버스/시외버스는 결제 플랫폼이
+            # 달라 등급이 같은 이름이어도 합치면 안 된다.
+            self._grades_found = sorted({
+                f"{d['_source']}:{d['gradeNm']}" for d in dispatches if d.get("gradeNm")
+            })
+            if not self._grades_found:
+                # 두 시스템 다 뒤져도 이 이름 조합엔 배차가 없음 — 도착터미널을
+                # 다시 검색해보게 한다(출발은 이미 검증된 이름이라 유지).
+                self._retry_error = "no_dispatch_found"
+                return await self.async_step_arr_search()
+            return await self.async_step_grades()
+        opts = [SelectOptionDict(value=n, label=n) for n in self._arr_names]
+        return self.async_show_form(step_id="arr_select", data_schema=vol.Schema({
+            vol.Required("arr_name"): SelectSelector(
+                SelectSelectorConfig(options=opts, mode=SelectSelectorMode.DROPDOWN)),
+        }))
+
+    async def async_step_grades(self, user_input=None):
+        """등급 선택 (당일 실제 배차에서 감지된 등급이 기본값, 고속/시외 표시) → 구간 subentry."""
+        import homeassistant.helpers.config_validation as cv
+        errors: dict[str, str] = {}
+
+        def _grade_label(grade_key: str) -> str:
+            source, grade = grade_key.split(":", 1)
+            return f"{grade} ({'고속버스' if source == 'express' else '시외버스'})"
+
+        grade_map = {g: _grade_label(g) for g in self._grades_found}
+        if user_input is not None:
+            selected = user_input.get("grades", [])
+            if not selected:
+                errors["base"] = "no_selection"
+            else:
+                return self.async_create_entry(
+                    title=f"{self._dep_name}→{self._arr_name}",
+                    data={"depTerminalName": self._dep_name, "arrTerminalName": self._arr_name,
+                          "queries": self._queries, "grades": selected},
+                    unique_id=f"{self._dep_name}_{self._arr_name}")
+        return self.async_show_form(step_id="grades", data_schema=vol.Schema({
+            vol.Required("grades", default=list(grade_map)): cv.multi_select(grade_map),
         }), errors=errors)
 
 

@@ -132,7 +132,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
     elif etype == ENTRY_BUS:
         from .bus.sensor import CityBusArrivalSensor
         from .bus.seoul_sensor import SeoulBusArrivalSensor
-        from .bus.device import city_bus_route_device, seoul_bus_route_device
+        from .bus.intercity_sensor import IntercityBusDepartureSensor, IntercityBusFareSensor
+        from .bus.device import (city_bus_route_device, seoul_bus_route_device,
+                                 intercity_bus_route_device)
         stop_subs = store.get("stop_subs") or {}
         for sub_id, info in stop_subs.items():
             coord = info["coordinator"]
@@ -150,6 +152,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
                     sensor_cls = CityBusArrivalSensor
                 for idx in range(2):
                     ents.append(sensor_cls(coord, node_id, route["routeId"], idx, di))
+            async_add_entities(ents, config_subentry_id=sub_id)
+
+        route_subs = store.get("route_subs") or {}
+        for sub_id, info in route_subs.items():
+            coord = info["coordinator"]
+            dep_name = info["depTerminalName"]
+            arr_name = info["arrTerminalName"]
+            ents = []
+            # One device per grade; 2 departure sensors + 2 fare sensors under it.
+            for grade in info["grades"]:
+                di = intercity_bus_route_device(dep_name, arr_name, grade)
+                for idx in range(2):
+                    ents.append(IntercityBusDepartureSensor(coord, dep_name, arr_name, grade, idx, di))
+                    ents.append(IntercityBusFareSensor(coord, dep_name, arr_name, grade, idx, di))
             async_add_entities(ents, config_subentry_id=sub_id)
 
     if entities:
