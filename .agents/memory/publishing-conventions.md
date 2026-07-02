@@ -7,7 +7,7 @@ metadata:
   originSessionId: afcab7c3-0676-4a97-987c-d8a9a6c1806c
 ---
 
-Across the `saya6k/ha-*` HACS integration repos (all except `ha-apps`), each repo publishes its own bilingual Zensical docs to GitHub Pages via a `docs.yml` workflow that runs only on release (release-please). The manifest `documentation` field should point at the **published docs site** `https://saya6k.github.io/<repo>/` (root redirects to `/en/`), NOT at the GitHub repo URL. `issue_tracker` stays as `https://github.com/saya6k/<repo>/issues`.
+Across the `saya6k/ha-*` HACS integration repos (all except `ha-apps`), each repo publishes its own bilingual Zensical docs to GitHub Pages via a `docs.yml` workflow that runs only on release (`release: published` — tool-agnostic trigger; most repos use release-please, but `ha-korea-public-data` switched to release-drafter after a release-please+draft race condition caused duplicate release PRs — see that repo's `.github/release-drafter.yml` for the pattern). The manifest `documentation` field should point at the **published docs site** `https://saya6k.github.io/<repo>/` (root redirects to `/en/`), NOT at the GitHub repo URL. `issue_tracker` stays as `https://github.com/saya6k/<repo>/issues`.
 
 **Why:** the "Documentation" link in HACS/HA should open the actual docs, not the source repo.
 
