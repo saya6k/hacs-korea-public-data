@@ -108,8 +108,13 @@
         "title": "재난정보 설정",
         "data": {
           "api_key": "재난안전데이터 API 키",
-          "region_filter": "수신 지역 (광역)",
-          "sub_region": "세부 지역 (시군구명, 선택)"
+          "sido": "광역자치단체"
+        }
+      },
+      "disaster_sgg": {
+        "title": "기초자치단체 선택 (복수 가능)",
+        "data": {
+          "sgg_list": "시군구"
         }
       },
       "safety_alert": {
@@ -145,8 +150,13 @@
         "title": "약국 운영정보 설정",
         "data": {
           "api_key": "공공데이터포털 서비스 키",
-          "q0": "시도",
-          "q1": "시군구 (선택)"
+          "q0": "광역자치단체"
+        }
+      },
+      "pharmacy_sgg": {
+        "title": "기초자치단체 선택 (복수 가능)",
+        "data": {
+          "sgg_list": "시군구"
         }
       },
       "transit_bus_select": {
@@ -224,6 +234,34 @@
       "no_options": "수정 가능한 옵션이 없습니다.",
       "reauth_successful": "재인증이 완료되었습니다.",
       "reauth_not_supported": "이 항목 유형은 재인증을 지원하지 않습니다."
+    }
+  },
+  "config_subentries": {
+    "region": {
+      "entry_type": "지역",
+      "initiate_flow": {
+        "user": "지역 추가"
+      },
+      "step": {
+        "user": {
+          "title": "광역자치단체",
+          "data": {
+            "sido": "광역자치단체"
+          }
+        },
+        "sgg": {
+          "title": "기초자치단체",
+          "data": {
+            "sgg": "시군구"
+          }
+        }
+      },
+      "error": {
+        "cannot_connect": "API에 연결할 수 없습니다."
+      },
+      "abort": {
+        "already_configured": "이미 설정되어 있습니다."
+      }
     }
   },
   "options": {

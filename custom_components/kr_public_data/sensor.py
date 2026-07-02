@@ -42,9 +42,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
 
     elif etype == ENTRY_DISASTER:
         from .disaster.sensor import DisasterMessageSensor, DisasterCountSensor
-        region = store.get("region", "")
         c = store["coordinator"]
-        entities = [DisasterMessageSensor(c, region), DisasterCountSensor(c, region)]
+        regions = store.get("regions") or {}
+        for sub_id, r in regions.items():
+            async_add_entities(
+                [DisasterMessageSensor(c, sido=r.get("sido", ""), sgg=r.get("sgg", "")),
+                 DisasterCountSensor(c, sido=r.get("sido", ""), sgg=r.get("sgg", ""))],
+                config_subentry_id=sub_id)
+        if not regions:
+            region = store.get("region", "")
+            entities = [DisasterMessageSensor(c, region), DisasterCountSensor(c, region)]
 
     elif etype == ENTRY_SAFETY_ALERT:
         from .safety_alert.sensor import SafetyAlertTextSensor, SafetyAlertCountSensor
@@ -84,7 +91,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
 
     elif etype == ENTRY_PHARMACY:
         from .pharmacy.sensor import PharmacySensor
-        entities = [PharmacySensor(store["coordinator"], entry.data["q0"], entry.data.get("q1",""))]
+        for sub_id, sub in entry.subentries.items():
+            coord = store["coordinators"].get(sub_id)
+            if coord:
+                async_add_entities(
+                    [PharmacySensor(coord, sub.data.get("sido", ""), sub.data.get("sgg", ""))],
+                    config_subentry_id=sub_id)
+        if not entry.subentries:
+            entities = [PharmacySensor(store["coordinator"], entry.data["q0"], entry.data.get("q1",""))]
 
     elif etype == ENTRY_AIRKOREA:
         from .airkorea.sensor import AirQualitySensor, POLLUTANTS, UVIndexSensor, AirStagnationSensor

@@ -81,10 +81,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     elif etype == ENTRY_DISASTER:
         from .disaster.coordinator import DisasterCoordinator
         api_key = entry.data["api_key"]
-        region = entry.data.get("region_filter", "")
-        c = DisasterCoordinator(hass, api_key, region)
+        c = DisasterCoordinator(hass, api_key)
         await c.async_config_entry_first_refresh()
-        store = {"coordinator": c, "region": region}
+        # One shared fetch; each 시군구 subentry filters in its entities.
+        regions = {sub_id: dict(sub.data) for sub_id, sub in entry.subentries.items()}
+        store = {"coordinator": c, "regions": regions,
+                 "region": entry.data.get("region_filter", "")}
 
     elif etype == ENTRY_SAFETY_ALERT:
         from .safety_alert.coordinator import SafetyAlertCoordinator
@@ -129,11 +131,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     elif etype == ENTRY_PHARMACY:
         from .pharmacy.coordinator import PharmacyCoordinator
         from .pharmacy.services import async_register_pharmacy_service
+        from .resilience import async_first_refresh_all
         api_key = entry.data["api_key"]
-        c = PharmacyCoordinator(hass, api_key,
-                                 entry.data["q0"], entry.data.get("q1", ""))
-        await c.async_config_entry_first_refresh()
-        store = {"coordinator": c}
+        # One coordinator per 시군구 subentry (the API queries per region).
+        coords = {sub_id: PharmacyCoordinator(hass, api_key,
+                                              sub.data.get("sido", ""),
+                                              sub.data.get("sgg", ""))
+                  for sub_id, sub in entry.subentries.items()}
+        if not coords:
+            # legacy single-region entry (q0/q1 stored in entry data)
+            coords[None] = PharmacyCoordinator(hass, api_key,
+                                               entry.data.get("q0", ""),
+                                               entry.data.get("q1", ""))
+        await async_first_refresh_all(list(coords.values()), "pharmacy")
+        store = {"coordinators": coords,
+                 "coordinator": next(iter(coords.values()))}
         async_register_pharmacy_service(hass, api_key)
 
     elif etype == ENTRY_AIRKOREA:

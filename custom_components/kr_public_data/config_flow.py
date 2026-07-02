@@ -4,6 +4,7 @@ import logging
 from typing import Any
 import voluptuous as vol
 from homeassistant import config_entries
+from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import (
@@ -12,6 +13,35 @@ from homeassistant.helpers.selector import (
 from .const import *
 
 _LOGGER = logging.getLogger(__name__)
+
+# 광역자치단체 → safekorea 법정동 코드 (시군구 목록 조회용)
+SIDO_CODES = {
+    "서울특별시": "1100000000", "부산광역시": "2600000000",
+    "대구광역시": "2700000000", "인천광역시": "2800000000",
+    "광주광역시": "2900000000", "대전광역시": "3000000000",
+    "울산광역시": "3100000000", "세종특별자치시": "3600000000",
+    "경기도": "4100000000", "강원특별자치도": "5100000000",
+    "충청북도": "4300000000", "충청남도": "4400000000",
+    "전북특별자치도": "4500000000", "전라남도": "4600000000",
+    "경상북도": "4700000000", "경상남도": "4800000000",
+    "제주특별자치도": "5000000000",
+}
+
+
+async def _async_fetch_sgg_names(sido_name: str) -> list[str]:
+    """기초자치단체(시군구) 이름 목록을 safekorea 지역 API에서 조회."""
+    from .safety_alert.region_api import SafetyAlertRegionApiClient
+    code = SIDO_CODES.get(sido_name, "")
+    if not code:
+        return []
+    client = SafetyAlertRegionApiClient()
+    return [s["name"] for s in await client.async_get_sgg_list(code) if s.get("name")]
+
+
+def _sido_selector():
+    opts = [SelectOptionDict(value=k, label=k) for k in SIDO_CODES]
+    return SelectSelector(SelectSelectorConfig(options=opts,
+                                               mode=SelectSelectorMode.DROPDOWN))
 
 
 _REGION_GRID = {
@@ -327,33 +357,51 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     # ══════════ 재난정보 ══════════
 
     async def async_step_disaster(self, user_input=None) -> FlowResult:
+        """Step 1: API key + 광역자치단체 선택."""
         from .disaster.api import validate_disaster_api
         errors: dict[str, str] = {}
-        region_opts = [SelectOptionDict(value="", label="전체 (필터 없음)")]
-        for name in ["서울", "부산", "대구", "인천", "광주", "대전", "울산", "세종",
-                      "경기", "강원", "충북", "충남", "전북", "전남", "경북", "경남", "제주"]:
-            region_opts.append(SelectOptionDict(value=name, label=name))
         if user_input is not None:
             api_key = user_input["api_key"]
-            if await validate_disaster_api(api_key):
-                region = user_input.get("region_filter", "")
-                sub = user_input.get("sub_region", "").strip()
-                if sub:
-                    region = sub  # 세부 지역이 있으면 그것을 사용
-                title = f"재난정보 - {region}" if region else "재난정보"
-                return self.async_create_entry(title=title,
-                    data={CONF_ENTRY_TYPE: ENTRY_DISASTER,
-                          "api_key": api_key,
-                          "region_filter": region})
-            else:
+            if not await validate_disaster_api(api_key):
                 errors["base"] = "cannot_connect"
+            else:
+                self._data = {CONF_ENTRY_TYPE: ENTRY_DISASTER, "api_key": api_key}
+                self._region_sido = user_input["sido"]
+                self._sgg_names = await _async_fetch_sgg_names(self._region_sido)
+                if not self._sgg_names:
+                    errors["base"] = "cannot_connect"
+                else:
+                    return await self.async_step_disaster_sgg()
         return self.async_show_form(step_id="disaster",
             data_schema=vol.Schema({
                 vol.Required("api_key"): str,
-                vol.Optional("region_filter", default=""): SelectSelector(
-                    SelectSelectorConfig(options=region_opts,
-                                         mode=SelectSelectorMode.DROPDOWN)),
-                vol.Optional("sub_region", default=""): str,
+                vol.Required("sido", default="서울특별시"): _sido_selector(),
+            }),
+            errors=errors)
+
+    async def async_step_disaster_sgg(self, user_input=None) -> FlowResult:
+        """Step 2: 기초자치단체 체크리스트 → 시군구별 subentry."""
+        import homeassistant.helpers.config_validation as cv
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            selected = user_input.get("sgg_list", [])
+            if not selected:
+                errors["base"] = "no_selection"
+            else:
+                sido = self._region_sido
+                return self.async_create_entry(
+                    title=f"재난정보 - {sido}",
+                    data=self._data,
+                    subentries=[
+                        {"subentry_type": "region", "title": f"{sido} {sgg}",
+                         "data": {"sido": sido, "sgg": sgg},
+                         "unique_id": f"{sido}_{sgg}"}
+                        for sgg in selected
+                    ])
+        labels = {s: s for s in self._sgg_names}
+        return self.async_show_form(step_id="disaster_sgg",
+            data_schema=vol.Schema({
+                vol.Required("sgg_list"): cv.multi_select(labels),
             }),
             errors=errors)
 
@@ -454,40 +502,52 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     # ══════════ 약국 ══════════
 
     async def async_step_pharmacy(self, user_input=None) -> FlowResult:
+        """Step 1: API key + 광역자치단체 선택."""
         errors: dict[str, str] = {}
-        sido_opts = {
-            "서울특별시": "서울특별시", "부산광역시": "부산광역시",
-            "대구광역시": "대구광역시", "인천광역시": "인천광역시",
-            "광주광역시": "광주광역시", "대전광역시": "대전광역시",
-            "울산광역시": "울산광역시", "세종특별자치시": "세종특별자치시",
-            "경기도": "경기도", "강원특별자치도": "강원특별자치도",
-            "충청북도": "충청북도", "충청남도": "충청남도",
-            "전북특별자치도": "전북특별자치도", "전라남도": "전라남도",
-            "경상북도": "경상북도", "경상남도": "경상남도",
-            "제주특별자치도": "제주특별자치도",
-        }
         if user_input is not None:
-            return self.async_create_entry(
-                title="약국 정보",
-                data={CONF_ENTRY_TYPE: ENTRY_PHARMACY,
-                      "api_key": user_input["api_key"],
-                      "q0": user_input["q0"],
-                      "q1": user_input.get("q1", "")})
+            self._data = {CONF_ENTRY_TYPE: ENTRY_PHARMACY,
+                          "api_key": user_input["api_key"],
+                          "q0": user_input["q0"]}
+            self._region_sido = user_input["q0"]
+            self._sgg_names = await _async_fetch_sgg_names(self._region_sido)
+            if not self._sgg_names:
+                errors["base"] = "cannot_connect"
+            else:
+                return await self.async_step_pharmacy_sgg()
         return self.async_show_form(
             step_id="pharmacy",
             data_schema=vol.Schema({
                 vol.Required("api_key"): str,
-                vol.Required("q0", default="서울특별시"): vol.In(sido_opts),
-                vol.Optional("q1", default="",
-                             description={"suggested_value": "시군구 (예: 강남구)"}): str,
+                vol.Required("q0", default="서울특별시"): _sido_selector(),
             }),
             errors=errors,
-            description_placeholders={
-                "api_key_desc": "공공데이터포털(data.go.kr)에서 발급받은 서비스 키",
-                "q0_desc": "시도를 선택하세요",
-                "q1_desc": "시군구를 입력하세요 (선택, 예: 강남구)",
-            },
         )
+
+    async def async_step_pharmacy_sgg(self, user_input=None) -> FlowResult:
+        """Step 2: 기초자치단체 체크리스트 → 시군구별 subentry."""
+        import homeassistant.helpers.config_validation as cv
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            selected = user_input.get("sgg_list", [])
+            if not selected:
+                errors["base"] = "no_selection"
+            else:
+                sido = self._region_sido
+                return self.async_create_entry(
+                    title=f"약국 정보 - {sido}",
+                    data=self._data,
+                    subentries=[
+                        {"subentry_type": "region", "title": f"{sido} {sgg}",
+                         "data": {"sido": sido, "sgg": sgg},
+                         "unique_id": f"{sido}_{sgg}"}
+                        for sgg in selected
+                    ])
+        labels = {s: s for s in self._sgg_names}
+        return self.async_show_form(step_id="pharmacy_sgg",
+            data_schema=vol.Schema({
+                vol.Required("sgg_list"): cv.multi_select(labels),
+            }),
+            errors=errors)
 
 
 
@@ -559,17 +619,23 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         "nx": sgg_map[r][0], "ny": sgg_map[r][1]}
                        for r in selected if r in sgg_map]
             self._data["regions"] = regions
-            self._data["air_station"] = user_input.get("air_station", "")
+            station = user_input.get("air_station") or "none"
+            self._data["air_station"] = "" if station == "none" else station
             self._data["area_no"] = SIDO_AREA_CODE.get(self._kma_sido, "")
             self._data["sido"] = self._kma_sido
             return self.async_create_entry(title="기상청 날씨예보", data=self._data)
         labels = {k: k for k in sgg_map.keys()}
         air_stations = STATIONS_BY_SIDO.get(self._kma_sido, [])
-        air_opts = {"": "사용 안 함 (날씨만)"}
-        air_opts.update({s: f"{s} (O₃/UV 포함)" for s in air_stations[:30]})
+        # "" is not usable as a select value in the frontend (it reads as
+        # "no selection" and locks the field) — use a "none" sentinel.
+        air_opts = [SelectOptionDict(value="none", label="사용 안 함 (날씨만)")]
+        air_opts += [SelectOptionDict(value=s, label=f"{s} (O₃/UV 포함)")
+                     for s in air_stations[:30]]
         return self.async_show_form(step_id="kma_weather_sgg", data_schema=vol.Schema({
             vol.Required("regions"): cv.multi_select(labels),
-            vol.Optional("air_station", default=""): vol.In(air_opts),
+            vol.Required("air_station", default="none"): SelectSelector(
+                SelectSelectorConfig(options=air_opts,
+                                     mode=SelectSelectorMode.DROPDOWN)),
         }))
 
     # ══════════ 지진 정보 ══════════
@@ -631,6 +697,53 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def async_get_options_flow(config_entry):
         return KRPublicDataOptionsFlow(config_entry)
 
+    @classmethod
+    @callback
+    def async_get_supported_subentry_types(cls, config_entry):
+        if config_entry.data.get(CONF_ENTRY_TYPE) in (ENTRY_PHARMACY, ENTRY_DISASTER):
+            return {"region": RegionSubentryFlowHandler}
+        return {}
+
+
+class RegionSubentryFlowHandler(config_entries.ConfigSubentryFlow):
+    """Add one 기초자치단체 region to a pharmacy/disaster entry."""
+
+    def __init__(self):
+        self._sido = ""
+        self._sgg_names: list[str] = []
+
+    async def async_step_user(self, user_input=None):
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            self._sido = user_input["sido"]
+            self._sgg_names = await _async_fetch_sgg_names(self._sido)
+            if not self._sgg_names:
+                errors["base"] = "cannot_connect"
+            else:
+                return await self.async_step_sgg()
+        return self.async_show_form(step_id="user", data_schema=vol.Schema({
+            vol.Required("sido", default="서울특별시"): _sido_selector(),
+        }), errors=errors)
+
+    async def async_step_sgg(self, user_input=None):
+        if user_input is not None:
+            sgg = user_input["sgg"]
+            entry = self._get_entry()
+            for sub in entry.subentries.values():
+                if (sub.data.get("sido") == self._sido
+                        and sub.data.get("sgg") == sgg):
+                    return self.async_abort(reason="already_configured")
+            return self.async_create_entry(
+                title=f"{self._sido} {sgg}",
+                data={"sido": self._sido, "sgg": sgg},
+                unique_id=f"{self._sido}_{sgg}")
+        sgg_opts = [SelectOptionDict(value=s, label=s) for s in self._sgg_names]
+        return self.async_show_form(step_id="sgg", data_schema=vol.Schema({
+            vol.Required("sgg"): SelectSelector(
+                SelectSelectorConfig(options=sgg_opts,
+                                     mode=SelectSelectorMode.DROPDOWN)),
+        }))
+
 
 class KRPublicDataOptionsFlow(config_entries.OptionsFlow):
     """Handle options for reconfiguration."""
@@ -643,6 +756,8 @@ class KRPublicDataOptionsFlow(config_entries.OptionsFlow):
         etype = self._entry.data.get(CONF_ENTRY_TYPE)
 
         if user_input is not None:
+            if user_input.get("air_station") == "none":
+                user_input["air_station"] = ""
             # Merge new options into data
             new_data = {**self._entry.data, **user_input}
             self.hass.config_entries.async_update_entry(self._entry, data=new_data)
@@ -752,8 +867,17 @@ class KRPublicDataOptionsFlow(config_entries.OptionsFlow):
             })
 
         elif etype == ENTRY_KMA_WEATHER:
+            from .airkorea import STATIONS_BY_SIDO
+            stations = STATIONS_BY_SIDO.get(d.get("sido", ""), [])
+            air_opts = [SelectOptionDict(value="none", label="사용 안 함 (날씨만)")]
+            air_opts += [SelectOptionDict(value=s, label=f"{s} (O₃/UV 포함)")
+                         for s in stations[:30]]
             return vol.Schema({
                 vol.Required("api_key", default=d.get("api_key", "")): str,
+                vol.Required("air_station",
+                             default=d.get("air_station") or "none"): SelectSelector(
+                    SelectSelectorConfig(options=air_opts,
+                                         mode=SelectSelectorMode.DROPDOWN)),
             })
 
         elif etype == ENTRY_EARTHQUAKE:
