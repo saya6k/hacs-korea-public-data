@@ -1,5 +1,27 @@
 # Changelog
 
+## [4.3.0](https://github.com/saya6k/ha-korea-public-data/compare/kr_public_data-v4.2.3...kr_public_data-v4.3.0) (2026-07-02)
+
+
+### Features
+
+* **resilience:** add failover handling for API outages ([#9](https://github.com/saya6k/ha-korea-public-data/issues/9)) ([c6e7a7c](https://github.com/saya6k/ha-korea-public-data/commit/c6e7a7c82d3c854a7300b9dcd7a7bde69f085c27))
+
+
+### Bug Fixes
+
+* **ci:** skip HACS validation on PR branches ([095f3ef](https://github.com/saya6k/ha-korea-public-data/commit/095f3ef79c49422b861587485b4706ec03211e00))
+
+
+### Documentation
+
+* add HACS My Home Assistant badge to README ([#6](https://github.com/saya6k/ha-korea-public-data/issues/6)) ([d3d3879](https://github.com/saya6k/ha-korea-public-data/commit/d3d3879f7f71715925042a075f175cb839e06296))
+
+
+### CI
+
+* **release:** draft releases with manual publish, deploy docs on release-published ([#8](https://github.com/saya6k/ha-korea-public-data/issues/8)) ([d806389](https://github.com/saya6k/ha-korea-public-data/commit/d8063892e03dd68867e16786d02708b2914f6ee3))
+
 ## [4.2.3](https://github.com/saya6k/ha-korea-public-data/compare/kr_public_data-v4.2.2...kr_public_data-v4.2.3) (2026-06-18)
 
 
