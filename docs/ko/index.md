@@ -46,7 +46,6 @@
 - KEPCO 사이버지점 — <https://cyber.kepco.co.kr/> (API 키가 아닌 로그인 자격증명)
 - 가스앱 — 모바일 앱 토큰 (gasapp)
 - 서울시 아리수 — 고객번호 + 성명 (arisu)
-- KakaoMap — KakaoMap URL에서 버스 정류장 ID를 직접 읽음 (transit bus)
 
 config flow가 각 서비스에 필요한 키를 안내합니다.
 
@@ -54,8 +53,6 @@ config flow가 각 서비스에 필요한 키를 안내합니다.
 
 구성된 서비스는 HA 액션을 등록합니다. 추가한 entry에 따라 사용 가능한 액션이 달라집니다:
 
-- `kr_public_data.search_location` — 장소명을 좌표로 변환 (transit)
-- `kr_public_data.search_transit_path` — 좌표 사이의 대중교통 경로 (transit)
 - `kr_public_data.search_pharmacy` — 지역 영업 약국 조회 (pharmacy)
 - `kr_public_data.get_living_index_forecast` — 자외선 / 대기정체 예보 (airkorea)
 

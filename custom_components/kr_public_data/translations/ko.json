@@ -35,8 +35,7 @@
       "transit": {
         "title": "지하철 API 키",
         "data": {
-          "seoul_api_key": "서울 열린데이터광장 인증키",
-          "bus_api_key": "공공데이터포털 서비스 키 (환승경로, 선택)"
+          "seoul_api_key": "서울 열린데이터광장 인증키"
         }
       },
       "transit_station": {

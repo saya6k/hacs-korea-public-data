@@ -125,7 +125,7 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     # ══════════ 지하철 ══════════
 
     async def async_step_transit(self, user_input=None) -> FlowResult:
-        """Step 1: 서울 열린데이터광장 키 (+선택: 환승경로 키)."""
+        """Step 1: 서울 열린데이터광장 키."""
         from .transit.subway_api import validate_seoul_api
         errors: dict[str, str] = {}
         if user_input is not None:
@@ -134,7 +134,6 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 self._data = {
                     CONF_ENTRY_TYPE: ENTRY_TRANSIT,
                     "seoul_api_key": seoul_key,
-                    "bus_api_key": user_input.get("bus_api_key", ""),
                 }
                 return await self.async_step_transit_station()
             errors["base"] = "cannot_connect"
@@ -142,7 +141,6 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="transit",
             data_schema=vol.Schema({
                 vol.Required("seoul_api_key"): str,
-                vol.Optional("bus_api_key", default=""): str,
             }),
             errors=errors)
 
@@ -993,7 +991,6 @@ class KRPublicDataOptionsFlow(config_entries.OptionsFlow):
         elif etype == ENTRY_TRANSIT:
             return vol.Schema({
                 vol.Optional("seoul_api_key", default=d.get("seoul_api_key", "")): str,
-                vol.Optional("bus_api_key", default=d.get("bus_api_key", "")): str,
             })
 
         elif etype == ENTRY_FUEL:

@@ -35,8 +35,7 @@
       "transit": {
         "title": "Subway Keys",
         "data": {
-          "seoul_api_key": "Seoul Open Data Key",
-          "bus_api_key": "Transfer Path Key (optional)"
+          "seoul_api_key": "Seoul Open Data Key"
         }
       },
       "transit_station": {

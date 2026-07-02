@@ -24,7 +24,6 @@ PLATFORM_MAP = {
 
 # Globally registered actions, removed when the last entry of the type unloads.
 SERVICES_BY_ETYPE = {
-    ENTRY_TRANSIT: ["search_location", "search_transit_path"],
     ENTRY_PHARMACY: ["search_pharmacy"],
     ENTRY_AIRKOREA: ["get_living_index_forecast"],
 }
@@ -48,10 +47,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     elif etype == ENTRY_TRANSIT:
         from .transit import line_directions
         from .transit.subway_coordinator import SubwayCoordinator
-        from .transit.services import async_register_services
         from .resilience import async_first_refresh_all
         seoul_key = entry.data.get("seoul_api_key", "")
-        bus_key = entry.data.get("bus_api_key", "")
         # 역 per subentry: one coordinator per station, subscribed to both
         # directions of every selected line.
         station_subs: dict = {}
@@ -78,8 +75,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await async_first_refresh_all(list(sc.values()), "subway")
         store = {"subway_coords": sc, "station_subs": station_subs,
                  "subway_items": legacy_items}
-        if bus_key:
-            async_register_services(hass, bus_key)
 
     elif etype == ENTRY_FUEL:
         from .fuel.coordinator import FuelCoordinator

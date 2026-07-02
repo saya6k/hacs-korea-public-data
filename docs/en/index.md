@@ -46,7 +46,6 @@ Most services require a free API key from a Korean public data portal. See:
 - KEPCO 사이버지점 — <https://cyber.kepco.co.kr/> (login credentials, not an API key)
 - 가스앱 — mobile-app token (gasapp)
 - 서울시 아리수 — 고객번호 + 성명 (arisu)
-- KakaoMap — bus stop ID is read directly from KakaoMap URLs (transit bus)
 
 The config flow tells you which key each service expects.
 
@@ -54,8 +53,6 @@ The config flow tells you which key each service expects.
 
 Configured services register HA actions. Available actions depend on which entries you've added:
 
-- `kr_public_data.search_location` — resolve a place name to coordinates (transit)
-- `kr_public_data.search_transit_path` — get a public-transit route between coordinates (transit)
 - `kr_public_data.search_pharmacy` — list operating pharmacies in a region (pharmacy)
 - `kr_public_data.get_living_index_forecast` — UV / air-stagnation forecast (airkorea)
 
