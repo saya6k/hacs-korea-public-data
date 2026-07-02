@@ -2,17 +2,19 @@
 from __future__ import annotations
 import logging
 from datetime import timedelta
-from typing import Any
 import aiohttp
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from . import KMA_SCAN_INTERVAL
 from .api import fetch_vilage_forecast, parse_weather
+from ..exceptions import KrTransientError
+from ..resilience import ResilientCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class KMAWeatherCoordinator(DataUpdateCoordinator[dict[str, Any]]):
+class KMAWeatherCoordinator(ResilientCoordinator):
+    stale_tolerance = 4
+
     def __init__(self, hass, api_key, regions,
                  air_api_key="", air_station="",
                  living_api_key="", area_no=""):
@@ -25,8 +27,11 @@ class KMAWeatherCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._living_key = living_api_key or api_key
         self._area_no = area_no
 
-    async def _async_update_data(self):
+    async def _fetch(self):
         result = {}
+        previous = self.data or {}
+        region_failures = 0
+        last_err: Exception | None = None
         async with aiohttp.ClientSession() as session:
             # 1. Fetch weather forecast per region
             for reg in self._regions:
@@ -36,8 +41,15 @@ class KMAWeatherCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                         session, self._api_key, reg["nx"], reg["ny"])
                     result[name] = parse_weather(items)
                 except Exception as e:
+                    region_failures += 1
+                    last_err = e
                     _LOGGER.warning("KMA weather %s: %s", name, e)
-                    result[name] = {}
+                    # Keep the previous forecast for this region instead of
+                    # blanking the weather entity.
+                    result[name] = previous.get(name, {})
+
+            if self._regions and region_failures == len(self._regions):
+                raise KrTransientError(f"KMA: all region forecasts failed: {last_err}")
 
             # 2. Fetch O3 from AirKorea (same session, same update cycle)
             if self._air_station:

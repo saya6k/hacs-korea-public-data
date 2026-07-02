@@ -9,6 +9,7 @@ from typing import Any
 from zoneinfo import ZoneInfo
 import aiohttp
 from . import VILAGE_URL
+from ..exceptions import KrTransientError
 
 _LOGGER = logging.getLogger(__name__)
 KST = ZoneInfo("Asia/Seoul")
@@ -86,17 +87,17 @@ async def fetch_vilage_forecast(session, api_key, nx, ny) -> list[dict]:
                            timeout=aiohttp.ClientTimeout(total=20)) as r:
         text = await r.text()
         if r.status != 200:
-            _LOGGER.error("KMA HTTP %s: %s", r.status, text[:200])
-            return []
+            raise KrTransientError(f"KMA HTTP {r.status}: {text[:200]}")
     try:
         data = json.loads(text)
-    except json.JSONDecodeError:
-        _LOGGER.error("KMA not JSON: %s", text[:200])
+    except json.JSONDecodeError as err:
+        raise KrTransientError(f"KMA not JSON: {text[:200]}") from err
+    header = data.get("response", {}).get("header", {})
+    rc = header.get("resultCode", "")
+    if rc == "03":  # NO_DATA
         return []
-    rc = data.get("response", {}).get("header", {}).get("resultCode", "")
     if rc != "00":
-        _LOGGER.warning("KMA error: %s", data.get("response",{}).get("header",{}).get("resultMsg",""))
-        return []
+        raise KrTransientError(f"KMA resultCode {rc}: {header.get('resultMsg', '')}")
     items = data.get("response", {}).get("body", {}).get("items", {}).get("item", [])
     return items if isinstance(items, list) else []
 

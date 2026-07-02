@@ -7,6 +7,7 @@ from typing import Any
 from zoneinfo import ZoneInfo
 import aiohttp
 from . import STATION_URL, REALTIME_URL, FORECAST_URL
+from ..exceptions import KrTransientError
 
 _LOGGER = logging.getLogger(__name__)
 KST = ZoneInfo("Asia/Seoul")
@@ -42,14 +43,18 @@ async def fetch_realtime(session, api_key, station_name) -> dict[str, Any]:
                            timeout=aiohttp.ClientTimeout(total=15)) as r:
         text = await r.text()
         if r.status != 200:
-            return {}
+            raise KrTransientError(f"AirKorea realtime HTTP {r.status}")
     try:
         data = json.loads(text)
-    except json.JSONDecodeError:
-        return {}
+    except json.JSONDecodeError as err:
+        raise KrTransientError(f"AirKorea realtime: not JSON: {text[:120]}") from err
     header = data.get("response", {}).get("header", {})
-    if header.get("resultCode") != "00":
+    rc = header.get("resultCode")
+    if rc == "03":  # NO_DATA
         return {}
+    if rc != "00":
+        raise KrTransientError(
+            f"AirKorea realtime resultCode {rc}: {header.get('resultMsg', '')}")
     items = data.get("response", {}).get("body", {}).get("items", [])
     if isinstance(items, dict):
         items = [items]
@@ -63,11 +68,18 @@ async def fetch_forecast(session, api_key) -> list[dict]:
                            timeout=aiohttp.ClientTimeout(total=15)) as r:
         text = await r.text()
         if r.status != 200:
-            return []
+            raise KrTransientError(f"AirKorea forecast HTTP {r.status}")
     try:
         data = json.loads(text)
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as err:
+        raise KrTransientError(f"AirKorea forecast: not JSON: {text[:120]}") from err
+    header = data.get("response", {}).get("header", {})
+    rc = header.get("resultCode")
+    if rc == "03":  # NO_DATA
         return []
+    if rc != "00":
+        raise KrTransientError(
+            f"AirKorea forecast resultCode {rc}: {header.get('resultMsg', '')}")
     items = data.get("response", {}).get("body", {}).get("items", [])
     if isinstance(items, dict):
         items = [items]

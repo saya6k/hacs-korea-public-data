@@ -2,17 +2,19 @@
 from __future__ import annotations
 import logging
 from datetime import timedelta
-from typing import Any
 import aiohttp
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from . import SCAN_INTERVAL, SIDO_AREA_CODE
 from .api import fetch_realtime, fetch_forecast, fetch_uv_index, fetch_air_stagnation
+from ..exceptions import KrTransientError
+from ..resilience import ResilientCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class AirKoreaCoordinator(DataUpdateCoordinator[dict[str, Any]]):
+class AirKoreaCoordinator(ResilientCoordinator):
+    stale_tolerance = 4
+
     def __init__(self, hass, api_key, stations, living_api_key="", sido=""):
         super().__init__(hass, _LOGGER, name="airkorea",
                          update_interval=timedelta(seconds=SCAN_INTERVAL))
@@ -21,8 +23,9 @@ class AirKoreaCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._living_key = living_api_key or api_key
         self._area_code = SIDO_AREA_CODE.get(sido, "1100000000")
 
-    async def _async_update_data(self):
+    async def _fetch(self):
         result = {"stations": {}, "forecast": [], "uv": {}, "stagnation": {}}
+        previous = self.data or {}
         station_failures = 0
         async with aiohttp.ClientSession() as session:
             for st in self._stations:
@@ -33,10 +36,14 @@ class AirKoreaCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 except Exception as e:
                     station_failures += 1
                     _LOGGER.warning("AirKorea realtime %s: %s", name, e)
+                    prev_station = (previous.get("stations") or {}).get(name)
+                    if prev_station:
+                        result["stations"][name] = prev_station
             try:
                 result["forecast"] = await fetch_forecast(session, self._api_key)
             except Exception as e:
                 _LOGGER.warning("AirKorea forecast: %s", e)
+                result["forecast"] = previous.get("forecast", [])
             # Living indices - shared for the region
             try:
                 result["uv"] = await fetch_uv_index(
@@ -50,5 +57,5 @@ class AirKoreaCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 _LOGGER.debug("AirKorea stagnation failed: %s", e)
         # If every station failed and forecast is empty, surface the failure
         if self._stations and station_failures == len(self._stations) and not result["forecast"]:
-            raise UpdateFailed("AirKorea: all station and forecast fetches failed")
+            raise KrTransientError("AirKorea: all station and forecast fetches failed")
         return result
