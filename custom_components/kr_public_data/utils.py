@@ -8,6 +8,16 @@ from zoneinfo import ZoneInfo
 
 TZ_ASIA_SEOUL = ZoneInfo("Asia/Seoul")
 
+# 전체 시도명 → 축약명 (airkorea의 STATIONS_BY_SIDO/SIDO_AREA_CODE 키).
+# 나머지 시도는 앞 두 글자가 곧 축약명이다.
+_SIDO_SHORT = {"충청북도": "충북", "충청남도": "충남", "전라남도": "전남",
+               "경상북도": "경북", "경상남도": "경남"}
+
+
+def sido_short_name(name: str) -> str:
+    """'서울특별시' → '서울', '충청북도' → '충북'."""
+    return _SIDO_SHORT.get(name, name[:2])
+
 
 class RSAKey:
     """RSA encryption for KEPCO login (matching rsa.js)."""

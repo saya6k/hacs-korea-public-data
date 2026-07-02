@@ -163,14 +163,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     elif etype == ENTRY_KMA_WEATHER:
         from .kma_weather.coordinator import KMAWeatherCoordinator
+        from .airkorea import SIDO_AREA_CODE
+        from .utils import sido_short_name
         api_key = entry.data["api_key"]
         regions = entry.data.get("regions", [])
+        # Entries created while the config flow looked SIDO_AREA_CODE up by
+        # full sido name stored area_no="" — recompute from the stored sido.
+        area_no = entry.data.get("area_no", "") or SIDO_AREA_CODE.get(
+            sido_short_name(entry.data.get("sido", "")), "")
         c = KMAWeatherCoordinator(
             hass, api_key, regions,
             air_api_key=api_key,
             air_station=entry.data.get("air_station", ""),
             living_api_key=api_key,
-            area_no=entry.data.get("area_no", ""),
+            area_no=area_no,
         )
         await c.async_config_entry_first_refresh()
         store = {"coordinator": c, "regions": regions}

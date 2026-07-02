@@ -11,6 +11,7 @@ from homeassistant.helpers.selector import (
     SelectOptionDict, SelectSelector, SelectSelectorConfig, SelectSelectorMode,
 )
 from .const import *
+from .utils import sido_short_name
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -22,20 +23,29 @@ SIDO_CODES = {
     "울산광역시": "3100000000", "세종특별자치시": "3600000000",
     "경기도": "4100000000", "강원특별자치도": "5100000000",
     "충청북도": "4300000000", "충청남도": "4400000000",
-    "전북특별자치도": "4500000000", "전라남도": "4600000000",
+    # 전북은 2026 개편으로 5200000000 (구 4500000000은 빈 목록 반환)
+    "전북특별자치도": "5200000000", "전라남도": "4600000000",
     "경상북도": "4700000000", "경상남도": "4800000000",
     "제주특별자치도": "5000000000",
 }
 
 
 async def _async_fetch_sgg_names(sido_name: str) -> list[str]:
-    """기초자치단체(시군구) 이름 목록을 safekorea 지역 API에서 조회."""
+    """기초자치단체(시군구) 이름 목록을 safekorea 지역 API에서 조회.
+
+    safekorea가 죽어 있거나 리다이렉트로 튕기면 kma_weather의 내장
+    시군구 테이블로 폴백한다 — config flow가 외부 API에 볼모잡히지 않게.
+    """
     from .safety_alert.region_api import SafetyAlertRegionApiClient
     code = SIDO_CODES.get(sido_name, "")
     if not code:
         return []
     client = SafetyAlertRegionApiClient()
-    return [s["name"] for s in await client.async_get_sgg_list(code) if s.get("name")]
+    names = [s["name"] for s in await client.async_get_sgg_list(code) if s.get("name")]
+    if names:
+        return names
+    from .kma_weather import SIDO_LIST
+    return sorted(SIDO_LIST.get(sido_name, {}).keys())
 
 
 def _sido_selector():
@@ -417,7 +427,7 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             "3100000000": "울산광역시", "3600000000": "세종특별자치시",
             "4100000000": "경기도", "5100000000": "강원특별자치도",
             "4300000000": "충청북도", "4400000000": "충청남도",
-            "4500000000": "전북특별자치도", "4600000000": "전라남도",
+            "5200000000": "전북특별자치도", "4600000000": "전라남도",
             "4700000000": "경상북도", "4800000000": "경상남도",
             "5000000000": "제주특별자치도",
         }
@@ -621,11 +631,13 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._data["regions"] = regions
             station = user_input.get("air_station") or "none"
             self._data["air_station"] = "" if station == "none" else station
-            self._data["area_no"] = SIDO_AREA_CODE.get(self._kma_sido, "")
+            # 에어코리아 테이블은 축약 시도명("서울")이 키다.
+            self._data["area_no"] = SIDO_AREA_CODE.get(
+                sido_short_name(self._kma_sido), "")
             self._data["sido"] = self._kma_sido
             return self.async_create_entry(title="기상청 날씨예보", data=self._data)
         labels = {k: k for k in sgg_map.keys()}
-        air_stations = STATIONS_BY_SIDO.get(self._kma_sido, [])
+        air_stations = STATIONS_BY_SIDO.get(sido_short_name(self._kma_sido), [])
         # "" is not usable as a select value in the frontend (it reads as
         # "no selection" and locks the field) — use a "none" sentinel.
         air_opts = [SelectOptionDict(value="none", label="사용 안 함 (날씨만)")]
@@ -829,7 +841,7 @@ class KRPublicDataOptionsFlow(config_entries.OptionsFlow):
                 "3100000000": "울산광역시", "3600000000": "세종특별자치시",
                 "4100000000": "경기도", "5100000000": "강원특별자치도",
                 "4300000000": "충청북도", "4400000000": "충청남도",
-                "4500000000": "전북특별자치도", "4600000000": "전라남도",
+                "5200000000": "전북특별자치도", "4600000000": "전라남도",
                 "4700000000": "경상북도", "4800000000": "경상남도",
                 "5000000000": "제주특별자치도",
             }
@@ -868,7 +880,7 @@ class KRPublicDataOptionsFlow(config_entries.OptionsFlow):
 
         elif etype == ENTRY_KMA_WEATHER:
             from .airkorea import STATIONS_BY_SIDO
-            stations = STATIONS_BY_SIDO.get(d.get("sido", ""), [])
+            stations = STATIONS_BY_SIDO.get(sido_short_name(d.get("sido", "")), [])
             air_opts = [SelectOptionDict(value="none", label="사용 안 함 (날씨만)")]
             air_opts += [SelectOptionDict(value=s, label=f"{s} (O₃/UV 포함)")
                          for s in stations[:30]]

@@ -1,14 +1,21 @@
 """Safety Alert Region API client for getting region codes.
 
-safekorea.go.kr rejects Python's default TLS fingerprint and serves the
-homepage HTML in place of the JSON endpoint. Use curl_cffi with chrome
-impersonation, like the main DisasterSmsList endpoint.
+safekorea.go.kr was replatformed: the old /idsiSFK/sfk/cs/sua/web/*.do
+endpoints now 302 to the new main page. The region dropdowns of the new
+disaster-SMS page (/safekorea-kor/ctim/cmsg/calamitySms.do) are fed by
+changeSidoList_new.do / changeSggList_new.do, which take a JSON body
+(form-encoded POSTs get a 500). The site still rejects Python's default
+TLS fingerprint, so keep curl_cffi with chrome impersonation.
+
+Note the 2026 행정구역 codes: 전북특별자치도 is 5200000000 (4500000000
+returns an empty list) and 전남광주통합특별시 (1200000000) exists alongside
+the still-working 광주(2900000000)/전남(4600000000) codes.
 """
 
 from __future__ import annotations
 
-import json
 import logging
+import re
 from typing import Dict, List
 
 from curl_cffi import requests as cffi_requests
@@ -17,11 +24,12 @@ _LOGGER = logging.getLogger(__name__)
 _IMPERSONATE = "chrome"
 _TIMEOUT = 15
 
+_BASE = "https://www.safekorea.go.kr/safekorea-kor/ctim/cmsg"
+_PAGE_URL = f"{_BASE}/calamitySms.do?menuSn=34"
+
 
 class SafetyAlertRegionApiClient:
     """API client for Safety Alert region code retrieval."""
-
-    BASE_URL = "https://www.safekorea.go.kr/idsiSFK/sfk/cs/sua/web"
 
     def __init__(self, session=None) -> None:
         # session arg kept for backward compatibility; curl_cffi creates its own.
@@ -30,14 +38,13 @@ class SafetyAlertRegionApiClient:
     @staticmethod
     def _headers() -> Dict[str, str]:
         return {
-            "Content-Type": "application/json; charset=UTF-8",
             "Accept": "application/json, text/plain, */*",
             "Origin": "https://www.safekorea.go.kr",
-            "Referer": "https://www.safekorea.go.kr/idsiSFK/neo/sfk/cs/sfc/dis/disasterMsgList.jsp",
+            "Referer": _PAGE_URL,
             "X-Requested-With": "XMLHttpRequest",
         }
 
-    async def _post_json(self, url: str, payload: dict) -> dict | None:
+    async def _post_json(self, url: str, payload: dict) -> list | None:
         try:
             async with cffi_requests.AsyncSession(impersonate=_IMPERSONATE) as s:
                 r = await s.post(
@@ -47,46 +54,50 @@ class SafetyAlertRegionApiClient:
             if r.status_code != 200:
                 _LOGGER.warning("Region API %s: HTTP %s", url, r.status_code)
                 return None
-            final_url = str(getattr(r, "url", "") or "")
             ctype = (r.headers.get("Content-Type") or "").lower()
-            if "main.do" in final_url or "html" in ctype:
+            if "json" not in ctype:
                 _LOGGER.warning(
-                    "Region API %s redirected to %s (content-type: %s)",
-                    url, final_url or "<unknown>", ctype,
+                    "Region API %s returned non-JSON (content-type: %s)",
+                    url, ctype,
                 )
                 return None
-            return json.loads(r.text)
+            data = r.json()
+            return data if isinstance(data, list) else None
         except Exception as e:
             _LOGGER.warning("Region API %s failed: %s", url, e)
             return None
 
     async def async_get_sido_list(self) -> List[Dict[str, str]]:
-        """Get list of sido (시도) regions."""
-        url = f"{self.BASE_URL}/Get_CBS_Sido_List.do"
-        data = await self._post_json(url, {})
-        if not data:
+        """Get list of sido (시도) regions.
+
+        There is no JSON endpoint for the sido level — the options are
+        rendered into the page HTML, so scrape them from there.
+        """
+        try:
+            async with cffi_requests.AsyncSession(impersonate=_IMPERSONATE) as s:
+                r = await s.get(_PAGE_URL, timeout=_TIMEOUT, verify=False)
+            if r.status_code != 200:
+                return []
+            result = [
+                {"code": code, "name": name}
+                for code, name in re.findall(
+                    r'<option value="(\d{10})">([^<]+)</option>', r.text)
+            ]
+        except Exception as e:
+            _LOGGER.warning("Region API sido page failed: %s", e)
             return []
-        result = [
-            {
-                "code": s.get("BDONG_CD", ""),
-                "name": s.get("CBS_AREA_NM", ""),
-                "id": s.get("CBS_AREA_ID", ""),
-            }
-            for s in data.get("cbs_sido_list", [])
-        ]
         result.sort(key=lambda x: x["name"])
         return result
 
     async def async_get_sgg_list(self, sido_code: str) -> List[Dict[str, str]]:
         """Get list of sgg (시군구) regions for a given sido."""
-        url = f"{self.BASE_URL}/Get_CBS_Sgg_List.do"
-        payload = {"sgg_searchInfo": {"BDONG_CD": "", "bdong_cd": sido_code}}
-        data = await self._post_json(url, payload)
+        data = await self._post_json(
+            f"{_BASE}/changeSidoList_new.do", {"sbLawArea1": sido_code})
         if not data:
             return []
         result = [
-            {"code": s.get("BDONG_CD", ""), "name": s.get("CBS_AREA_NM", "")}
-            for s in data.get("cbs_sgg_list", [])
+            {"code": s.get("bdongCd", ""), "name": s.get("cbsAreaNm", "")}
+            for s in data
         ]
         result.sort(key=lambda x: x["name"])
         return result
@@ -95,20 +106,14 @@ class SafetyAlertRegionApiClient:
         self, sido_code: str, sgg_code: str
     ) -> List[Dict[str, str]]:
         """Get list of emd (읍면동) regions for a given sido and sgg."""
-        url = f"{self.BASE_URL}/Get_CBS_Emd_List.do"
-        payload = {
-            "emd_searchInfo": {
-                "BDONG_CD": "",
-                "area1_bdong_cd": sido_code,
-                "area2_bdong_cd": sgg_code,
-            }
-        }
-        data = await self._post_json(url, payload)
+        data = await self._post_json(
+            f"{_BASE}/changeSggList_new.do",
+            {"sbLawArea1": sido_code, "sbLawArea2": sgg_code})
         if not data:
             return []
         result = [
-            {"code": e.get("BDONG_CD", ""), "name": e.get("CBS_AREA_NM", "")}
-            for e in data.get("cbs_emd_list", [])
+            {"code": e.get("bdongCd", ""), "name": e.get("cbsAreaNm", "")}
+            for e in data
         ]
         result.sort(key=lambda x: x["name"])
         return result
