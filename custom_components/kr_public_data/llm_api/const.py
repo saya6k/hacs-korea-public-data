@@ -4,6 +4,7 @@ from __future__ import annotations
 from ..const import (
     ENTRY_AIRKOREA,
     ENTRY_ARISU,
+    ENTRY_BUS,
     ENTRY_DISASTER,
     ENTRY_EARTHQUAKE,
     ENTRY_FUEL,
@@ -33,6 +34,7 @@ API_NAMES: dict[str, str] = {
     ENTRY_ARISU: "한국 공공데이터: 아리수 수도 요금",
     ENTRY_PHARMACY: "한국 공공데이터: 운영중인 약국",
     ENTRY_EARTHQUAKE: "한국 공공데이터: 최근 지진",
+    ENTRY_BUS: "한국 공공데이터: 버스 도착정보",
 }
 
 API_DESCRIPTIONS: dict[str, str] = {
@@ -49,6 +51,7 @@ API_DESCRIPTIONS: dict[str, str] = {
     ENTRY_ARISU: "Seoul Arisu water bill and usage.",
     ENTRY_PHARMACY: "Currently open pharmacies (including night/holiday).",
     ENTRY_EARTHQUAKE: "Recently observed earthquakes in/around Korea.",
+    ENTRY_BUS: "Realtime city bus arrivals at configured stops (nationwide TAGO + Seoul TOPIS).",
 }
 
 API_PROMPTS: dict[str, str] = {
@@ -116,5 +119,11 @@ API_PROMPTS: dict[str, str] = {
     ENTRY_EARTHQUAKE: (
         "Use get_recent_earthquakes to list earthquakes observed recently. "
         "Mention magnitude, depth, location, and time."
+    ),
+    ENTRY_BUS: (
+        "Use get_city_bus_arrivals for city bus arrivals at configured "
+        "stops (nationwide TAGO data plus Seoul via TOPIS). Pick the first "
+        "configured stop if the user doesn't name one. Convert "
+        "arrival_in_seconds to minutes."
     ),
 }

@@ -22,7 +22,8 @@
           "pharmacy": "Pharmacy",
           "airkorea": "AirKorea",
           "kma_weather": "KMA Weather",
-          "earthquake": "Earthquake"
+          "earthquake": "Earthquake",
+          "bus": "City Bus"
         }
       },
       "weather_warning": {
@@ -201,6 +202,31 @@
           "member_id": "ID",
           "contract_num": "Contract"
         }
+      },
+      "bus": {
+        "title": "Bus API Key",
+        "data": {
+          "service_key": "TAGO (data.go.kr) Service Key"
+        }
+      },
+      "bus_stop_search": {
+        "title": "Search Stop",
+        "data": {
+          "city_code": "City",
+          "name": "Stop name"
+        }
+      },
+      "bus_stop_select": {
+        "title": "Select Stop",
+        "data": {
+          "node_id": "Stop"
+        }
+      },
+      "bus_routes": {
+        "title": "Routes (detected routes preselected)",
+        "data": {
+          "routes": "Routes"
+        }
       }
     },
     "error": {
@@ -305,6 +331,40 @@
       },
       "error": {
         "no_selection": "Select one."
+      },
+      "abort": {
+        "already_configured": "Already configured."
+      }
+    },
+    "city_bus_stop": {
+      "entry_type": "Stop",
+      "initiate_flow": {
+        "user": "Add stop"
+      },
+      "step": {
+        "user": {
+          "title": "Search Stop",
+          "data": {
+            "city_code": "City",
+            "name": "Stop name"
+          }
+        },
+        "select": {
+          "title": "Select Stop",
+          "data": {
+            "node_id": "Stop"
+          }
+        },
+        "routes": {
+          "title": "Routes (detected routes preselected)",
+          "data": {
+            "routes": "Routes"
+          }
+        }
+      },
+      "error": {
+        "no_selection": "Select one.",
+        "no_stations_found": "No stations found."
       },
       "abort": {
         "already_configured": "Already configured."

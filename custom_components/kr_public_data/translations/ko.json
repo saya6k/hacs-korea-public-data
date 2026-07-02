@@ -22,7 +22,8 @@
           "pharmacy": "약국 운영정보",
           "airkorea": "에어코리아 (대기질)",
           "kma_weather": "기상청 날씨예보",
-          "earthquake": "지진 정보"
+          "earthquake": "지진 정보",
+          "bus": "버스"
         }
       },
       "weather_warning": {
@@ -201,6 +202,31 @@
           "member_id": "회원 ID",
           "contract_num": "계약 번호"
         }
+      },
+      "bus": {
+        "title": "버스 API 키",
+        "data": {
+          "service_key": "국토교통부(TAGO) 공공데이터포털 서비스키"
+        }
+      },
+      "bus_stop_search": {
+        "title": "정류소 검색",
+        "data": {
+          "city_code": "도시",
+          "name": "정류소명"
+        }
+      },
+      "bus_stop_select": {
+        "title": "정류소 선택",
+        "data": {
+          "node_id": "정류소"
+        }
+      },
+      "bus_routes": {
+        "title": "노선 선택 (감지된 노선이 기본값)",
+        "data": {
+          "routes": "노선"
+        }
       }
     },
     "error": {
@@ -305,6 +331,40 @@
       },
       "error": {
         "no_selection": "하나 이상 선택하세요."
+      },
+      "abort": {
+        "already_configured": "이미 설정되어 있습니다."
+      }
+    },
+    "city_bus_stop": {
+      "entry_type": "정류장",
+      "initiate_flow": {
+        "user": "정류장 추가"
+      },
+      "step": {
+        "user": {
+          "title": "정류소 검색",
+          "data": {
+            "city_code": "도시",
+            "name": "정류소명"
+          }
+        },
+        "select": {
+          "title": "정류소 선택",
+          "data": {
+            "node_id": "정류소"
+          }
+        },
+        "routes": {
+          "title": "노선 선택 (감지된 노선이 기본값)",
+          "data": {
+            "routes": "노선"
+          }
+        }
+      },
+      "error": {
+        "no_selection": "하나 이상 선택하세요.",
+        "no_stations_found": "정류소를 찾을 수 없습니다."
       },
       "abort": {
         "already_configured": "이미 설정되어 있습니다."
