@@ -51,6 +51,17 @@ async def fetch_bulk_arrivals(session: aiohttp.ClientSession, api_key: str,
     return []
 
 
+async def discover_lines(session: aiohttp.ClientSession, api_key: str,
+                         station: str) -> list[str]:
+    """Line ids currently serving a station, from live arrivals.
+
+    Empty when the station name is wrong — or when service has ended for
+    the night, so callers must let the user override the selection.
+    """
+    raw = await fetch_bulk_arrivals(session, api_key, station)
+    return sorted({a.get("subwayId", "") for a in raw if a.get("subwayId")})
+
+
 def filter_arrivals(arrivals: list[dict], direction: str,
                     line_id: str | None = None) -> list[dict[str, Any]]:
     """Filter and parse arrivals for a specific direction/line."""

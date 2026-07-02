@@ -1,17 +1,18 @@
-"""Transit sub-module constants."""
+"""Subway (지하철) sub-module constants."""
 SUBWAY_BULK_URL = "http://swopenAPI.seoul.go.kr/api/subway/{key}/json/realtimeStationArrival/0/500/{station}"
 SUBWAY_SCAN_INTERVAL = 120
-
-BUS_STOP_URL = "http://ws.bus.go.kr/api/rest/stationinfo/getStationByName"
-BUS_ROUTE_BY_STATION_URL = "http://ws.bus.go.kr/api/rest/stationinfo/getRouteByStation"
-BUS_ARRIVAL_URL = "http://ws.bus.go.kr/api/rest/arrive/getArrInfoByRoute"
-BUS_SCAN_INTERVAL = 60
 
 DIRECTION_UP = "상행"
 DIRECTION_DOWN = "하행"
 DIRECTION_INNER = "내선"
 DIRECTION_OUTER = "외선"
-DIRECTIONS = [DIRECTION_UP, DIRECTION_DOWN, DIRECTION_INNER, DIRECTION_OUTER]
+
+
+def line_directions(line_id: str) -> tuple[str, str]:
+    """updnLine values used by a line: 2호선 is a loop (외선/내선)."""
+    if line_id == "1002":
+        return (DIRECTION_OUTER, DIRECTION_INNER)
+    return (DIRECTION_UP, DIRECTION_DOWN)
 
 SUBWAY_LINES = {
     "1001": "1호선", "1002": "2호선", "1003": "3호선", "1004": "4호선",

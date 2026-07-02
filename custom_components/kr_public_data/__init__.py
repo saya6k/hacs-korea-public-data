@@ -46,23 +46,38 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         store = {"coordinator": c, "area_codes": area_codes, "areas": areas}
 
     elif etype == ENTRY_TRANSIT:
+        from .transit import line_directions
         from .transit.subway_coordinator import SubwayCoordinator
-        from .transit.bus_coordinator import BusCoordinator
         from .transit.services import async_register_services
+        from .resilience import async_first_refresh_all
         seoul_key = entry.data.get("seoul_api_key", "")
         bus_key = entry.data.get("bus_api_key", "")
-        sg: dict[str, list] = {}
-        for item in entry.data.get("subway_items", []):
-            sg.setdefault(item["station"], []).append(item)
-        from .resilience import async_first_refresh_all
-        sc = {station: SubwayCoordinator(hass, seoul_key, station, subs)
-              for station, subs in sg.items()}
-        bus_coords = {stop["stop_id"]: BusCoordinator(hass, stop["stop_id"], stop["stop_name"])
-                      for stop in entry.data.get("bus_stops", [])}
-        await async_first_refresh_all([*sc.values(), *bus_coords.values()], "transit")
-        store = {"subway_coords": sc, "bus_coords": bus_coords,
-                 "subway_items": entry.data.get("subway_items", []),
-                 "bus_stops": entry.data.get("bus_stops", [])}
+        # 역 per subentry: one coordinator per station, subscribed to both
+        # directions of every selected line.
+        station_subs: dict = {}
+        for sub_id, sub in entry.subentries.items():
+            station = sub.data["station"]
+            subscriptions = [{"direction": d, "line_id": lid}
+                             for lid in sub.data.get("lines", [])
+                             for d in line_directions(lid)]
+            station_subs[sub_id] = {
+                "station": station, "lines": sub.data.get("lines", []),
+                "coordinator": SubwayCoordinator(hass, seoul_key, station,
+                                                 subscriptions)}
+        sc = {info["station"]: info["coordinator"]
+              for info in station_subs.values()}
+        legacy_items: list = []
+        if not station_subs:
+            # legacy entry: subway_items with direction/line filters
+            legacy_items = entry.data.get("subway_items", [])
+            sg: dict[str, list] = {}
+            for item in legacy_items:
+                sg.setdefault(item["station"], []).append(item)
+            sc = {station: SubwayCoordinator(hass, seoul_key, station, subs)
+                  for station, subs in sg.items()}
+        await async_first_refresh_all(list(sc.values()), "subway")
+        store = {"subway_coords": sc, "station_subs": station_subs,
+                 "subway_items": legacy_items}
         if bus_key:
             async_register_services(hass, bus_key)
 
