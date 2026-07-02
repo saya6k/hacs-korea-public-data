@@ -28,7 +28,7 @@
       "weather_warning": {
         "title": "기상특보 설정",
         "data": {
-          "api_key": "공공데이터포털 서비스 키",
+          "api_key": "공공데이터포털 서비스 키 (Decoding)",
           "area_codes": "지역 선택"
         }
       },
@@ -149,7 +149,7 @@
       "pharmacy": {
         "title": "약국 운영정보 설정",
         "data": {
-          "api_key": "공공데이터포털 서비스 키",
+          "api_key": "공공데이터포털 서비스 키 (Decoding)",
           "q0": "광역자치단체"
         }
       },
@@ -182,14 +182,14 @@
       "kma_weather": {
         "title": "기상청 날씨예보 - 광역시도 선택",
         "data": {
-          "api_key": "공공데이터포털 서비스 키",
+          "api_key": "공공데이터포털 서비스 키 (Decoding)",
           "sido": "광역시도"
         }
       },
       "earthquake": {
         "title": "지진 정보 설정",
         "data": {
-          "api_key": "공공데이터포털 서비스 키",
+          "api_key": "공공데이터포털 서비스 키 (Decoding)",
           "latitude": "위도",
           "longitude": "경도",
           "radius_km": "반경 (km)",
