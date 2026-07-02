@@ -371,15 +371,17 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             else:
                 sido = self._region_sido
                 return self.async_create_entry(
-                    title=f"재난정보 - {sido}",
+                    title="재난정보",
                     data=self._data,
                     subentries=[
-                        {"subentry_type": "region", "title": f"{sido} {sgg}",
-                         "data": {"sido": sido, "sgg": sgg},
-                         "unique_id": f"{sido}_{sgg}"}
+                        {"subentry_type": "region",
+                         "title": f"{sido} 전체" if sgg == "전체" else f"{sido} {sgg}",
+                         "data": {"sido": sido, "sgg": "" if sgg == "전체" else sgg},
+                         "unique_id": f"{sido}_전체" if sgg == "전체" else f"{sido}_{sgg}"}
                         for sgg in selected
                     ])
-        labels = {s: s for s in self._sgg_names}
+        labels = {"전체": f"{self._region_sido} 전체 (광역자치단체 전체)",
+                  **{s: s for s in self._sgg_names}}
         return self.async_show_form(step_id="disaster_sgg",
             data_schema=vol.Schema({
                 vol.Required("sgg_list"): cv.multi_select(labels),
@@ -696,8 +698,10 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @callback
     def async_get_supported_subentry_types(cls, config_entry):
         etype = config_entry.data.get(CONF_ENTRY_TYPE)
-        if etype in (ENTRY_PHARMACY, ENTRY_DISASTER):
+        if etype == ENTRY_PHARMACY:
             return {"region": RegionSubentryFlowHandler}
+        if etype == ENTRY_DISASTER:
+            return {"region": DisasterRegionSubentryFlowHandler}
         if etype == ENTRY_KMA_WEATHER:
             return {"region": KmaRegionSubentryFlowHandler}
         if etype == ENTRY_WEATHER:
@@ -742,6 +746,50 @@ class RegionSubentryFlowHandler(config_entries.ConfigSubentryFlow):
                 data={"sido": self._sido, "sgg": sgg},
                 unique_id=f"{self._sido}_{sgg}")
         sgg_opts = [SelectOptionDict(value=s, label=s) for s in self._sgg_names]
+        return self.async_show_form(step_id="sgg", data_schema=vol.Schema({
+            vol.Required("sgg"): SelectSelector(
+                SelectSelectorConfig(options=sgg_opts,
+                                     mode=SelectSelectorMode.DROPDOWN)),
+        }))
+
+
+class DisasterRegionSubentryFlowHandler(config_entries.ConfigSubentryFlow):
+    """Add one 기초자치단체 region — or a whole 광역자치단체 — to a disaster entry."""
+
+    def __init__(self):
+        self._sido = ""
+        self._sgg_names: list[str] = []
+
+    async def async_step_user(self, user_input=None):
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            self._sido = user_input["sido"]
+            self._sgg_names = await _async_fetch_sgg_names(self._sido)
+            if not self._sgg_names:
+                errors["base"] = "cannot_connect"
+            else:
+                return await self.async_step_sgg()
+        return self.async_show_form(step_id="user", data_schema=vol.Schema({
+            vol.Required("sido", default="서울특별시"): _sido_selector(),
+        }), errors=errors)
+
+    async def async_step_sgg(self, user_input=None):
+        if user_input is not None:
+            sgg = user_input["sgg"]
+            whole = sgg == "전체"
+            stored_sgg = "" if whole else sgg
+            entry = self._get_entry()
+            for sub in entry.subentries.values():
+                if (sub.data.get("sido") == self._sido
+                        and sub.data.get("sgg") == stored_sgg):
+                    return self.async_abort(reason="already_configured")
+            return self.async_create_entry(
+                title=f"{self._sido} 전체" if whole else f"{self._sido} {sgg}",
+                data={"sido": self._sido, "sgg": stored_sgg},
+                unique_id=f"{self._sido}_전체" if whole else f"{self._sido}_{sgg}")
+        sgg_opts = [SelectOptionDict(value="전체",
+                                     label=f"{self._sido} 전체 (광역자치단체 전체)")]
+        sgg_opts += [SelectOptionDict(value=s, label=s) for s in self._sgg_names]
         return self.async_show_form(step_id="sgg", data_schema=vol.Schema({
             vol.Required("sgg"): SelectSelector(
                 SelectSelectorConfig(options=sgg_opts,

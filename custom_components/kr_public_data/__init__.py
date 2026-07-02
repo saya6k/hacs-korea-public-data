@@ -11,7 +11,7 @@ PLATFORM_MAP = {
     ENTRY_TRANSIT: [Platform.SENSOR],
     ENTRY_FUEL: [Platform.SENSOR],
     ENTRY_SCHOOL: [Platform.SENSOR, Platform.CALENDAR],
-    ENTRY_DISASTER: [Platform.SENSOR, Platform.EVENT],
+    ENTRY_DISASTER: [Platform.SENSOR, Platform.EVENT, Platform.GEO_LOCATION],
     ENTRY_SAFETY_ALERT: [Platform.BINARY_SENSOR, Platform.SENSOR, Platform.EVENT],
     ENTRY_KEPCO: [Platform.SENSOR],
     ENTRY_GASAPP: [Platform.SENSOR],

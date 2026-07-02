@@ -15,10 +15,11 @@ def filter_messages(msgs, sido="", sgg="", legacy=""):
     """Filter messages by region.
 
     sido+sgg: match parts like "서울특별시 종로구"; sido-wide ("서울특별시 전체")
-    and nationwide ("전국") messages also match. legacy: plain substring
-    filter kept for entries created before per-district subentries.
+    and nationwide ("전국") messages also match. sido alone (sgg=""): match
+    any district within that sido (whole-sido subentry). legacy: plain
+    substring filter kept for entries created before per-district subentries.
     """
-    if sgg:
+    if sido:
         sido_short = sido[:2]
         out = []
         for m in msgs:
@@ -26,8 +27,8 @@ def filter_messages(msgs, sido="", sgg="", legacy=""):
             for part in area.split(","):
                 part = part.strip()
                 if "전국" in part or (
-                        sido_short and sido_short in part
-                        and (sgg in part or "전체" in part)):
+                        sido_short in part
+                        and (not sgg or sgg in part or "전체" in part)):
                     out.append(m)
                     break
         return out
