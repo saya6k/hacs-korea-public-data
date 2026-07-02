@@ -41,8 +41,27 @@ class GetDisasterMessagesTool(BaseKRTool):
         if coord is None or coord.data is None:
             return self.error("재난문자 데이터가 아직 준비되지 않았습니다.")
 
+        from ..disaster.coordinator import filter_messages
         limit = tool_input.tool_args.get("limit") or 5
-        messages = (coord.data or [])[:limit]
+        msgs = coord.data or []
+        regions = store.get("regions") or {}
+        if regions:
+            merged: list[dict[str, Any]] = []
+            for r in regions.values():
+                for m in filter_messages(msgs, r.get("sido", ""), r.get("sgg", "")):
+                    if m not in merged:
+                        merged.append(m)
+            merged.sort(key=lambda m: m.get("create_date", ""), reverse=True)
+            msgs = merged
+            region_label = ", ".join(
+                f"{r.get('sido', '')} {r.get('sgg', '')}".strip()
+                for r in regions.values())
+        elif store.get("region"):
+            msgs = filter_messages(msgs, legacy=store["region"])
+            region_label = store["region"]
+        else:
+            region_label = None
+        messages = msgs[:limit]
 
         results = grid_results(
             (
@@ -62,7 +81,7 @@ class GetDisasterMessagesTool(BaseKRTool):
         )
 
         return self.envelope(
-            region_filter=store.get("region") or None,
+            region_filter=region_label,
             count=len(messages),
             messages=[
                 {

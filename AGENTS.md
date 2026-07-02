@@ -62,6 +62,8 @@ ha_korean_public_data/
 - **`airkorea` / `kma_weather`**: share the same 공공데이터포털 service key. The config flow lets you reuse one key across multiple regions/stations.
 - **`weather_warning` vs `kma_weather`**: `weather_warning` is the alert/특보 stream (event entities); `kma_weather` is the forecast (weather entity). They are independent entries.
 - **`pharmacy`**: the `search_pharmacy` action is registered globally on entry setup; only one pharmacy entry should exist per HA instance.
+- **`pharmacy` / `disaster` regions are config subentries.** The main entry holds the API key; each 기초자치단체 (시군구) is a `region` subentry (`{"sido", "sgg"}`), added via the checklist in the config flow or the "지역 추가" subentry flow (`RegionSubentryFlowHandler`). Entities are registered with `config_subentry_id` so removing a subentry cleans up its device. The 시군구 list is fetched live from the safekorea region API (`safety_alert/region_api.py`). Legacy entries (pre-subentry `q0`/`q1` or `region_filter` in entry data) still load through fallback paths in `__init__.py`/`sensor.py`/`event.py` — don't remove them.
+- **`disaster`** polls once per entry: a single coordinator fetches all messages and each subentry's entities filter with `disaster/coordinator.py:filter_messages` (시군구, 시도 전체, 전국 match). `pharmacy` is the opposite — the API queries per region, so it's one coordinator per subentry.
 
 ## Config-flow conventions
 

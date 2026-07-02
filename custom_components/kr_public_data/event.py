@@ -20,7 +20,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
 
     elif etype == ENTRY_DISASTER:
         from .disaster.sensor import DisasterEvent
-        entities = [DisasterEvent(store["coordinator"], store.get("region", ""))]
+        c = store["coordinator"]
+        regions = store.get("regions") or {}
+        for sub_id, r in regions.items():
+            async_add_entities(
+                [DisasterEvent(c, sido=r.get("sido", ""), sgg=r.get("sgg", ""))],
+                config_subentry_id=sub_id)
+        if not regions:
+            entities = [DisasterEvent(c, store.get("region", ""))]
 
     elif etype == ENTRY_SAFETY_ALERT:
         from .safety_alert.sensor import SafetyAlertEvent

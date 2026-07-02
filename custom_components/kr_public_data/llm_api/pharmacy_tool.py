@@ -73,8 +73,13 @@ class GetOpenPharmaciesTool(BaseKRTool):
         llm_context: llm.LLMContext,
     ) -> dict[str, Any]:
         store = self.store
-        coord = store.get("coordinator")
-        if coord is None or coord.data is None:
+        coords = store.get("coordinators") or {}
+        if not coords and store.get("coordinator") is not None:
+            coords = {None: store["coordinator"]}
+        data: list[dict[str, Any]] = []
+        for coord in coords.values():
+            data.extend(coord.data or [])
+        if not coords or all(c.data is None for c in coords.values()):
             return self.error("약국 데이터가 아직 준비되지 않았습니다.")
 
         only_open = tool_input.tool_args.get("only_open", False)
@@ -82,7 +87,7 @@ class GetOpenPharmaciesTool(BaseKRTool):
         now = datetime.now()
 
         pharmacies = []
-        for ph in coord.data:
+        for ph in data:
             duty_time = ph.get("duty_time") or {}
             open_now = _is_open_now(duty_time, now)
             if only_open and not open_now:

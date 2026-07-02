@@ -75,7 +75,8 @@ class SafetyAlertTextSensor(CoordinatorEntity[SafetyAlertCoordinator], SensorEnt
 
 class SafetyAlertEvent(CoordinatorEntity[SafetyAlertCoordinator], EventEntity):
     _attr_has_entity_name = True
-    _attr_event_types = ["safety_alert"]
+    # "safety_alert" stays as the fallback so pre-existing automations keep firing.
+    _attr_event_types = ["emergency", "urgent", "safety", "safety_alert"]
     _attr_icon = "mdi:alert-circle"
 
     def __init__(self, coordinator, area_code, area_name):
@@ -93,12 +94,22 @@ class SafetyAlertEvent(CoordinatorEntity[SafetyAlertCoordinator], EventEntity):
         latest = alerts[0]
         msg_id = latest.get("MD101_SN", "") or latest.get("CRT_DT", "")
         if self._last_id is not None and msg_id != self._last_id:
-            self._trigger_event("safety_alert", {
+            level = latest.get("EMRG_STEP_NM", "") or latest.get("MSG_SE_NM", "")
+            dtype = latest.get("DST_SE_NM", "")
+            if "위급" in level:
+                event_type = "emergency"
+            elif "긴급" in level:
+                event_type = "urgent"
+            elif "안전" in level or "안전" in dtype:
+                event_type = "safety"
+            else:
+                event_type = "safety_alert"
+            self._trigger_event(event_type, {
                 "message": latest.get("MSG_CN", ""),
                 "area": latest.get("RCV_AREA_NM", ""),
                 "date": latest.get("CRT_DT", ""),
-                "type": latest.get("DST_SE_NM", ""),
-                "level": latest.get("EMRG_STEP_NM", "") or latest.get("MSG_SE_NM", ""),
+                "type": dtype,
+                "level": level,
             })
         self._last_id = msg_id
         self.async_write_ha_state()

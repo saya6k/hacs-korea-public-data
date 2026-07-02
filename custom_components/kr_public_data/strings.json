@@ -108,8 +108,13 @@
         "title": "Disaster",
         "data": {
           "api_key": "Key",
-          "region_filter": "Region",
-          "sub_region": "Sub-region (optional)"
+          "sido": "Province"
+        }
+      },
+      "disaster_sgg": {
+        "title": "Select Districts",
+        "data": {
+          "sgg_list": "Districts"
         }
       },
       "safety_alert": {
@@ -145,8 +150,13 @@
         "title": "Pharmacy",
         "data": {
           "api_key": "Key",
-          "q0": "Province",
-          "q1": "City"
+          "q0": "Province"
+        }
+      },
+      "pharmacy_sgg": {
+        "title": "Select Districts",
+        "data": {
+          "sgg_list": "Districts"
         }
       },
       "transit_bus_select": {
@@ -224,6 +234,34 @@
       "no_options": "No options available.",
       "reauth_successful": "Re-authentication was successful.",
       "reauth_not_supported": "This entry type does not support re-authentication."
+    }
+  },
+  "config_subentries": {
+    "region": {
+      "entry_type": "Region",
+      "initiate_flow": {
+        "user": "Add district"
+      },
+      "step": {
+        "user": {
+          "title": "Province",
+          "data": {
+            "sido": "Province"
+          }
+        },
+        "sgg": {
+          "title": "District",
+          "data": {
+            "sgg": "District"
+          }
+        }
+      },
+      "error": {
+        "cannot_connect": "Cannot connect."
+      },
+      "abort": {
+        "already_configured": "Already configured."
+      }
     }
   },
   "options": {

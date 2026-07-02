@@ -11,19 +11,39 @@ from ..resilience import ResilientCoordinator
 _LOGGER = logging.getLogger(__name__)
 
 
+def filter_messages(msgs, sido="", sgg="", legacy=""):
+    """Filter messages by region.
+
+    sido+sgg: match parts like "서울특별시 종로구"; sido-wide ("서울특별시 전체")
+    and nationwide ("전국") messages also match. legacy: plain substring
+    filter kept for entries created before per-district subentries.
+    """
+    if sgg:
+        sido_short = sido[:2]
+        out = []
+        for m in msgs:
+            area = m.get("area") or ""
+            for part in area.split(","):
+                part = part.strip()
+                if "전국" in part or (
+                        sido_short and sido_short in part
+                        and (sgg in part or "전체" in part)):
+                    out.append(m)
+                    break
+        return out
+    if legacy:
+        return [m for m in msgs if legacy in (m.get("area") or "")]
+    return msgs
+
+
 class DisasterCoordinator(ResilientCoordinator):
     # safetydata.go.kr flaps often; a blip must not read as "no alerts".
     stale_tolerance = 5
 
-    def __init__(self, hass, api_key, region_filter=""):
+    def __init__(self, hass, api_key):
         super().__init__(hass, _LOGGER, name="disaster",
                          update_interval=timedelta(seconds=DISASTER_SCAN_INTERVAL))
         self._api_key = api_key
-        self._region_filter = region_filter
 
     async def _fetch(self):
-        all_msgs = await fetch_disaster_messages(self._api_key, count=30)
-        if self._region_filter:
-            return [m for m in all_msgs
-                    if self._region_filter in (m.get("area") or "")]
-        return all_msgs
+        return await fetch_disaster_messages(self._api_key, count=30)
