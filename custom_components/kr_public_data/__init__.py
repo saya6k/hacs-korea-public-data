@@ -20,6 +20,7 @@ PLATFORM_MAP = {
     ENTRY_AIRKOREA: [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.EVENT, Platform.CALENDAR],
     ENTRY_KMA_WEATHER: [Platform.WEATHER],
     ENTRY_EARTHQUAKE: [Platform.EVENT],
+    ENTRY_BUS: [Platform.SENSOR],
 }
 
 # Globally registered actions, removed when the last entry of the type unloads.
@@ -209,6 +210,63 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         c = EarthquakeCoordinator(hass, api_key)
         await c.async_config_entry_first_refresh()
         store = {"coordinator": c}
+
+    elif etype == ENTRY_BUS:
+        from .bus.city_coordinator import CityBusCoordinator
+        from .bus.seoul_coordinator import SeoulBusCoordinator
+        from .bus.intercity_coordinator import IntercityBusCoordinator
+        from .resilience import async_first_refresh_all
+        service_key = entry.data.get("service_key", "")
+        # 정류장 per subentry: one coordinator per stop, subscribed to every
+        # selected route at that stop. All stops share the one "city_bus_stop"
+        # subentry type; sub.data["source"] ("tago" | "seoul") — set by the
+        # config flow based on the chosen city — picks the coordinator/API
+        # (ws.bus.go.kr reuses the same service_key, verified live it
+        # authenticates there without a separate 활용신청).
+        stop_subs: dict = {}
+        # 구간(출발-도착 터미널) per subentry: 고속/시외버스도 하나의
+        # "intercity_bus_route" subentry type을 공유하고, source("express"|
+        # "intercity")로 API만 구분한다.
+        route_subs: dict = {}
+        for sub_id, sub in entry.subentries.items():
+            if sub.subentry_type == "intercity_bus_route":
+                route_subs[sub_id] = {
+                    "depTerminalName": sub.data["depTerminalName"],
+                    "arrTerminalName": sub.data["arrTerminalName"],
+                    "grades": sub.data.get("grades", []),
+                    "coordinator": IntercityBusCoordinator(
+                        hass, service_key, sub.data.get("queries", []),
+                        sub.data.get("grades", [])),
+                }
+            elif sub.data.get("source") == "seoul":
+                stop_subs[sub_id] = {
+                    "kind": "seoul",
+                    "nodeId": sub.data["nodeId"],
+                    "nodeName": sub.data["nodeName"],
+                    "routes": sub.data.get("routes", []),
+                    "coordinator": SeoulBusCoordinator(
+                        hass, service_key, sub.data["nodeId"],
+                        [r["routeId"] for r in sub.data.get("routes", [])]),
+                }
+            else:
+                stop_subs[sub_id] = {
+                    "kind": "tago",
+                    "cityCode": sub.data["cityCode"],
+                    "nodeId": sub.data["nodeId"],
+                    "nodeName": sub.data["nodeName"],
+                    "routes": sub.data.get("routes", []),
+                    "coordinator": CityBusCoordinator(
+                        hass, service_key, sub.data["cityCode"], sub.data["nodeId"],
+                        [r["routeId"] for r in sub.data.get("routes", [])]),
+                }
+        sc = {info["nodeId"]: info["coordinator"] for info in stop_subs.values()}
+        by_name = {info["nodeName"]: info for info in stop_subs.values()}
+        all_coords = list(sc.values()) + [info["coordinator"] for info in route_subs.values()]
+        await async_first_refresh_all(all_coords, "bus")
+        route_by_name = {f"{info['depTerminalName']}→{info['arrTerminalName']}": info
+                         for info in route_subs.values()}
+        store = {"city_bus_coords": sc, "stop_subs": stop_subs, "city_bus_by_name": by_name,
+                 "route_subs": route_subs, "intercity_bus_by_name": route_by_name}
 
     hass.data[DOMAIN][entry.entry_id] = store
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORM_MAP.get(etype, []))
