@@ -3,7 +3,13 @@ name: Docs
 # Build + deploy the bilingual Zensical site to Pages. Runs only when a GitHub
 # release is published — release-drafter maintains a single rolling draft, so
 # a maintainer's manual publish is what deploys the docs. Checkout defaults to
-# the released tag. Also dispatchable for manual re-deploys.
+# the released tag. Also dispatchable for manual re-deploys (always forces a
+# rebuild, bypassing the skip check below).
+#
+# release-drafter cuts a new release roughly every merged PR, but most PRs
+# only touch custom_components/ — not docs/ or the Zensical configs — so the
+# "check" step below diffs against the previous tag and skips the (~1min but
+# non-trivial) build+deploy steps when nothing doc-relevant changed.
 # yamllint disable-line rule:truthy
 on:
   release:
@@ -23,19 +29,43 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Check for doc-relevant changes since last release
+        id: check
+        if: github.event_name == 'release'
+        run: |
+          CURRENT_TAG="${GITHUB_REF_NAME}"
+          PREV_TAG=$(git tag --sort=-creatordate | grep -v "^${CURRENT_TAG}$" | head -1)
+          if [ -z "$PREV_TAG" ]; then
+            echo "No previous tag found; building."
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          elif git diff --quiet "$PREV_TAG" "$CURRENT_TAG" -- docs/ zensical.en.toml zensical.ko.toml; then
+            echo "No docs-relevant changes between $PREV_TAG and $CURRENT_TAG; skipping build."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
 
       - uses: astral-sh/setup-uv@v6
+        if: github.event_name == 'workflow_dispatch' || steps.check.outputs.changed == 'true'
 
       - name: Install Zensical
+        if: github.event_name == 'workflow_dispatch' || steps.check.outputs.changed == 'true'
         run: uv tool install zensical
 
       - name: Build English
+        if: github.event_name == 'workflow_dispatch' || steps.check.outputs.changed == 'true'
         run: zensical build -f zensical.en.toml
 
       - name: Build Korean
+        if: github.event_name == 'workflow_dispatch' || steps.check.outputs.changed == 'true'
         run: zensical build -f zensical.ko.toml
 
       - name: Write landing page (/ → /en/)
+        if: github.event_name == 'workflow_dispatch' || steps.check.outputs.changed == 'true'
         run: |
           cat > site/index.html <<'HTML'
           <!doctype html>
@@ -51,8 +81,10 @@ jobs:
           HTML
 
       - uses: actions/upload-pages-artifact@v4
+        if: github.event_name == 'workflow_dispatch' || steps.check.outputs.changed == 'true'
         with:
           path: site
 
       - id: deploy
+        if: github.event_name == 'workflow_dispatch' || steps.check.outputs.changed == 'true'
         uses: actions/deploy-pages@v4
