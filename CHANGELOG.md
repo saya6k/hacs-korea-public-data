@@ -1,5 +1,33 @@
 # Changelog
 
+## [4.4.0](https://github.com/saya6k/ha-korea-public-data/compare/kr_public_data-v4.3.0...kr_public_data-v4.4.0) (2026-07-02)
+
+
+### Features
+
+* **resilience:** add failover handling for API outages ([#9](https://github.com/saya6k/ha-korea-public-data/issues/9)) ([c6e7a7c](https://github.com/saya6k/ha-korea-public-data/commit/c6e7a7c82d3c854a7300b9dcd7a7bde69f085c27))
+
+
+### Bug Fixes
+
+* **ci:** skip HACS validation on PR branches ([095f3ef](https://github.com/saya6k/ha-korea-public-data/commit/095f3ef79c49422b861587485b4706ec03211e00))
+* **coordinator:** harden error handling across 6 coordinator/api modules ([71aa20b](https://github.com/saya6k/ha-korea-public-data/commit/71aa20b7e1639fe8d3f5078c0284cd23a79286da))
+* **manifest:** point documentation at the published docs site ([3f67efc](https://github.com/saya6k/ha-korea-public-data/commit/3f67efc8bc92a5d781414873877dab027f1be80c))
+* **manifest:** set documentation, issue_tracker, and codeowners ([008eabd](https://github.com/saya6k/ha-korea-public-data/commit/008eabd2023ac735f0a1a185a9c8cdd1afd6fcd3))
+
+
+### Documentation
+
+* add HACS My Home Assistant badge to README ([#6](https://github.com/saya6k/ha-korea-public-data/issues/6)) ([d3d3879](https://github.com/saya6k/ha-korea-public-data/commit/d3d3879f7f71715925042a075f175cb839e06296))
+
+
+### CI
+
+* **docs:** allow manual docs deploy via workflow_dispatch ([3ff9019](https://github.com/saya6k/ha-korea-public-data/commit/3ff9019517f12b58dd26b30f0dc41a1c9c38e0f5))
+* gate release and docs workflows on Validate success ([20986ad](https://github.com/saya6k/ha-korea-public-data/commit/20986adea6fc2c867a1839fa0731f488442b8b7f))
+* orchestrate validate/release/docs as one check suite via reusable workflows ([2fc1bca](https://github.com/saya6k/ha-korea-public-data/commit/2fc1bca0598d7646ee7242dee2510a40250a3bf6))
+* **release:** draft releases with manual publish, deploy docs on release-published ([#8](https://github.com/saya6k/ha-korea-public-data/issues/8)) ([d806389](https://github.com/saya6k/ha-korea-public-data/commit/d8063892e03dd68867e16786d02708b2914f6ee3))
+
 ## [4.3.0](https://github.com/saya6k/ha-korea-public-data/compare/kr_public_data-v4.2.3...kr_public_data-v4.3.0) (2026-07-02)
 
 
