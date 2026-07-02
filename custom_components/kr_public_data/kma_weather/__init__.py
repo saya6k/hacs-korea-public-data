@@ -3,6 +3,18 @@ VILAGE_URL = "http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilage
 ULTRA_URL = "http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtFcst"
 KMA_SCAN_INTERVAL = 1800
 
+
+def region_key(reg: dict) -> str:
+    """Coordinator data key / entity unique_id suffix for one region.
+
+    Subentry regions carry a sido, which disambiguates same-named 시군구
+    (서울 중구 vs 부산 중구). Legacy regions (no sido) keep the bare name so
+    existing entity unique_ids and history survive.
+    """
+    name = reg["name"]
+    sido = reg.get("sido", "")
+    return f"{sido} {name}" if sido else name
+
 # 광역시도
 SIDO_LIST = {
     "서울특별시": {"종로구":(60,127),"중구":(60,127),"용산구":(60,126),"성동구":(61,127),

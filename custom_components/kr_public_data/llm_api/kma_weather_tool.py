@@ -130,14 +130,23 @@ class GetKMAWeatherForecastTool(BaseKRTool):
         if coord is None or not coord.data:
             return self.error("기상청 데이터가 아직 준비되지 않았습니다.")
 
-        # Resolve region
+        # Resolve region — data keys are region_key(r) ("시도 시군구" for
+        # subentry regions, bare name for legacy), so match either form.
+        from ..kma_weather import region_key
         region_name = None
-        if wanted_region and wanted_region in coord.data:
-            region_name = wanted_region
-        else:
+        if wanted_region:
+            if wanted_region in coord.data:
+                region_name = wanted_region
+            else:
+                for r in regions:
+                    key = region_key(r)
+                    if wanted_region == r.get("name") and key in coord.data:
+                        region_name = key
+                        break
+        if region_name is None:
             for r in regions:
-                if r.get("name") in coord.data:
-                    region_name = r["name"]
+                if region_key(r) in coord.data:
+                    region_name = region_key(r)
                     break
             if region_name is None and coord.data:
                 region_name = next(iter(coord.data.keys()))
