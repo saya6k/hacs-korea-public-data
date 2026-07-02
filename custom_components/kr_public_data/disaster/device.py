@@ -6,3 +6,9 @@ def disaster_device(region=""):
     return DeviceInfo(identifiers={(DOMAIN, did)}, name=label,
                       manufacturer="행정안전부", model="재난안전데이터",
                       entry_type=DeviceEntryType.SERVICE)
+
+def region_label(region="", sido="", sgg=""):
+    """sido+sgg: subentry region label ('시도 시군구' or '시도 전체'). Else legacy region."""
+    if sido:
+        return f"{sido} {sgg}" if sgg else f"{sido} 전체"
+    return region

@@ -6,7 +6,7 @@ from homeassistant.components.event import EventEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.core import callback
 from ..const import DOMAIN
-from .device import disaster_device
+from .device import disaster_device, region_label
 from .coordinator import DisasterCoordinator, filter_messages
 
 
@@ -19,7 +19,7 @@ class DisasterRegionEntity(CoordinatorEntity[DisasterCoordinator]):
         self._region = region
         self._sido = sido
         self._sgg = sgg
-        label = f"{sido} {sgg}".strip() if sgg else region
+        label = region_label(region, sido, sgg)
         self._label = label
         self._suffix = f"_{label}" if label else ""
         self._attr_device_info = disaster_device(label)

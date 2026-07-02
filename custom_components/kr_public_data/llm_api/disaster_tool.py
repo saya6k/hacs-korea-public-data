@@ -53,8 +53,9 @@ class GetDisasterMessagesTool(BaseKRTool):
                         merged.append(m)
             merged.sort(key=lambda m: m.get("create_date", ""), reverse=True)
             msgs = merged
+            from ..disaster.device import region_label as _region_label
             region_label = ", ".join(
-                f"{r.get('sido', '')} {r.get('sgg', '')}".strip()
+                _region_label(sido=r.get("sido", ""), sgg=r.get("sgg", ""))
                 for r in regions.values())
         elif store.get("region"):
             msgs = filter_messages(msgs, legacy=store["region"])
