@@ -75,9 +75,6 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     def __init__(self):
         self._data: dict[str, Any] = {}
-        self._bus_stops: list[dict] = []
-        self._bus_routes: list[dict] = []
-        self._selected_stop: dict = {}
 
     async def async_step_user(self, user_input=None) -> FlowResult:
         return self.async_show_menu(
@@ -125,103 +122,73 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             }),
             errors=errors)
 
-    # ══════════ 대중교통 ══════════
+    # ══════════ 지하철 ══════════
 
     async def async_step_transit(self, user_input=None) -> FlowResult:
+        """Step 1: 서울 열린데이터광장 키 (+선택: 환승경로 키)."""
+        from .transit.subway_api import validate_seoul_api
+        errors: dict[str, str] = {}
         if user_input is not None:
-            self._data = {
-                CONF_ENTRY_TYPE: ENTRY_TRANSIT,
-                "seoul_api_key": user_input.get("seoul_api_key", ""),
-                "bus_api_key": user_input.get("bus_api_key", ""),
-                "subway_items": [], "bus_stops": [],
-            }
-            return await self.async_step_transit_add()
+            seoul_key = user_input["seoul_api_key"]
+            if await validate_seoul_api(seoul_key):
+                self._data = {
+                    CONF_ENTRY_TYPE: ENTRY_TRANSIT,
+                    "seoul_api_key": seoul_key,
+                    "bus_api_key": user_input.get("bus_api_key", ""),
+                }
+                return await self.async_step_transit_station()
+            errors["base"] = "cannot_connect"
         return self.async_show_form(
             step_id="transit",
             data_schema=vol.Schema({
-                vol.Optional("seoul_api_key"): str,
-                vol.Optional("bus_api_key", description={"suggested_value": "환승경로 조회용 (선택)"}): str,
-            }))
+                vol.Required("seoul_api_key"): str,
+                vol.Optional("bus_api_key", default=""): str,
+            }),
+            errors=errors)
 
-    async def async_step_transit_add(self, user_input=None) -> FlowResult:
-        return self.async_show_menu(
-            step_id="transit_add",
-            menu_options=["transit_subway", "transit_bus_search", "transit_done"])
-
-    # ── 지하철 ──
-    async def async_step_transit_subway(self, user_input=None) -> FlowResult:
-        from .transit import DIRECTIONS, SUBWAY_LINES
+    async def async_step_transit_station(self, user_input=None) -> FlowResult:
+        """Step 2: 역 이름 입력 → 운행 노선 자동 감지."""
+        from .transit.subway_api import discover_lines
         if user_input is not None:
-            self._data["subway_items"].append({
-                "station": user_input["station"].strip(),
-                "direction": user_input["direction"],
-                "line_id": user_input.get("line_id", ""),
-            })
-            return await self.async_step_transit_add()
-        dir_opts = {d: d for d in DIRECTIONS}
-        line_opts = {"": "전체 (필터 없음)"}
-        line_opts.update(SUBWAY_LINES)
-        return self.async_show_form(
-            step_id="transit_subway",
-            data_schema=vol.Schema({
-                vol.Required("station"): str,
-                vol.Required("direction", default="상행"): vol.In(dir_opts),
-                vol.Optional("line_id", default=""): vol.In(line_opts),
-            }))
-
-    # ── 버스: 정류장 ID 입력 (KakaoMap) ──
-    async def async_step_transit_bus_search(self, user_input=None) -> FlowResult:
-        import homeassistant.helpers.config_validation as cv
-        errors: dict[str, str] = {}
-        if user_input is not None:
-            stop_id = user_input["kakao_stop_id"].strip()
-            from .transit.bus_api import fetch_stop_data, build_bus_labels
+            self._subway_station = user_input["station"].strip()
             try:
                 session = async_get_clientsession(self.hass)
-                data = await fetch_stop_data(session, stop_id)
-                stop_name = data.get("name", stop_id)
-                bus_labels = build_bus_labels(data)
-                if not bus_labels:
-                    errors["kakao_stop_id"] = "no_stops_found"
-                else:
-                    self._bus_stop_id = stop_id
-                    self._bus_stop_name = stop_name
-                    self._bus_labels = bus_labels
-                    return await self.async_step_transit_bus_select()
+                self._subway_lines_found = await discover_lines(
+                    session, self._data["seoul_api_key"], self._subway_station)
             except Exception as e:
-                _LOGGER.error("KakaoMap bus stop error: %s", e)
-                errors["kakao_stop_id"] = "cannot_connect"
+                _LOGGER.warning("Subway line discovery failed: %s", e)
+                self._subway_lines_found = []
+            return await self.async_step_transit_lines()
         return self.async_show_form(
-            step_id="transit_bus_search",
-            data_schema=vol.Schema({
-                vol.Required("kakao_stop_id"): str,
-            }),
-            errors=errors,
-            description_placeholders={
-                "tip": "카카오맵에서 정류장 검색 후 URL의 busstopid 값을 입력하세요"
-            })
+            step_id="transit_station",
+            data_schema=vol.Schema({vol.Required("station"): str}))
 
-    # ── 버스: 노선 복수 선택 ──
-    async def async_step_transit_bus_select(self, user_input=None) -> FlowResult:
+    async def async_step_transit_lines(self, user_input=None) -> FlowResult:
+        """Step 3: 호선 선택 (감지된 노선이 기본값) → 역 subentry."""
         import homeassistant.helpers.config_validation as cv
+        from .transit import SUBWAY_LINES
+        errors: dict[str, str] = {}
         if user_input is not None:
-            selected = user_input.get("buses", [])
-            self._data.setdefault("bus_stops", []).append({
-                "stop_id": self._bus_stop_id,
-                "stop_name": self._bus_stop_name,
-                "buses": selected,
-            })
-            return await self.async_step_transit_add()
+            lines = user_input.get("lines", [])
+            if not lines:
+                errors["base"] = "no_selection"
+            else:
+                station = self._subway_station
+                return self.async_create_entry(
+                    title="지하철", data=self._data,
+                    subentries=[
+                        {"subentry_type": "subway_station",
+                         "title": f"{station}역",
+                         "data": {"station": station, "lines": lines},
+                         "unique_id": station}
+                    ])
         return self.async_show_form(
-            step_id="transit_bus_select",
+            step_id="transit_lines",
             data_schema=vol.Schema({
-                vol.Required("buses", default=list(self._bus_labels.keys())):
-                    cv.multi_select(self._bus_labels),
-            }))
-
-    # ── 대중교통 완료 ──
-    async def async_step_transit_done(self, user_input=None) -> FlowResult:
-        return self.async_create_entry(title="대중교통", data=self._data)
+                vol.Required("lines", default=self._subway_lines_found):
+                    cv.multi_select(SUBWAY_LINES),
+            }),
+            errors=errors)
 
     # ══════════ 유가정보 ══════════
 
@@ -737,6 +704,8 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return {"area": WarningAreaSubentryFlowHandler}
         if etype == ENTRY_AIRKOREA:
             return {"station": StationSubentryFlowHandler}
+        if etype == ENTRY_TRANSIT:
+            return {"subway_station": SubwayStationSubentryFlowHandler}
         return {}
 
 
@@ -882,6 +851,53 @@ class StationSubentryFlowHandler(config_entries.ConfigSubentryFlow):
                 SelectSelectorConfig(options=station_opts,
                                      mode=SelectSelectorMode.DROPDOWN)),
         }))
+
+
+class SubwayStationSubentryFlowHandler(config_entries.ConfigSubentryFlow):
+    """Add one 역 to a subway entry."""
+
+    def __init__(self):
+        self._station = ""
+        self._lines_found: list[str] = []
+
+    async def async_step_user(self, user_input=None):
+        from .transit.subway_api import discover_lines
+        if user_input is not None:
+            station = user_input["station"].strip()
+            entry = self._get_entry()
+            for sub in entry.subentries.values():
+                if sub.data.get("station") == station:
+                    return self.async_abort(reason="already_configured")
+            self._station = station
+            try:
+                session = async_get_clientsession(self.hass)
+                self._lines_found = await discover_lines(
+                    session, entry.data["seoul_api_key"], station)
+            except Exception as e:
+                _LOGGER.warning("Subway line discovery failed: %s", e)
+                self._lines_found = []
+            return await self.async_step_lines()
+        return self.async_show_form(step_id="user", data_schema=vol.Schema({
+            vol.Required("station"): str,
+        }))
+
+    async def async_step_lines(self, user_input=None):
+        import homeassistant.helpers.config_validation as cv
+        from .transit import SUBWAY_LINES
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            lines = user_input.get("lines", [])
+            if not lines:
+                errors["base"] = "no_selection"
+            else:
+                return self.async_create_entry(
+                    title=f"{self._station}역",
+                    data={"station": self._station, "lines": lines},
+                    unique_id=self._station)
+        return self.async_show_form(step_id="lines", data_schema=vol.Schema({
+            vol.Required("lines", default=self._lines_found):
+                cv.multi_select(SUBWAY_LINES),
+        }), errors=errors)
 
 
 class KRPublicDataOptionsFlow(config_entries.OptionsFlow):

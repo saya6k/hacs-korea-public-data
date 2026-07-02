@@ -39,7 +39,7 @@ API_DESCRIPTIONS: dict[str, str] = {
     ENTRY_KMA_WEATHER: "Korean Meteorological Administration weather forecast.",
     ENTRY_WEATHER: "Korean Meteorological Administration severe weather warnings.",
     ENTRY_AIRKOREA: "Realtime air quality (PM, ozone, UV) for configured stations.",
-    ENTRY_TRANSIT: "Realtime Seoul subway and KakaoMap bus arrivals.",
+    ENTRY_TRANSIT: "Realtime Seoul subway arrivals.",
     ENTRY_FUEL: "Korean fuel (gasoline/diesel/LPG) average and lowest prices.",
     ENTRY_SCHOOL: "School lunch menus and class timetables (NEIS).",
     ENTRY_DISASTER: "Korean civil defense disaster messages (재난문자).",
@@ -73,9 +73,8 @@ API_PROMPTS: dict[str, str] = {
     ),
     ENTRY_TRANSIT: (
         "Use get_subway_arrivals for Seoul subway arrivals at configured "
-        "stations, and get_bus_arrivals for bus arrivals at configured "
-        "stops. The user may say 'when is the next bus/subway' — pick the "
-        "first configured stop/station if they don't name one."
+        "stations. The user may say 'when is the next subway/train' — pick "
+        "the first configured station if they don't name one."
     ),
     ENTRY_FUEL: (
         "Use get_fuel_prices to retrieve the latest national average and "

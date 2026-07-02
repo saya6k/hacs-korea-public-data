@@ -11,7 +11,7 @@
         "title": "Service Selection",
         "menu_options": {
           "weather_warning": "Weather Warning",
-          "transit": "Transit",
+          "transit": "Subway",
           "fuel": "Fuel Prices",
           "school": "School Info",
           "disaster": "Disaster Alerts",
@@ -33,33 +33,22 @@
         }
       },
       "transit": {
-        "title": "Transit Keys",
+        "title": "Subway Keys",
         "data": {
-          "seoul_api_key": "Seoul Key",
-          "bus_api_key": "Bus Key"
+          "seoul_api_key": "Seoul Open Data Key",
+          "bus_api_key": "Transfer Path Key (optional)"
         }
       },
-      "transit_add": {
-        "title": "Add",
-        "menu_options": {
-          "transit_subway": "Subway",
-          "transit_bus_search": "Bus",
-          "transit_done": "Done"
+      "transit_station": {
+        "title": "Station",
+        "data": {
+          "station": "Station"
         }
       },
-      "transit_subway": {
-        "title": "Subway",
+      "transit_lines": {
+        "title": "Lines",
         "data": {
-          "station": "Station",
-          "direction": "Direction",
-          "line_id": "Line"
-        }
-      },
-      "transit_bus_search": {
-        "title": "Add Bus Stop",
-        "description": "Enter the KakaoMap bus stop ID",
-        "data": {
-          "kakao_stop_id": "KakaoMap Stop ID"
+          "lines": "Lines"
         }
       },
       "fuel": {
@@ -159,12 +148,6 @@
           "sgg_list": "Districts"
         }
       },
-      "transit_bus_select": {
-        "title": "Select Bus Routes",
-        "data": {
-          "buses": "Bus Routes"
-        }
-      },
       "airkorea": {
         "title": "AirKorea - Province",
         "data": {
@@ -226,7 +209,6 @@
       "invalid_api_key": "Invalid key.",
       "no_schools_found": "No schools.",
       "no_selection": "Select one.",
-      "no_stops_found": "No stops.",
       "no_stations_found": "No stations found."
     },
     "abort": {
@@ -298,6 +280,32 @@
             "station": "Station"
           }
         }
+      },
+      "abort": {
+        "already_configured": "Already configured."
+      }
+    },
+    "subway_station": {
+      "entry_type": "Station",
+      "initiate_flow": {
+        "user": "Add station"
+      },
+      "step": {
+        "user": {
+          "title": "Station",
+          "data": {
+            "station": "Station"
+          }
+        },
+        "lines": {
+          "title": "Lines",
+          "data": {
+            "lines": "Lines"
+          }
+        }
+      },
+      "error": {
+        "no_selection": "Select one."
       },
       "abort": {
         "already_configured": "Already configured."

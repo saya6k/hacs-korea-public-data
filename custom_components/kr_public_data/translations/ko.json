@@ -11,7 +11,7 @@
         "title": "서비스 선택",
         "menu_options": {
           "weather_warning": "기상특보 (기상청)",
-          "transit": "대중교통 (지하철/버스)",
+          "transit": "지하철 (실시간 도착정보)",
           "fuel": "유가정보 (Opinet)",
           "school": "학교정보 (NEIS)",
           "disaster": "재난정보 (긴급재난문자)",
@@ -33,33 +33,22 @@
         }
       },
       "transit": {
-        "title": "대중교통 API 키",
+        "title": "지하철 API 키",
         "data": {
-          "seoul_api_key": "서울 열린데이터광장 인증키 (지하철)",
-          "bus_api_key": "공공데이터포털 서비스 키 (버스)"
+          "seoul_api_key": "서울 열린데이터광장 인증키",
+          "bus_api_key": "공공데이터포털 서비스 키 (환승경로, 선택)"
         }
       },
-      "transit_add": {
-        "title": "항목 추가",
-        "menu_options": {
-          "transit_subway": "지하철 역 추가",
-          "transit_bus_search": "버스 노선 추가",
-          "transit_done": "완료"
+      "transit_station": {
+        "title": "역 추가",
+        "data": {
+          "station": "역 이름"
         }
       },
-      "transit_subway": {
-        "title": "지하철 역",
+      "transit_lines": {
+        "title": "호선 선택 (운행 노선 자동 감지)",
         "data": {
-          "station": "역 이름",
-          "direction": "방향",
-          "line_id": "호선 필터"
-        }
-      },
-      "transit_bus_search": {
-        "title": "버스 정류장 추가",
-        "description": "카카오맵에서 정류장 검색 후 URL의 busstopid 값을 입력하세요 (예: 03171, BS09013700 등)",
-        "data": {
-          "kakao_stop_id": "카카오맵 정류장 ID"
+          "lines": "호선"
         }
       },
       "fuel": {
@@ -159,12 +148,6 @@
           "sgg_list": "시군구"
         }
       },
-      "transit_bus_select": {
-        "title": "버스 노선 선택",
-        "data": {
-          "buses": "추적할 버스 노선"
-        }
-      },
       "airkorea": {
         "title": "에어코리아 - 광역시도 선택",
         "data": {
@@ -226,7 +209,6 @@
       "invalid_api_key": "API 키가 유효하지 않습니다.",
       "no_schools_found": "학교를 찾을 수 없습니다.",
       "no_selection": "하나 이상 선택하세요.",
-      "no_stops_found": "정류장을 찾을 수 없습니다.",
       "no_stations_found": "측정소를 찾을 수 없습니다."
     },
     "abort": {
@@ -298,6 +280,32 @@
             "station": "측정소"
           }
         }
+      },
+      "abort": {
+        "already_configured": "이미 설정되어 있습니다."
+      }
+    },
+    "subway_station": {
+      "entry_type": "역",
+      "initiate_flow": {
+        "user": "역 추가"
+      },
+      "step": {
+        "user": {
+          "title": "역 추가",
+          "data": {
+            "station": "역 이름"
+          }
+        },
+        "lines": {
+          "title": "호선 선택 (운행 노선 자동 감지)",
+          "data": {
+            "lines": "호선"
+          }
+        }
+      },
+      "error": {
+        "no_selection": "하나 이상 선택하세요."
       },
       "abort": {
         "already_configured": "이미 설정되어 있습니다."

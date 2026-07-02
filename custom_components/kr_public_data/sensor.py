@@ -11,22 +11,32 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
     entities = []
 
     if etype == ENTRY_TRANSIT:
-        from .transit.sensor import SubwayArrivalSensor, BusArrivalSensor
-        from .transit.device import subway_device, bus_stop_device
-        for station, coord in store.get("subway_coords", {}).items():
-            for item in store.get("subway_items", []):
-                if item["station"] != station: continue
-                di = subway_device(item["station"], item["direction"], item.get("line_id",""))
-                for idx in range(2):
-                    entities.append(SubwayArrivalSensor(
-                        coord, item["station"], item["direction"], item.get("line_id",""), idx, di))
-        for stop in store.get("bus_stops", []):
-            coord = store.get("bus_coords", {}).get(stop["stop_id"])
-            if not coord: continue
-            di = bus_stop_device(stop["stop_id"], stop["stop_name"])
-            for bus_name in stop.get("buses", []):
-                for idx in range(2):
-                    entities.append(BusArrivalSensor(coord, bus_name, idx, di))
+        from .transit import line_directions
+        from .transit.sensor import SubwayArrivalSensor
+        from .transit.device import subway_device, subway_line_device
+        station_subs = store.get("station_subs") or {}
+        for sub_id, info in station_subs.items():
+            coord = info["coordinator"]
+            station = info["station"]
+            ents = []
+            # One device per line; 4 sensors under it (2 directions × next/next-next).
+            for lid in info["lines"]:
+                di = subway_line_device(station, lid)
+                for direction in line_directions(lid):
+                    for idx in range(2):
+                        ents.append(SubwayArrivalSensor(
+                            coord, station, direction, lid, idx, di,
+                            name_prefix=direction))
+            async_add_entities(ents, config_subentry_id=sub_id)
+        if not station_subs:
+            # legacy entry: per-(station, direction, line) devices
+            for station, coord in store.get("subway_coords", {}).items():
+                for item in store.get("subway_items", []):
+                    if item["station"] != station: continue
+                    di = subway_device(item["station"], item["direction"], item.get("line_id",""))
+                    for idx in range(2):
+                        entities.append(SubwayArrivalSensor(
+                            coord, item["station"], item["direction"], item.get("line_id",""), idx, di))
 
     elif etype == ENTRY_FUEL:
         from .fuel.sensor import FuelAvgSensor, FuelLowSensor

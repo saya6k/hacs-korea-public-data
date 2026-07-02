@@ -40,7 +40,7 @@ def _build() -> dict[str, list[ToolFactory]]:
     from .pharmacy_tool import GetOpenPharmaciesTool
     from .safety_alert_tool import GetSafetyAlertsTool
     from .school_tool import GetSchoolMealTool, GetSchoolTimetableTool
-    from .transit_tool import GetBusArrivalsTool, GetSubwayArrivalsTool
+    from .transit_tool import GetSubwayArrivalsTool
     from .utility_tools import (
         GetElectricityUsageTool,
         GetGasBillTool,
@@ -52,10 +52,7 @@ def _build() -> dict[str, list[ToolFactory]]:
         ENTRY_KMA_WEATHER: [_factory(GetKMAWeatherForecastTool)],
         ENTRY_WEATHER: [_factory(GetWeatherWarningsTool)],
         ENTRY_AIRKOREA: [_factory(GetAirQualityTool)],
-        ENTRY_TRANSIT: [
-            _factory(GetSubwayArrivalsTool),
-            _factory(GetBusArrivalsTool),
-        ],
+        ENTRY_TRANSIT: [_factory(GetSubwayArrivalsTool)],
         ENTRY_FUEL: [_factory(GetFuelPricesTool)],
         ENTRY_SCHOOL: [
             _factory(GetSchoolMealTool),
