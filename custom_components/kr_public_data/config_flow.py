@@ -514,6 +514,7 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors)
 
     async def async_step_school_search(self, user_input=None) -> FlowResult:
+        from .school import SCHOOL_LEVELS
         errors: dict[str, str] = {}
         if user_input is not None:
             session = async_get_clientsession(self.hass)
@@ -522,6 +523,8 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             c = NeisApiClient(session, self._data["neis_api_key"])
             if "school_search" in user_input:
                 schools = await c.search_school(user_input["school_search"])
+                kind = SCHOOL_LEVELS.get(self._data["school_level"])
+                schools = [s for s in schools if s.get("SCHUL_KND_SC_NM") == kind]
                 if not schools:
                     errors["school_search"] = "no_schools_found"
                 else:
@@ -1451,6 +1454,7 @@ class SchoolSubentryFlowHandler(config_entries.ConfigSubentryFlow):
         }))
 
     async def async_step_search(self, user_input=None):
+        from .school import SCHOOL_LEVELS
         errors: dict[str, str] = {}
         if user_input is not None:
             entry = self._get_entry()
@@ -1461,6 +1465,8 @@ class SchoolSubentryFlowHandler(config_entries.ConfigSubentryFlow):
             c = NeisApiClient(session, api_key)
             if "school_search" in user_input:
                 schools = await c.search_school(user_input["school_search"])
+                kind = SCHOOL_LEVELS.get(self._data["school_level"])
+                schools = [s for s in schools if s.get("SCHUL_KND_SC_NM") == kind]
                 if not schools:
                     errors["school_search"] = "no_schools_found"
                 else:
