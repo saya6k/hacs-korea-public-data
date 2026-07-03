@@ -30,6 +30,15 @@ def _next_midnight_kst() -> datetime:
     return (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
 
 
+def _describe(err: Exception) -> str:
+    """str(err), falling back to the exception's class name.
+
+    Some exceptions (e.g. asyncio.TimeoutError) stringify to "", which makes
+    logged/raised messages look blank and hides the actual cause.
+    """
+    return str(err) or type(err).__name__
+
+
 class ResilientCoordinator(DataUpdateCoordinator):
     """DataUpdateCoordinator with stale-keep, quota pause, and reauth mapping."""
 
@@ -74,9 +83,9 @@ class ResilientCoordinator(DataUpdateCoordinator):
             if self.data is not None and self._consecutive_failures <= self.stale_tolerance:
                 _LOGGER.warning(
                     "%s: transient API error (%d/%d), serving stale data: %s",
-                    self.name, self._consecutive_failures, self.stale_tolerance, err)
+                    self.name, self._consecutive_failures, self.stale_tolerance, _describe(err))
                 return self.data
-            raise UpdateFailed(f"{self.name}: {err}") from err
+            raise UpdateFailed(f"{self.name}: {_describe(err)}") from err
 
         self._consecutive_failures = 0
         self.last_success_time = dt_util.utcnow()
