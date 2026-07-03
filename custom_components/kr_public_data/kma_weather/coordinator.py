@@ -1,6 +1,8 @@
 """KMA Weather coordinator - fetches forecast + O3 + UV in sync."""
 from __future__ import annotations
+import asyncio
 import logging
+import random
 from datetime import timedelta
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -10,6 +12,11 @@ from ..exceptions import KrTransientError
 from ..resilience import ResilientCoordinator
 
 _LOGGER = logging.getLogger(__name__)
+
+# Small randomized delay between sequential 공공데이터포털 calls in one _fetch()
+# cycle, so back-to-back requests (forecast/O3/UV, or multiple regions) don't
+# bunch up against the gateway's per-second rate limit.
+_REQUEST_JITTER = (0.2, 0.5)
 
 
 class KMAWeatherCoordinator(ResilientCoordinator):
@@ -35,7 +42,9 @@ class KMAWeatherCoordinator(ResilientCoordinator):
         last_err: Exception | None = None
         session = self._session
         # 1. Fetch weather forecast per region
-        for reg in self._regions:
+        for i, reg in enumerate(self._regions):
+            if i:
+                await asyncio.sleep(random.uniform(*_REQUEST_JITTER))
             name = region_key(reg)
             try:
                 items = await fetch_vilage_forecast(
@@ -54,6 +63,7 @@ class KMAWeatherCoordinator(ResilientCoordinator):
 
         # 2. Fetch O3 from AirKorea (same session, same update cycle)
         if self._air_station:
+            await asyncio.sleep(random.uniform(*_REQUEST_JITTER))
             try:
                 from ..airkorea.api import fetch_realtime
                 air = await fetch_realtime(session, self._air_key, self._air_station)
@@ -67,6 +77,7 @@ class KMAWeatherCoordinator(ResilientCoordinator):
 
         # 3. Fetch UV index from Living Weather V4 (same session)
         if self._area_no:
+            await asyncio.sleep(random.uniform(*_REQUEST_JITTER))
             try:
                 from ..airkorea.api import fetch_uv_index
                 uv = await fetch_uv_index(session, self._living_key, self._area_no)
