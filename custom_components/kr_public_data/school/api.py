@@ -69,8 +69,16 @@ class NeisApiClient:
         p["CLRM_NM" if level == "high" else "CLASS_NM"] = str(cls)
         return (await self._req(ep, p)).get("row", [])
 
-    async def get_classroom_info(self, rc, sc, grade):
-        return (await self._req(ENDPOINTS["classroom_info"], {
+    async def get_timetable_classes(self, rc, sc, level, d: date):
+        """Fetch one day's timetable rows for a whole school (no GRADE/CLASS_NM filter).
+
+        Used to discover which grade/class combinations actually exist —
+        classInfo doesn't reliably reflect this, but every existing class has
+        periods on any given school day.
+        """
+        ep = ENDPOINTS["timetable"][level]
+        ymd = d.strftime("%Y%m%d")
+        return (await self._req(ep, {
             "ATPT_OFCDC_SC_CODE": rc, "SD_SCHUL_CODE": sc,
-            "GRADE": str(grade), "AY": str(_ay())
+            "TI_FROM_YMD": ymd, "TI_TO_YMD": ymd,
         })).get("row", [])
