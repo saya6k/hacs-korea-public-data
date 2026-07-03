@@ -47,8 +47,7 @@ class PharmacySensor(CoordinatorEntity, SensorEntity):
 class PharmacyLocationSensor(CoordinatorEntity, SensorEntity):
     """개별 약국 위치 - latitude/longitude 속성으로 지도 카드에 핀 표시.
 
-    지역(device_info)마다 하나씩 있던 별도 디바이스 대신, 그 지역의 PharmacySensor와
-    같은 디바이스(pharmacy_region_device)에 묶어 "약국 - {지역}" 하나로 모아본다.
+    약국(hpid)마다 별도 디바이스(pharmacy_device)를 갖는다.
     """
     _attr_has_entity_name = True
     _attr_icon = "mdi:map-marker"

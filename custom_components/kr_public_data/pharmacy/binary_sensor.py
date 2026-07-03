@@ -32,7 +32,7 @@ def is_pharmacy_open(duty_time: dict, now) -> bool:
 
 
 class PharmacyOpenBinarySensor(CoordinatorEntity, BinarySensorEntity):
-    """개별 약국의 현재 운영 여부. PharmacyLocationSensor와 같은 지역 디바이스에 묶인다."""
+    """개별 약국의 현재 운영 여부. PharmacyLocationSensor와 같은 약국 디바이스에 묶인다."""
     _attr_has_entity_name = True
     _attr_device_class = BinarySensorDeviceClass.RUNNING
     _attr_icon = "mdi:pharmacy"

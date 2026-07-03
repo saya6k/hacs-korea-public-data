@@ -32,6 +32,33 @@ SIDO_CODES = {
     "제주특별자치도": "5000000000",
 }
 
+# safety_alert 지역 선택지: 시도 코드→이름 + 서울 자치구 코드→이름.
+# 생성 플로우와 옵션 플로우가 같은 목록을 공유해야 옵션 화면에서 서울
+# 자치구로 만든 지역을 편집할 때 목록에서 빠지는 일이 없다.
+SAFETY_ALERT_SIDO = {
+    "1100000000": "서울특별시", "2600000000": "부산광역시",
+    "2700000000": "대구광역시", "2800000000": "인천광역시",
+    "2900000000": "광주광역시", "3000000000": "대전광역시",
+    "3100000000": "울산광역시", "3600000000": "세종특별자치시",
+    "4100000000": "경기도", "5100000000": "강원특별자치도",
+    "4300000000": "충청북도", "4400000000": "충청남도",
+    "5200000000": "전북특별자치도", "4600000000": "전라남도",
+    "4700000000": "경상북도", "4800000000": "경상남도",
+    "5000000000": "제주특별자치도",
+}
+SAFETY_ALERT_SEOUL_GU = {
+    "1111000000": "종로구", "1114000000": "중구", "1117000000": "용산구",
+    "1120000000": "성동구", "1121500000": "광진구", "1123000000": "동대문구",
+    "1126000000": "중랑구", "1129000000": "성북구", "1130500000": "강북구",
+    "1132000000": "도봉구", "1135000000": "노원구", "1138000000": "은평구",
+    "1141000000": "서대문구", "1144000000": "마포구", "1147000000": "양천구",
+    "1150000000": "강서구", "1153000000": "구로구", "1154500000": "금천구",
+    "1156000000": "영등포구", "1159000000": "동작구", "1162000000": "관악구",
+    "1165000000": "서초구", "1168000000": "강남구", "1171000000": "송파구",
+    "1174000000": "강동구",
+}
+SAFETY_ALERT_REGIONS = {**SAFETY_ALERT_SIDO, **SAFETY_ALERT_SEOUL_GU}
+
 
 async def _async_fetch_sgg_names(sido_name: str) -> list[str]:
     """기초자치단체(시군구) 이름 목록을 safekorea 지역 API에서 조회.
@@ -577,31 +604,7 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_safety_alert(self, user_input=None) -> FlowResult:
         """Select regions for safety alerts (시도 + 시군구)."""
         errors: dict[str, str] = {}
-        sido_map = {
-            "1100000000": "서울특별시", "2600000000": "부산광역시",
-            "2700000000": "대구광역시", "2800000000": "인천광역시",
-            "2900000000": "광주광역시", "3000000000": "대전광역시",
-            "3100000000": "울산광역시", "3600000000": "세종특별자치시",
-            "4100000000": "경기도", "5100000000": "강원특별자치도",
-            "4300000000": "충청북도", "4400000000": "충청남도",
-            "5200000000": "전북특별자치도", "4600000000": "전라남도",
-            "4700000000": "경상북도", "4800000000": "경상남도",
-            "5000000000": "제주특별자치도",
-        }
-        # 서울 자치구
-        seoul_gu = {
-            "1111000000": "종로구", "1114000000": "중구", "1117000000": "용산구",
-            "1120000000": "성동구", "1121500000": "광진구", "1123000000": "동대문구",
-            "1126000000": "중랑구", "1129000000": "성북구", "1130500000": "강북구",
-            "1132000000": "도봉구", "1135000000": "노원구", "1138000000": "은평구",
-            "1141000000": "서대문구", "1144000000": "마포구", "1147000000": "양천구",
-            "1150000000": "강서구", "1153000000": "구로구", "1154500000": "금천구",
-            "1156000000": "영등포구", "1159000000": "동작구", "1162000000": "관악구",
-            "1165000000": "서초구", "1168000000": "강남구", "1171000000": "송파구",
-            "1174000000": "강동구",
-        }
-        all_regions = {**sido_map, **seoul_gu}
-        region_opts = [SelectOptionDict(value=k, label=v) for k, v in all_regions.items()]
+        region_opts = [SelectOptionDict(value=k, label=v) for k, v in SAFETY_ALERT_REGIONS.items()]
         if user_input is not None:
             areas = user_input.get("area_codes", [])
             if not isinstance(areas, list):
@@ -609,7 +612,7 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             if not areas:
                 errors["base"] = "no_selection"
             else:
-                region_items = [{"code": c, "name": all_regions.get(c, c)} for c in areas]
+                region_items = [{"code": c, "name": SAFETY_ALERT_REGIONS.get(c, c)} for c in areas]
                 return self.async_create_entry(
                     title="안전알림",
                     data={CONF_ENTRY_TYPE: ENTRY_SAFETY_ALERT, "regions": region_items})
@@ -1522,6 +1525,10 @@ class KRPublicDataOptionsFlow(config_entries.OptionsFlow):
                 user_input["home_latitude"] = loc["latitude"]
                 user_input["home_longitude"] = loc["longitude"]
                 user_input["radius_km"] = loc["radius"] / 1000
+            if etype == ENTRY_SAFETY_ALERT and "area_codes" in user_input:
+                codes = user_input.pop("area_codes")
+                user_input["regions"] = [
+                    {"code": c, "name": SAFETY_ALERT_REGIONS.get(c, c)} for c in codes]
             # Merge new options into data
             new_data = {**self._entry.data, **user_input}
             self.hass.config_entries.async_update_entry(self._entry, data=new_data)
@@ -1667,19 +1674,11 @@ class KRPublicDataOptionsFlow(config_entries.OptionsFlow):
             })
 
         elif etype == ENTRY_SAFETY_ALERT:
-            sido_map = {
-                "1100000000": "서울특별시", "2600000000": "부산광역시",
-                "2700000000": "대구광역시", "2800000000": "인천광역시",
-                "2900000000": "광주광역시", "3000000000": "대전광역시",
-                "3100000000": "울산광역시", "3600000000": "세종특별자치시",
-                "4100000000": "경기도", "5100000000": "강원특별자치도",
-                "4300000000": "충청북도", "4400000000": "충청남도",
-                "5200000000": "전북특별자치도", "4600000000": "전라남도",
-                "4700000000": "경상북도", "4800000000": "경상남도",
-                "5000000000": "제주특별자치도",
-            }
-            cur_codes = [r["code"] for r in d.get("regions", [])]
-            opts = [SelectOptionDict(value=k, label=v) for k, v in sido_map.items()]
+            regions = d.get("regions") or (
+                [{"code": d["area_code"], "name": d.get("area_name", "")}]
+                if d.get("area_code") else [])
+            cur_codes = [r["code"] for r in regions]
+            opts = [SelectOptionDict(value=k, label=v) for k, v in SAFETY_ALERT_REGIONS.items()]
             return vol.Schema({
                 vol.Required("area_codes", default=cur_codes): SelectSelector(
                     SelectSelectorConfig(options=opts, multiple=True,

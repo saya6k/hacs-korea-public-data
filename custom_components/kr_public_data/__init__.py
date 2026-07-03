@@ -36,6 +36,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     if etype == ENTRY_WEATHER:
         from .weather.coordinator import WeatherWarningCoordinator
+        from .weather.cleanup import async_cleanup_stale_weather_entities
         api_key = entry.data["api_key"]
         # 특보구역 per subentry; legacy entries keep area_codes in entry data.
         areas = {sub_id: sub.data["area_code"]
@@ -44,6 +45,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         c = WeatherWarningCoordinator(hass, api_key, area_codes)
         await c.async_config_entry_first_refresh()
         store = {"coordinator": c, "area_codes": area_codes, "areas": areas}
+        async_cleanup_stale_weather_entities(hass, entry, area_codes)
 
     elif etype == ENTRY_TRANSIT:
         from .transit import line_directions
@@ -79,6 +81,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     elif etype == ENTRY_FUEL:
         from .fuel.coordinator import FuelCoordinator
+        from .fuel.cleanup import async_cleanup_stale_fuel_entities
         api_key = entry.data.get("opinet_api_key") or entry.data.get("api_key", "")
         # 지역(시도) per subentry, 유종은 그 안의 목록; 레거시 엔트리는 configs를 그대로 사용.
         configs = [{"sido_code": sub.data["sido_code"], "fuel_code": f}
@@ -91,6 +94,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         c = FuelCoordinator(hass, api_key, configs)
         await c.async_config_entry_first_refresh()
         store = {"coordinator": c, "configs": configs}
+        async_cleanup_stale_fuel_entities(hass, entry, configs)
 
     elif etype == ENTRY_SCHOOL:
         from .school.coordinator import SchoolCoordinator
@@ -126,6 +130,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     elif etype == ENTRY_SAFETY_ALERT:
         from .safety_alert.coordinator import SafetyAlertCoordinator
+        from .safety_alert.cleanup import async_cleanup_stale_safety_alert_entities
         regions = entry.data.get("regions", [])
         if not regions and entry.data.get("area_code"):
             regions = [{"code": entry.data["area_code"], "name": entry.data.get("area_name", "")}]
@@ -134,6 +139,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                         for region in regions}
         await async_first_refresh_all(list(coordinators.values()), "safety_alert")
         store = {"coordinators": coordinators, "regions": regions}
+        async_cleanup_stale_safety_alert_entities(hass, entry, regions)
 
     elif etype == ENTRY_KEPCO:
         from homeassistant.exceptions import ConfigEntryAuthFailed
@@ -167,6 +173,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     elif etype == ENTRY_PHARMACY:
         from .pharmacy.coordinator import PharmacyCoordinator
         from .pharmacy.services import async_register_pharmacy_service
+        from .pharmacy.cleanup import async_cleanup_stale_pharmacy_entities
         from .resilience import async_first_refresh_all
         api_key = entry.data["api_key"]
         # 지역은 entry.data["regions"]에 flat하게 저장 (subentry 없이 관리).
@@ -185,6 +192,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         store = {"coordinators": coords, "coordinator": next(iter(coords.values())),
                  "regions": regions}
         async_register_pharmacy_service(hass, api_key)
+        async_cleanup_stale_pharmacy_entities(hass, entry, regions, coords)
 
     elif etype == ENTRY_AIRKOREA:
         from .airkorea.coordinator import AirKoreaCoordinator

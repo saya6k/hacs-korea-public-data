@@ -119,16 +119,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
 
     elif etype == ENTRY_PHARMACY:
         from .pharmacy.sensor import PharmacySensor, PharmacyLocationSensor, region_nearby_pharmacies
-        from .pharmacy.device import pharmacy_region_device
+        from .pharmacy.device import pharmacy_device
         for i, region in enumerate(store.get("regions", [])):
             coord = store["coordinators"].get(i)
             if not coord:
                 continue
             ents = [PharmacySensor(coord, region.get("sido", ""), region.get("sgg", ""))]
             if region.get("location_sensors"):
-                device_info = pharmacy_region_device(region.get("sido", ""), region.get("sgg", ""))
                 nearby = region_nearby_pharmacies(hass, region, coord)
-                ents += [PharmacyLocationSensor(coord, p["hpid"], p["name"], device_info)
+                ents += [PharmacyLocationSensor(coord, p["hpid"], p["name"],
+                                                pharmacy_device(p["hpid"], p["name"]))
                          for p in nearby if p.get("hpid")]
             sub_id = region.get("subentry_id")
             if sub_id:
