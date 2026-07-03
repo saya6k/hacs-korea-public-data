@@ -279,7 +279,7 @@ def parse_timetable_classes(api_data: list[dict[str, Any]]) -> list[dict[str, An
             grade = int(row.get("GRADE", 1))
             class_num = int(row.get("CLASS_NM", 1))
             classes.append({"grade": grade, "class_num": class_num})
-        except (ValueError, AttributeError):
+        except (ValueError, TypeError):
             continue
 
     return classes
