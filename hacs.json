@@ -1,5 +1,7 @@
 {
   "name": "한국 공공데이터 (Korean Public Data)",
   "render_readme": true,
-  "homeassistant": "2026.4.0"
+  "homeassistant": "2026.4.0",
+  "zip_release": true,
+  "filename": "kr_public_data.zip"
 }
