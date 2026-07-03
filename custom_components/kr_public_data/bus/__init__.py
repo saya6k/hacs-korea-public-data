@@ -12,7 +12,7 @@ CITY_CODES below is TAGO's city list and does not include Seoul; Seoul
 stops are searched via seoul_api.search_stops instead.
 """
 
-CITY_BUS_SCAN_INTERVAL = 60  # arrival times go stale fast
+CITY_BUS_SCAN_INTERVAL = 120  # arrival times go stale fast
 
 # Sentinel city_code value for the unified stop-search dropdown: routes the
 # config flow to seoul_api (ws.bus.go.kr) instead of TAGO's api.py. Not a

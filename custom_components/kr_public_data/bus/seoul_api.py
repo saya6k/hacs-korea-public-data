@@ -15,7 +15,7 @@ from typing import Any
 
 import aiohttp
 
-from ..exceptions import KrTransientError
+from ..exceptions import KrQuotaError, KrTransientError
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -45,7 +45,12 @@ async def _call(session: aiohttp.ClientSession, operation: str, api_key: str,
     header = data.get("msgHeader", {})
     code = header.get("headerCd")
     if code not in ("0", "4"):  # 0=success, 4=no matching data
-        raise KrTransientError(f"{operation}: headerCd {code} {header.get('headerMsg', '')}")
+        msg = header.get("headerMsg", "")
+        # headerCd 7 is an overloaded auth-error bucket; this specific
+        # message is ws.bus.go.kr's rate-limit/quota response within it.
+        if code == "7" and "REQUESTS EXCEEDS" in msg.upper():
+            raise KrQuotaError(f"{operation}: {msg}")
+        raise KrTransientError(f"{operation}: headerCd {code} {msg}")
     return _items(data)
 
 
