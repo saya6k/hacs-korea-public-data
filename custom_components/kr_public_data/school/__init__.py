@@ -5,7 +5,7 @@ ENDPOINTS = {
     "school_info": "schoolInfo", "meal": "mealServiceDietInfo",
     "calendar": "SchoolSchedule",
     "timetable": {"elementary": "elsTimetable", "middle": "misTimetable", "high": "hisTimetable"},
-    "classroom_info": "tiClrminfo",
+    "classroom_info": "classInfo",
 }
 SCHOOL_LEVELS = {"elementary": "초등학교", "middle": "중학교", "high": "고등학교"}
 ALLERGY_MAP = {

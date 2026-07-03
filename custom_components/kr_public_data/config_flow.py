@@ -149,7 +149,7 @@ async def _bus_stop_routes(session, api_key: str, city_code: str, node_id: str) 
             for r in routes]
 
 
-# ── 학교: 학년/반 선택지는 NEIS 학급정보(tiClrminfo)로 실제 존재하는 반만 보여준다.
+# ── 학교: 학년/반 선택지는 NEIS 학급정보(classInfo)로 실제 존재하는 반만 보여준다.
 # 학년별로 조회하며, 특정 학년 조회가 실패하거나 비어 있으면(연초 자료 미등록 등)
 # 그 학년만 1~20반 풀레인지로 폴백한다 — config flow가 NEIS 자료 공백에 볼모잡히지 않게.
 
@@ -162,8 +162,12 @@ async def _school_class_options(session, api_key: str, region_code: str, school_
     for g in range(1, max_g + 1):
         try:
             rows = await c.get_classroom_info(region_code, school_code, g)
-        except Exception:
+        except Exception as err:
+            _LOGGER.debug("get_classroom_info(%s, %s, grade=%s) failed: %s",
+                          region_code, school_code, g, err)
             rows = []
+        _LOGGER.debug("get_classroom_info(%s, %s, grade=%s) rows: %s",
+                      region_code, school_code, g, rows)
         classes = sorted({info["class_num"] for info in parse_class_info(rows)})
         for cl in (classes or range(1, 21)):
             combo_opts[f"{g}-{cl}"] = f"{g}학년 {cl}반"
