@@ -5,6 +5,7 @@ from datetime import date, datetime
 from typing import Any
 from zoneinfo import ZoneInfo
 from aiohttp import ClientSession
+from ..exceptions import KrQuotaError
 from . import NEIS_BASE, ENDPOINTS
 
 _LOGGER = logging.getLogger(__name__)
@@ -28,7 +29,13 @@ class NeisApiClient:
         if res is not None:
             code = res.findtext("CODE", "")
             if code != "INFO-000":
-                raise Exception(f"NEIS {code}: {res.findtext('MESSAGE','')}")
+                msg = res.findtext("MESSAGE", "")
+                # NEIS's own code space doesn't map onto raise_for_result_code
+                # (data.go.kr's "22"/"30-32"); match its daily-traffic-limit
+                # phrasing directly since we haven't confirmed the exact code live.
+                if "트래픽" in msg and "제한" in msg:
+                    raise KrQuotaError(f"NEIS {code}: {msg}")
+                raise Exception(f"NEIS {code}: {msg}")
         rows = []
         for row in root.findall(".//row"):
             rows.append({c.tag: c.text for c in row})

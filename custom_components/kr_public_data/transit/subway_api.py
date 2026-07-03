@@ -4,6 +4,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any
 import aiohttp
+from ..exceptions import KrQuotaError
 from . import SUBWAY_BULK_URL, SUBWAY_LINES
 
 _LOGGER = logging.getLogger(__name__)
@@ -46,6 +47,11 @@ async def fetch_bulk_arrivals(session: aiohttp.ClientSession, api_key: str,
         if code in ("INFO-200", "INFO-000"):
             return []
         msg = data["errorMessage"].get("message", "Unknown error")
+        # Seoul Open Data Plaza's daily-traffic-limit response for this API
+        # (documented cap: 1,000 calls/day per key) isn't a fixed code we've
+        # confirmed live, so match on the Korean phrasing instead.
+        if "트래픽" in msg and "제한" in msg:
+            raise KrQuotaError(f"Subway API error {code}: {msg}")
         raise Exception(f"Subway API error {code}: {msg}")
 
     return []
