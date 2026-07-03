@@ -62,7 +62,7 @@
       "school": {
         "title": "학교정보 설정",
         "data": {
-          "api_key": "NEIS Open API 키",
+          "neis_api_key": "NEIS Open API 키",
           "school_level": "학교 급"
         }
       },
@@ -96,7 +96,7 @@
       "disaster": {
         "title": "재난정보 설정",
         "data": {
-          "api_key": "재난안전데이터 API 키",
+          "safety_api_key": "재난안전데이터 API 키",
           "sido": "광역자치단체"
         }
       },
@@ -206,7 +206,7 @@
       "bus": {
         "title": "버스 API 키",
         "data": {
-          "service_key": "국토교통부(TAGO) 공공데이터포털 서비스키"
+          "api_key": "국토교통부(TAGO) 공공데이터포털 서비스키 (Decoding)"
         }
       },
       "bus_stop_search": {

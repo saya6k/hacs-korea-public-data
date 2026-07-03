@@ -95,7 +95,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     elif etype == ENTRY_DISASTER:
         from .disaster.coordinator import DisasterCoordinator
-        api_key = entry.data["api_key"]
+        api_key = entry.data.get("safety_api_key") or entry.data["api_key"]
         c = DisasterCoordinator(hass, api_key)
         await c.async_config_entry_first_refresh()
         # One shared fetch; each 시군구 subentry filters in its entities.
@@ -216,7 +216,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         from .bus.seoul_coordinator import SeoulBusCoordinator
         from .bus.intercity_coordinator import IntercityBusCoordinator
         from .resilience import async_first_refresh_all
-        service_key = entry.data.get("service_key", "")
+        service_key = entry.data.get("api_key") or entry.data.get("service_key", "")
         # 정류장 per subentry: one coordinator per stop, subscribed to every
         # selected route at that stop. All stops share the one "city_bus_stop"
         # subentry type; sub.data["source"] ("tago" | "seoul") — set by the

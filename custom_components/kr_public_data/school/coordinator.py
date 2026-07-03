@@ -31,7 +31,8 @@ class SchoolCoordinator(ResilientCoordinator):
 
     def __init__(self, hass, entry):
         self.entry = entry
-        self.client = NeisApiClient(async_get_clientsession(hass), entry.data["api_key"])
+        api_key = entry.data.get("neis_api_key") or entry.data["api_key"]
+        self.client = NeisApiClient(async_get_clientsession(hass), api_key)
         self.rc = entry.data["region_code"]
         self.sc = entry.data["school_code"]
         self.level = entry.data["school_level"]
