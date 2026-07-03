@@ -112,6 +112,20 @@ There is no automated test suite. The integration is validated by:
 2. Adding each service via Settings → Devices & Services with real API keys.
 3. Watching `home-assistant.log` for coordinator update failures and HTTP errors.
 
+## Release workflow
+
+This repo (and other `ha-*` HACS components, excluding `ha-app*`) ships on a
+two-track rolling draft release, maintained by release-drafter since
+`15ae319` (#31): a `rc` (prerelease) draft and a `stable` draft, both updated
+continuously as PRs merge to `main`.
+
+1. Verify locally with the devcontainer (`scripts/develop`) before merging —
+   see Testing above.
+2. Once merged and the `rc` draft looks right, publish it as a prerelease
+   from the GitHub Releases UI.
+3. After the prerelease has been exercised with no issues, promote/publish
+   the corresponding `stable` draft.
+
 ## LLM API registration
 
 `llm_api/__init__.py` registers one `llm.API` per *added* config entry. The API id is `kr_public_data__<etype>__<entry_id>`, so every entry gets a unique surface and unloading one entry doesn't disturb others. `__init__.py:async_setup_entry` calls `async_setup_llm_api(...)` after coordinator first refresh and stores the unregister callback in `store["unregister_llm"]`; `async_unload_entry` invokes it before unloading platforms. The `conversation` HA component is declared as a manifest dependency so `homeassistant.helpers.llm` is guaranteed to be importable.
