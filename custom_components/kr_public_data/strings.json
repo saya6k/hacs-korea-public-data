@@ -54,7 +54,7 @@
       "fuel": {
         "title": "Fuel",
         "data": {
-          "api_key": "Key",
+          "opinet_api_key": "Opinet API Key",
           "sido_codes": "Regions",
           "fuel_codes": "Types"
         }
@@ -145,7 +145,12 @@
       "pharmacy_sgg": {
         "title": "Select Districts",
         "data": {
-          "sgg_list": "Districts"
+          "sgg_list": "Districts",
+          "location_sensors": "Create per-pharmacy location sensors",
+          "location": "Center point & radius"
+        },
+        "data_description": {
+          "location_sensors": "Creates one location sensor per pharmacy within the radius below - this can add a large number of entities."
         }
       },
       "airkorea": {
@@ -173,9 +178,7 @@
         "title": "Earthquake",
         "data": {
           "api_key": "Key",
-          "latitude": "Lat",
-          "longitude": "Lon",
-          "radius_km": "Radius",
+          "location": "Center point & radius",
           "min_magnitude": "Min Magnitude"
         }
       },
@@ -463,12 +466,61 @@
       "abort": {
         "already_configured": "Already configured."
       }
+    },
+    "fuel_region": {
+      "entry_type": "Region",
+      "initiate_flow": {
+        "user": "Add region"
+      },
+      "step": {
+        "user": {
+          "title": "Region & fuel types",
+          "data": {
+            "sido_code": "Province",
+            "fuel_codes": "Fuel types"
+          }
+        },
+        "reconfigure": {
+          "title": "Edit Fuel Types",
+          "data": {
+            "fuel_codes": "Fuel types"
+          }
+        }
+      },
+      "error": {
+        "no_selection": "Select at least one."
+      },
+      "abort": {
+        "already_configured": "Already configured."
+      }
     }
   },
   "options": {
     "step": {
       "init": {
         "title": "Edit Settings"
+      },
+      "pharmacy_options": {
+        "title": "Edit Settings",
+        "data": {
+          "api_key": "Key",
+          "region": "Region",
+          "location_sensors": "Create per-pharmacy location sensors",
+          "location": "Center point & radius"
+        },
+        "data_description": {
+          "location_sensors": "Creates one location sensor per pharmacy within the radius below - this can add a large number of entities."
+        }
+      },
+      "pharmacy_region_edit": {
+        "title": "Location Sensors",
+        "data": {
+          "location_sensors": "Create per-pharmacy location sensors",
+          "location": "Center point & radius"
+        },
+        "data_description": {
+          "location_sensors": "Creates one location sensor per pharmacy within the radius below - this can add a large number of entities."
+        }
       }
     }
   },

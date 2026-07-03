@@ -16,7 +16,7 @@ PLATFORM_MAP = {
     ENTRY_KEPCO: [Platform.SENSOR],
     ENTRY_GASAPP: [Platform.SENSOR],
     ENTRY_ARISU: [Platform.SENSOR],
-    ENTRY_PHARMACY: [Platform.SENSOR],
+    ENTRY_PHARMACY: [Platform.SENSOR, Platform.BINARY_SENSOR],
     ENTRY_AIRKOREA: [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.EVENT, Platform.CALENDAR],
     ENTRY_KMA_WEATHER: [Platform.WEATHER],
     ENTRY_EARTHQUAKE: [Platform.EVENT],
@@ -25,7 +25,7 @@ PLATFORM_MAP = {
 
 # Globally registered actions, removed when the last entry of the type unloads.
 SERVICES_BY_ETYPE = {
-    ENTRY_PHARMACY: ["search_pharmacy"],
+    ENTRY_PHARMACY: ["search_pharmacy", "list_nearby_pharmacies"],
     ENTRY_AIRKOREA: ["get_living_index_forecast"],
 }
 
@@ -36,6 +36,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     if etype == ENTRY_WEATHER:
         from .weather.coordinator import WeatherWarningCoordinator
+        from .weather.cleanup import async_cleanup_stale_weather_entities
         api_key = entry.data["api_key"]
         # 특보구역 per subentry; legacy entries keep area_codes in entry data.
         areas = {sub_id: sub.data["area_code"]
@@ -44,6 +45,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         c = WeatherWarningCoordinator(hass, api_key, area_codes)
         await c.async_config_entry_first_refresh()
         store = {"coordinator": c, "area_codes": area_codes, "areas": areas}
+        async_cleanup_stale_weather_entities(hass, entry, area_codes)
 
     elif etype == ENTRY_TRANSIT:
         from .transit import line_directions
@@ -79,13 +81,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     elif etype == ENTRY_FUEL:
         from .fuel.coordinator import FuelCoordinator
-        api_key = entry.data["api_key"]
-        configs = entry.data.get("configs", [])
+        from .fuel.cleanup import async_cleanup_stale_fuel_entities
+        api_key = entry.data.get("opinet_api_key") or entry.data.get("api_key", "")
+        # 지역(시도) per subentry, 유종은 그 안의 목록; 레거시 엔트리는 configs를 그대로 사용.
+        configs = [{"sido_code": sub.data["sido_code"], "fuel_code": f}
+                   for sub in entry.subentries.values()
+                   for f in sub.data.get("fuel_codes", [])]
+        if not configs:
+            configs = entry.data.get("configs", [])
         if not configs and "sido_code" in entry.data:
             configs = [{"sido_code": entry.data["sido_code"], "fuel_code": entry.data["fuel_code"]}]
         c = FuelCoordinator(hass, api_key, configs)
         await c.async_config_entry_first_refresh()
         store = {"coordinator": c, "configs": configs}
+        async_cleanup_stale_fuel_entities(hass, entry, configs)
 
     elif etype == ENTRY_SCHOOL:
         from .school.coordinator import SchoolCoordinator
@@ -121,6 +130,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     elif etype == ENTRY_SAFETY_ALERT:
         from .safety_alert.coordinator import SafetyAlertCoordinator
+        from .safety_alert.cleanup import async_cleanup_stale_safety_alert_entities
         regions = entry.data.get("regions", [])
         if not regions and entry.data.get("area_code"):
             regions = [{"code": entry.data["area_code"], "name": entry.data.get("area_name", "")}]
@@ -129,6 +139,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                         for region in regions}
         await async_first_refresh_all(list(coordinators.values()), "safety_alert")
         store = {"coordinators": coordinators, "regions": regions}
+        async_cleanup_stale_safety_alert_entities(hass, entry, regions)
 
     elif etype == ENTRY_KEPCO:
         from homeassistant.exceptions import ConfigEntryAuthFailed
@@ -162,22 +173,26 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     elif etype == ENTRY_PHARMACY:
         from .pharmacy.coordinator import PharmacyCoordinator
         from .pharmacy.services import async_register_pharmacy_service
+        from .pharmacy.cleanup import async_cleanup_stale_pharmacy_entities
         from .resilience import async_first_refresh_all
         api_key = entry.data["api_key"]
-        # One coordinator per 시군구 subentry (the API queries per region).
-        coords = {sub_id: PharmacyCoordinator(hass, api_key,
-                                              sub.data.get("sido", ""),
-                                              sub.data.get("sgg", ""))
-                  for sub_id, sub in entry.subentries.items()}
-        if not coords:
-            # legacy single-region entry (q0/q1 stored in entry data)
-            coords[None] = PharmacyCoordinator(hass, api_key,
-                                               entry.data.get("q0", ""),
-                                               entry.data.get("q1", ""))
+        # 지역은 entry.data["regions"]에 flat하게 저장 (subentry 없이 관리).
+        regions = entry.data.get("regions")
+        if regions is None:
+            if entry.subentries:
+                # 레거시: subentry 기반으로 만들어졌던 이전 버전의 약국 엔트리.
+                regions = [dict(sub.data, subentry_id=sub_id)
+                           for sub_id, sub in entry.subentries.items()]
+            else:
+                # 가장 오래된 레거시: 단일 지역(q0/q1) flat 엔트리.
+                regions = [{"sido": entry.data.get("q0", ""), "sgg": entry.data.get("q1", "")}]
+        coords = {i: PharmacyCoordinator(hass, api_key, r.get("sido", ""), r.get("sgg", ""))
+                  for i, r in enumerate(regions)}
         await async_first_refresh_all(list(coords.values()), "pharmacy")
-        store = {"coordinators": coords,
-                 "coordinator": next(iter(coords.values()))}
+        store = {"coordinators": coords, "coordinator": next(iter(coords.values())),
+                 "regions": regions}
         async_register_pharmacy_service(hass, api_key)
+        async_cleanup_stale_pharmacy_entities(hass, entry, regions, coords)
 
     elif etype == ENTRY_AIRKOREA:
         from .airkorea.coordinator import AirKoreaCoordinator

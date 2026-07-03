@@ -39,11 +39,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
                             coord, item["station"], item["direction"], item.get("line_id",""), idx, di))
 
     elif etype == ENTRY_FUEL:
-        from .fuel.sensor import FuelAvgSensor, FuelLowSensor
+        from .fuel.sensor import FuelAvgSensor, FuelLowSensor, FuelLowLocationSensor
         c = store["coordinator"]
-        for cfg in store.get("configs", []):
-            entities += [FuelAvgSensor(c, cfg["sido_code"], cfg["fuel_code"]),
-                         FuelLowSensor(c, cfg["sido_code"], cfg["fuel_code"])]
+        if entry.subentries:
+            for sub_id, sub in entry.subentries.items():
+                sido = sub.data["sido_code"]
+                ents = []
+                for fuel in sub.data.get("fuel_codes", []):
+                    ents += [FuelAvgSensor(c, sido, fuel), FuelLowSensor(c, sido, fuel),
+                             FuelLowLocationSensor(c, sido, fuel)]
+                async_add_entities(ents, config_subentry_id=sub_id)
+        else:
+            for cfg in store.get("configs", []):
+                entities += [FuelAvgSensor(c, cfg["sido_code"], cfg["fuel_code"]),
+                             FuelLowSensor(c, cfg["sido_code"], cfg["fuel_code"]),
+                             FuelLowLocationSensor(c, cfg["sido_code"], cfg["fuel_code"])]
 
     elif etype == ENTRY_SCHOOL:
         from .school.sensor import SchoolLunchSensor, SchoolInfoSensor
@@ -108,15 +118,23 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
                     ArisuSensor(c, cn, "청구월", "billing_month")]
 
     elif etype == ENTRY_PHARMACY:
-        from .pharmacy.sensor import PharmacySensor
-        for sub_id, sub in entry.subentries.items():
-            coord = store["coordinators"].get(sub_id)
-            if coord:
-                async_add_entities(
-                    [PharmacySensor(coord, sub.data.get("sido", ""), sub.data.get("sgg", ""))],
-                    config_subentry_id=sub_id)
-        if not entry.subentries:
-            entities = [PharmacySensor(store["coordinator"], entry.data["q0"], entry.data.get("q1",""))]
+        from .pharmacy.sensor import PharmacySensor, PharmacyLocationSensor, region_nearby_pharmacies
+        from .pharmacy.device import pharmacy_device
+        for i, region in enumerate(store.get("regions", [])):
+            coord = store["coordinators"].get(i)
+            if not coord:
+                continue
+            ents = [PharmacySensor(coord, region.get("sido", ""), region.get("sgg", ""))]
+            if region.get("location_sensors"):
+                nearby = region_nearby_pharmacies(hass, region, coord)
+                ents += [PharmacyLocationSensor(coord, p["hpid"], p["name"],
+                                                pharmacy_device(p["hpid"], p["name"]))
+                         for p in nearby if p.get("hpid")]
+            sub_id = region.get("subentry_id")
+            if sub_id:
+                async_add_entities(ents, config_subentry_id=sub_id)
+            else:
+                entities += ents
 
     elif etype == ENTRY_AIRKOREA:
         from .airkorea.sensor import AirQualitySensor, POLLUTANTS, UVIndexSensor, AirStagnationSensor

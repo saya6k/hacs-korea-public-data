@@ -31,6 +31,7 @@ async def fetch_pharmacies(session, api_key, q0, q1="", page=1, num=20):
                 day_names = {1:"월",2:"화",3:"수",4:"목",5:"금",6:"토",7:"일",8:"공휴일"}
                 duty_time[day_names.get(day_n, str(day_n))] = f"{s}~{c}"
         results.append({
+            "hpid": item.findtext("hpid", ""),
             "name": item.findtext("dutyName", ""),
             "address": item.findtext("dutyAddr", ""),
             "phone": item.findtext("dutyTel1", ""),

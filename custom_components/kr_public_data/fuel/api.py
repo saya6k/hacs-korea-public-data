@@ -5,6 +5,7 @@ import xml.etree.ElementTree as ET
 from typing import Any
 import aiohttp
 from . import OPINET_AVG_URL, OPINET_LOWPRICE_URL
+from .coords import katec_to_wgs84
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -43,10 +44,17 @@ async def fetch_low_price(session: aiohttp.ClientSession, api_key: str,
     root = ET.fromstring(text)
     results = []
     for oil in root.findall(".//OIL"):
-        results.append({
+        entry: dict[str, Any] = {
             "station_name": oil.findtext("OS_NM", ""),
             "price": oil.findtext("PRICE", ""),
             "address": oil.findtext("NEW_ADR", "") or oil.findtext("VAN_ADR", ""),
             "brand": oil.findtext("POLL_DIV_CD", ""),
-        })
+        }
+        try:
+            x = float(oil.findtext("GIS_X_COOR", ""))
+            y = float(oil.findtext("GIS_Y_COOR", ""))
+            entry["latitude"], entry["longitude"] = katec_to_wgs84(x, y)
+        except (TypeError, ValueError):
+            pass
+        results.append(entry)
     return results
