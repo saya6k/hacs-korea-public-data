@@ -415,6 +415,54 @@
       "abort": {
         "already_configured": "Already configured."
       }
+    },
+    "school": {
+      "entry_type": "School",
+      "initiate_flow": {
+        "user": "Add school"
+      },
+      "step": {
+        "user": {
+          "title": "School",
+          "data": {
+            "school_level": "Level"
+          }
+        },
+        "search": {
+          "title": "Search",
+          "data": {
+            "school_search": "Name",
+            "selected_school": "Select"
+          }
+        },
+        "class": {
+          "title": "Select Grade/Class",
+          "data": {
+            "grade_classes": "Grade-Class"
+          }
+        },
+        "periods": {
+          "title": "Periods",
+          "data": {
+            "period_1": "P1", "period_2": "P2", "period_3": "P3", "period_4": "P4",
+            "period_5": "P5", "period_6": "P6", "period_7": "P7",
+            "lunch_start": "Lunch Start", "lunch_end": "Lunch End"
+          }
+        },
+        "reconfigure": {
+          "title": "Edit Grade/Class",
+          "data": {
+            "grade_classes": "Grade-Class"
+          }
+        }
+      },
+      "error": {
+        "no_schools_found": "No schools found.",
+        "cannot_connect": "Cannot connect."
+      },
+      "abort": {
+        "already_configured": "Already configured."
+      }
     }
   },
   "options": {

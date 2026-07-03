@@ -9,13 +9,13 @@ class SchoolLunchSensor(CoordinatorEntity, SensorEntity):
     _attr_icon = "mdi:food"
     _attr_has_entity_name = True
     _attr_translation_key = "school_lunch"
-    def __init__(self, coordinator, entry):
+    def __init__(self, coordinator, data):
         super().__init__(coordinator)
-        self.entry = entry
-        rc = entry.data["region_code"]
-        sc = entry.data["school_code"]
+        self.data_source = data
+        rc = data["region_code"]
+        sc = data["school_code"]
         self._attr_unique_id = f"{DOMAIN}_lunch_{rc}_{sc}"
-        self._attr_device_info = school_device(entry)
+        self._attr_device_info = school_device(data)
     @property
     def native_value(self):
         lunch = (self.coordinator.data or {}).get("lunch", {}).get(date.today().isoformat())
@@ -29,19 +29,19 @@ class SchoolInfoSensor(CoordinatorEntity, SensorEntity):
     _attr_icon = "mdi:school"
     _attr_has_entity_name = True
     _attr_translation_key = "school_info"
-    def __init__(self, coordinator, entry):
+    def __init__(self, coordinator, data):
         super().__init__(coordinator)
-        self.entry = entry
-        rc = entry.data["region_code"]
-        sc = entry.data["school_code"]
+        self.data_source = data
+        rc = data["region_code"]
+        sc = data["school_code"]
         self._attr_unique_id = f"{DOMAIN}_info_{rc}_{sc}"
-        self._attr_device_info = school_device(entry)
+        self._attr_device_info = school_device(data)
     @property
     def native_value(self):
-        return self.entry.data.get("school_name", "")
+        return self.data_source.get("school_name", "")
     @property
     def extra_state_attributes(self):
-        d = self.entry.data
+        d = self.data_source
         return {
             "school_name": d.get("school_name", ""),
             "grade_classes": d.get("grade_classes", []),

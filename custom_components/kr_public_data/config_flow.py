@@ -479,8 +479,18 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                      4:"12:00-12:50",5:"13:40-14:30",6:"14:40-15:30",7:"15:40-16:30"}
         if user_input is not None:
             self._data.update(user_input)
-            title = "학교정보"
-            return self.async_create_entry(title=title, data=self._data)
+            school_data = {k: v for k, v in self._data.items()
+                           if k not in (CONF_ENTRY_TYPE, "neis_api_key")}
+            entry_data = {CONF_ENTRY_TYPE: ENTRY_SCHOOL,
+                          "neis_api_key": self._data["neis_api_key"]}
+            return self.async_create_entry(
+                title="학교정보", data=entry_data,
+                subentries=[{
+                    "subentry_type": "school",
+                    "title": school_data.get("school_name", "학교"),
+                    "data": school_data,
+                    "unique_id": f"{school_data['region_code']}_{school_data['school_code']}",
+                }])
         schema: dict = {vol.Required("period_1", default=defaults[1]): str}
         for i in range(2, 8):
             schema[vol.Optional(f"period_{i}", default=defaults.get(i, ""))] = str
@@ -856,6 +866,8 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return {"region": RegionSubentryFlowHandler}
         if etype == ENTRY_DISASTER:
             return {"region": DisasterRegionSubentryFlowHandler}
+        if etype == ENTRY_SCHOOL:
+            return {"school": SchoolSubentryFlowHandler}
         if etype == ENTRY_KMA_WEATHER:
             return {"region": KmaRegionSubentryFlowHandler}
         if etype == ENTRY_WEATHER:
@@ -1342,6 +1354,117 @@ class IntercityBusRouteSubentryFlowHandler(config_entries.ConfigSubentryFlow):
         }), errors=errors)
 
 
+class SchoolSubentryFlowHandler(config_entries.ConfigSubentryFlow):
+    """Add another school to a school entry, or edit an existing one's 학년/반."""
+
+    def __init__(self):
+        self._data: dict = {}
+
+    async def async_step_user(self, user_input=None):
+        from .school import SCHOOL_LEVELS
+        if user_input is not None:
+            self._data = {"school_level": user_input["school_level"]}
+            return await self.async_step_search()
+        return self.async_show_form(step_id="user", data_schema=vol.Schema({
+            vol.Required("school_level", default="elementary"): vol.In(SCHOOL_LEVELS),
+        }))
+
+    async def async_step_search(self, user_input=None):
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            entry = self._get_entry()
+            api_key = entry.data.get("neis_api_key") or entry.data.get("api_key", "")
+            session = async_get_clientsession(self.hass)
+            from .school.api import NeisApiClient
+            from .school.parser import parse_school_info
+            c = NeisApiClient(session, api_key)
+            if "school_search" in user_input:
+                schools = await c.search_school(user_input["school_search"])
+                if not schools:
+                    errors["school_search"] = "no_schools_found"
+                else:
+                    opts = {
+                        f"{s['ATPT_OFCDC_SC_CODE']}_{s['SD_SCHUL_CODE']}":
+                        f"{s['SCHUL_NM']} ({s.get('ORG_RDNMA', '')})"
+                        for s in schools[:10]}
+                    return self.async_show_form(step_id="search",
+                        data_schema=vol.Schema({vol.Required("selected_school"): vol.In(opts)}))
+            elif "selected_school" in user_input:
+                rc, sc = user_input["selected_school"].split("_")
+                for sub in entry.subentries.values():
+                    if sub.data.get("region_code") == rc and sub.data.get("school_code") == sc:
+                        return self.async_abort(reason="already_configured")
+                info = await c.get_school_info(rc, sc)
+                if info:
+                    self._data.update(parse_school_info(info))
+                    return await self.async_step_class()
+                errors["base"] = "cannot_connect"
+        return self.async_show_form(step_id="search",
+            data_schema=vol.Schema({vol.Required("school_search"): str}),
+            errors=errors)
+
+    async def async_step_class(self, user_input=None):
+        import homeassistant.helpers.config_validation as cv
+        if user_input is not None:
+            selected = user_input.get("grade_classes", [])
+            self._data["grade_classes"] = selected
+            if selected:
+                g, cl = selected[0].split("-")
+                self._data["grade"] = int(g)
+                self._data["classes"] = [s.split("-")[1] for s in selected]
+                self._data["class"] = selected[0].split("-")[1]
+            return await self.async_step_periods()
+        max_g = 6 if self._data["school_level"] == "elementary" else 3
+        combo_opts = {}
+        for g in range(1, max_g + 1):
+            for cl in range(1, 21):
+                combo_opts[f"{g}-{cl}"] = f"{g}학년 {cl}반"
+        return self.async_show_form(step_id="class", data_schema=vol.Schema({
+            vol.Required("grade_classes"): cv.multi_select(combo_opts),
+        }))
+
+    async def async_step_periods(self, user_input=None):
+        defaults = {1: "09:00-09:50", 2: "10:00-10:50", 3: "11:00-11:50",
+                    4: "12:00-12:50", 5: "13:40-14:30", 6: "14:40-15:30", 7: "15:40-16:30"}
+        if user_input is not None:
+            self._data.update(user_input)
+            return self.async_create_entry(
+                title=self._data.get("school_name", "학교"),
+                data=self._data,
+                unique_id=f"{self._data['region_code']}_{self._data['school_code']}")
+        schema: dict = {vol.Required("period_1", default=defaults[1]): str}
+        for i in range(2, 8):
+            schema[vol.Optional(f"period_{i}", default=defaults.get(i, ""))] = str
+        schema[vol.Optional("lunch_start", default="12:50")] = str
+        schema[vol.Optional("lunch_end", default="13:40")] = str
+        return self.async_show_form(step_id="periods", data_schema=vol.Schema(schema))
+
+    async def async_step_reconfigure(self, user_input=None):
+        """Edit an existing school's 학년/반 selection."""
+        import homeassistant.helpers.config_validation as cv
+        subentry = self._get_reconfigure_subentry()
+        d = subentry.data
+        if user_input is not None:
+            selected = user_input.get("grade_classes", [])
+            updates = {"grade_classes": selected}
+            if selected:
+                g, cl = selected[0].split("-")
+                updates["grade"] = int(g)
+                updates["classes"] = [s.split("-")[1] for s in selected]
+                updates["class"] = selected[0].split("-")[1]
+            return self.async_update_and_abort(
+                self._get_entry(), subentry, data_updates=updates)
+        max_g = 6 if d.get("school_level") == "elementary" else 3
+        combo_opts = {}
+        for g in range(1, max_g + 1):
+            for cl in range(1, 21):
+                combo_opts[f"{g}-{cl}"] = f"{g}학년 {cl}반"
+        return self.async_show_form(step_id="reconfigure", data_schema=vol.Schema({
+            vol.Required("grade_classes", default=d.get("grade_classes", [])):
+                cv.multi_select(combo_opts),
+        }))
+
+
 class KRPublicDataOptionsFlow(config_entries.OptionsFlow):
     """Handle options for reconfiguration."""
 
@@ -1406,6 +1529,13 @@ class KRPublicDataOptionsFlow(config_entries.OptionsFlow):
             })
 
         elif etype == ENTRY_SCHOOL:
+            if self._entry.subentries:
+                # 학교별 학년/반은 school subentry에서 편집 — 여기서는 키만 편집.
+                return vol.Schema({
+                    vol.Required("neis_api_key",
+                                 default=d.get("neis_api_key") or d.get("api_key", "")):
+                        _password_selector(),
+                })
             import homeassistant.helpers.config_validation as cv
             max_g = 6 if d.get("school_level") == "elementary" else 3
             combo_opts = {}

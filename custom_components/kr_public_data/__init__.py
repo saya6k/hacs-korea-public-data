@@ -89,9 +89,24 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     elif etype == ENTRY_SCHOOL:
         from .school.coordinator import SchoolCoordinator
-        c = SchoolCoordinator(hass, entry)
-        await c.async_config_entry_first_refresh()
-        store = {"coordinator": c}
+        from .resilience import async_first_refresh_all
+        api_key = entry.data.get("neis_api_key") or entry.data.get("api_key", "")
+        # 학교 per subentry: one coordinator per school.
+        school_subs = {sub_id: {"data": sub.data,
+                                 "coordinator": SchoolCoordinator(hass, api_key, sub.data, sub_id)}
+                       for sub_id, sub in entry.subentries.items()}
+        if school_subs:
+            await async_first_refresh_all(
+                [info["coordinator"] for info in school_subs.values()], "school")
+            # LLM tools only know a single "coordinator" — point it at the
+            # first school until the tools learn to disambiguate.
+            first = next(iter(school_subs.values()))
+            store = {"school_subs": school_subs, "coordinator": first["coordinator"]}
+        else:
+            # legacy entry: single school lives directly in entry.data
+            c = SchoolCoordinator(hass, api_key, entry.data, entry.entry_id)
+            await c.async_config_entry_first_refresh()
+            store = {"coordinator": c}
 
     elif etype == ENTRY_DISASTER:
         from .disaster.coordinator import DisasterCoordinator

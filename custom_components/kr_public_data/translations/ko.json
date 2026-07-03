@@ -415,6 +415,54 @@
       "abort": {
         "already_configured": "이미 설정되어 있습니다."
       }
+    },
+    "school": {
+      "entry_type": "학교",
+      "initiate_flow": {
+        "user": "학교 추가"
+      },
+      "step": {
+        "user": {
+          "title": "학교정보 설정",
+          "data": {
+            "school_level": "학교 급"
+          }
+        },
+        "search": {
+          "title": "학교 검색",
+          "data": {
+            "school_search": "학교 이름",
+            "selected_school": "학교 선택"
+          }
+        },
+        "class": {
+          "title": "학년/반 선택 (복수 선택 가능)",
+          "data": {
+            "grade_classes": "학년-반"
+          }
+        },
+        "periods": {
+          "title": "교시 시간 설정",
+          "data": {
+            "period_1": "1교시", "period_2": "2교시", "period_3": "3교시", "period_4": "4교시",
+            "period_5": "5교시", "period_6": "6교시", "period_7": "7교시",
+            "lunch_start": "점심 시작", "lunch_end": "점심 종료"
+          }
+        },
+        "reconfigure": {
+          "title": "학년/반 수정 (복수 선택 가능)",
+          "data": {
+            "grade_classes": "학년-반"
+          }
+        }
+      },
+      "error": {
+        "no_schools_found": "학교를 찾을 수 없습니다.",
+        "cannot_connect": "연결할 수 없습니다."
+      },
+      "abort": {
+        "already_configured": "이미 설정되어 있습니다."
+      }
     }
   },
   "options": {
