@@ -29,21 +29,21 @@ def _school_year_mondays(ref=None):
 class SchoolCoordinator(ResilientCoordinator):
     stale_tolerance = 2  # 6h interval: two misses already cover half a day
 
-    def __init__(self, hass, entry):
-        self.entry = entry
-        self.client = NeisApiClient(async_get_clientsession(hass), entry.data["api_key"])
-        self.rc = entry.data["region_code"]
-        self.sc = entry.data["school_code"]
-        self.level = entry.data["school_level"]
+    def __init__(self, hass, api_key, data, coordinator_id):
+        self.data_source = data
+        self.client = NeisApiClient(async_get_clientsession(hass), api_key)
+        self.rc = data["region_code"]
+        self.sc = data["school_code"]
+        self.level = data["school_level"]
         # Parse grade_classes: ["1-3", "3-1"] format
-        self.grade_classes = entry.data.get("grade_classes", [])
+        self.grade_classes = data.get("grade_classes", [])
         if not self.grade_classes:
-            g = entry.data.get("grade", 1)
-            cls_list = entry.data.get("classes", [str(entry.data.get("class", "1"))])
+            g = data.get("grade", 1)
+            cls_list = data.get("classes", [str(data.get("class", "1"))])
             self.grade_classes = [f"{g}-{c}" for c in cls_list]
         # All unique grades for calendar
         self.grades = list(set(gc.split("-")[0] for gc in self.grade_classes))
-        super().__init__(hass, _LOGGER, name=f"{DOMAIN}_school_{entry.entry_id}",
+        super().__init__(hass, _LOGGER, name=f"{DOMAIN}_school_{coordinator_id}",
                          update_interval=timedelta(hours=6))
 
     async def _fetch(self):

@@ -89,13 +89,29 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     elif etype == ENTRY_SCHOOL:
         from .school.coordinator import SchoolCoordinator
-        c = SchoolCoordinator(hass, entry)
-        await c.async_config_entry_first_refresh()
-        store = {"coordinator": c}
+        from .resilience import async_first_refresh_all
+        api_key = entry.data.get("neis_api_key") or entry.data.get("api_key", "")
+        # 학교 per subentry: one coordinator per school.
+        school_subs = {sub_id: {"data": sub.data,
+                                 "coordinator": SchoolCoordinator(hass, api_key, sub.data, sub_id)}
+                       for sub_id, sub in entry.subentries.items()}
+        if school_subs:
+            await async_first_refresh_all(
+                [info["coordinator"] for info in school_subs.values()], "school")
+            # "coordinator" is a single-school fallback for callers that
+            # don't disambiguate by name; llm_api/school_tool.py picks the
+            # right one itself via store["school_subs"].
+            first = next(iter(school_subs.values()))
+            store = {"school_subs": school_subs, "coordinator": first["coordinator"]}
+        else:
+            # legacy entry: single school lives directly in entry.data
+            c = SchoolCoordinator(hass, api_key, entry.data, entry.entry_id)
+            await c.async_config_entry_first_refresh()
+            store = {"coordinator": c}
 
     elif etype == ENTRY_DISASTER:
         from .disaster.coordinator import DisasterCoordinator
-        api_key = entry.data["api_key"]
+        api_key = entry.data.get("safety_api_key") or entry.data["api_key"]
         c = DisasterCoordinator(hass, api_key)
         await c.async_config_entry_first_refresh()
         # One shared fetch; each 시군구 subentry filters in its entities.
@@ -216,7 +232,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         from .bus.seoul_coordinator import SeoulBusCoordinator
         from .bus.intercity_coordinator import IntercityBusCoordinator
         from .resilience import async_first_refresh_all
-        service_key = entry.data.get("service_key", "")
+        service_key = entry.data.get("api_key") or entry.data.get("service_key", "")
         # 정류장 per subentry: one coordinator per stop, subscribed to every
         # selected route at that stop. All stops share the one "city_bus_stop"
         # subentry type; sub.data["source"] ("tago" | "seoul") — set by the

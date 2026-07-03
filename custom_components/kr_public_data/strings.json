@@ -62,7 +62,7 @@
       "school": {
         "title": "School",
         "data": {
-          "api_key": "Key",
+          "neis_api_key": "NEIS Open API Key",
           "school_level": "Level"
         }
       },
@@ -96,7 +96,7 @@
       "disaster": {
         "title": "Disaster",
         "data": {
-          "api_key": "Key",
+          "safety_api_key": "Safety Data Key",
           "sido": "Province"
         }
       },
@@ -206,7 +206,7 @@
       "bus": {
         "title": "Bus API Key",
         "data": {
-          "service_key": "TAGO (data.go.kr) Service Key"
+          "api_key": "TAGO (data.go.kr) Decoding API Key"
         }
       },
       "bus_stop_search": {
@@ -411,6 +411,54 @@
         "no_selection": "Select one.",
         "no_stations_found": "No terminals found.",
         "no_dispatch_found": "No dispatches found for that route — try a different arrival terminal."
+      },
+      "abort": {
+        "already_configured": "Already configured."
+      }
+    },
+    "school": {
+      "entry_type": "School",
+      "initiate_flow": {
+        "user": "Add school"
+      },
+      "step": {
+        "user": {
+          "title": "School",
+          "data": {
+            "school_level": "Level"
+          }
+        },
+        "search": {
+          "title": "Search",
+          "data": {
+            "school_search": "Name",
+            "selected_school": "Select"
+          }
+        },
+        "class": {
+          "title": "Select Grade/Class",
+          "data": {
+            "grade_classes": "Grade-Class"
+          }
+        },
+        "periods": {
+          "title": "Periods",
+          "data": {
+            "period_1": "P1", "period_2": "P2", "period_3": "P3", "period_4": "P4",
+            "period_5": "P5", "period_6": "P6", "period_7": "P7",
+            "lunch_start": "Lunch Start", "lunch_end": "Lunch End"
+          }
+        },
+        "reconfigure": {
+          "title": "Edit Grade/Class",
+          "data": {
+            "grade_classes": "Grade-Class"
+          }
+        }
+      },
+      "error": {
+        "no_schools_found": "No schools found.",
+        "cannot_connect": "Cannot connect."
       },
       "abort": {
         "already_configured": "Already configured."

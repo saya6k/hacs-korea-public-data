@@ -4,7 +4,6 @@ from datetime import datetime, time, date, timedelta
 from zoneinfo import ZoneInfo
 
 from homeassistant.components.calendar import CalendarEntity, CalendarEvent
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -17,18 +16,6 @@ from .device import school_device
 KST = ZoneInfo("Asia/Seoul")
 
 
-async def async_setup_entry(hass, entry, async_add_entities):
-    """Set up calendar entities."""
-    coordinator = hass.data[DOMAIN][entry.entry_id]
-
-    entities = [
-        SchoolCalendar(coordinator, entry),
-        SchoolClassCalendar(coordinator, entry),
-    ]
-
-    async_add_entities(entities)
-
-
 class SchoolCalendar(CoordinatorEntity, CalendarEntity):
     """학교 학사일정 캘린더"""
     _attr_has_entity_name = True
@@ -37,15 +24,15 @@ class SchoolCalendar(CoordinatorEntity, CalendarEntity):
     def __init__(
         self,
         coordinator: SchoolCoordinator,
-        entry: ConfigEntry,
+        data: dict,
     ) -> None:
         super().__init__(coordinator)
-        self.entry = entry
-        self._attr_unique_id = f"{DOMAIN}_school_{entry.data['region_code']}_{entry.data['school_code']}_{entry.data['grade']}_calendar"
+        self.data_source = data
+        self._attr_unique_id = f"{DOMAIN}_school_{data['region_code']}_{data['school_code']}_{data.get('grade', 1)}_calendar"
 
     @property
     def device_info(self) -> DeviceInfo:
-        return school_device(self.entry)
+        return school_device(self.data_source)
 
     @property
     def event(self) -> CalendarEvent | None:
@@ -117,21 +104,21 @@ class SchoolClassCalendar(CoordinatorEntity, CalendarEntity):
     def __init__(
         self,
         coordinator: SchoolCoordinator,
-        entry: ConfigEntry,
+        data: dict,
         grade_class: str = "",
     ) -> None:
         super().__init__(coordinator)
-        self.entry = entry
+        self.data_source = data
         self._gc = grade_class or "1-1"
         parts = self._gc.split("-")
         self._grade = parts[0] if parts else "1"
         self._cls = parts[1] if len(parts) > 1 else "1"
-        self._attr_unique_id = f"{DOMAIN}_class_{entry.data['region_code']}_{entry.data['school_code']}_{self._gc}_schedule"
+        self._attr_unique_id = f"{DOMAIN}_class_{data['region_code']}_{data['school_code']}_{self._gc}_schedule"
         self._attr_name = f"{self._grade}학년 {self._cls}반 시간표"
 
     @property
     def device_info(self) -> DeviceInfo:
-        return school_device(self.entry)
+        return school_device(self.data_source)
 
     @property
     def event(self) -> CalendarEvent | None:
@@ -203,8 +190,8 @@ class SchoolClassCalendar(CoordinatorEntity, CalendarEntity):
         except Exception:
             lunch_text = "점심시간"
 
-        lunch_start = self._parse_time(self.entry.data.get("lunch_start"))
-        lunch_end = self._parse_time(self.entry.data.get("lunch_end"))
+        lunch_start = self._parse_time(self.data_source.get("lunch_start"))
+        lunch_end = self._parse_time(self.data_source.get("lunch_end"))
 
         for day_schedule in timetable:
             try:
@@ -267,7 +254,7 @@ class SchoolClassCalendar(CoordinatorEntity, CalendarEntity):
         # 최대 10교시까지 지원
         for i in range(1, 11):
             key = f"period_{i}"
-            value = self.entry.data.get(key)
+            value = self.data_source.get(key)
             if not value:
                 continue
 

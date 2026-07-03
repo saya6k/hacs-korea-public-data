@@ -47,8 +47,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
 
     elif etype == ENTRY_SCHOOL:
         from .school.sensor import SchoolLunchSensor, SchoolInfoSensor
-        entities = [SchoolLunchSensor(store["coordinator"], entry),
-                    SchoolInfoSensor(store["coordinator"], entry)]
+        school_subs = store.get("school_subs") or {}
+        for sub_id, info in school_subs.items():
+            coord = info["coordinator"]
+            data = info["data"]
+            async_add_entities(
+                [SchoolLunchSensor(coord, data), SchoolInfoSensor(coord, data)],
+                config_subentry_id=sub_id)
+        if not school_subs:
+            entities = [SchoolLunchSensor(store["coordinator"], entry.data),
+                        SchoolInfoSensor(store["coordinator"], entry.data)]
 
     elif etype == ENTRY_DISASTER:
         from .disaster.sensor import DisasterMessageSensor, DisasterCountSensor

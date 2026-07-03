@@ -22,11 +22,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
 
     elif etype == ENTRY_SCHOOL:
         from .school.calendar import SchoolCalendar, SchoolClassCalendar
-        coord = store["coordinator"]
-        entities = [SchoolCalendar(coord, entry)]
-        for gc in coord.grade_classes:
-            entities.append(SchoolClassCalendar(coord, entry, gc))
-        async_add_entities(entities)
+        school_subs = store.get("school_subs") or {}
+        for sub_id, info in school_subs.items():
+            coord = info["coordinator"]
+            data = info["data"]
+            ents = [SchoolCalendar(coord, data)]
+            for gc in coord.grade_classes:
+                ents.append(SchoolClassCalendar(coord, data, gc))
+            async_add_entities(ents, config_subentry_id=sub_id)
+        if not school_subs:
+            coord = store["coordinator"]
+            entities = [SchoolCalendar(coord, entry.data)]
+            for gc in coord.grade_classes:
+                entities.append(SchoolClassCalendar(coord, entry.data, gc))
+            async_add_entities(entities)
     elif etype == ENTRY_AIRKOREA:
         from .airkorea.sensor import AirForecastCalendar
         c = store["coordinator"]

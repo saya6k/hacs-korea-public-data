@@ -29,6 +29,36 @@ def _resolve_iso_date(when: str) -> str | None:
         return None
 
 
+def _resolve_school_coordinator(store: dict, school_name: str | None):
+    """Pick the coordinator for the requested school.
+
+    Returns (coordinator, error_message); error_message is None on success.
+    Entries with a single configured school (the common case, including
+    legacy pre-subentry entries) resolve without needing `school_name`.
+    """
+    school_subs = store.get("school_subs")
+    if not school_subs:
+        coord = store.get("coordinator")
+        if coord is None:
+            return None, "학교 데이터가 아직 준비되지 않았습니다."
+        return coord, None
+
+    infos = list(school_subs.values())
+    names = [info["data"].get("school_name", "") for info in infos]
+
+    if school_name:
+        wanted = school_name.strip()
+        for info, name in zip(infos, names):
+            if wanted == name or wanted in name:
+                return info["coordinator"], None
+        return None, f"'{school_name}' 학교를 찾을 수 없습니다. 등록된 학교: {', '.join(names)}"
+
+    if len(infos) == 1:
+        return infos[0]["coordinator"], None
+
+    return None, f"등록된 학교가 여러 개입니다. 어느 학교인지 물어보세요: {', '.join(names)}"
+
+
 class GetSchoolMealTool(BaseKRTool):
     service = ENTRY_SCHOOL
     name = "get_school_meal"
@@ -42,6 +72,13 @@ class GetSchoolMealTool(BaseKRTool):
                 "when",
                 description="'today', 'tomorrow', or 'YYYY-MM-DD'.",
             ): str,
+            vol.Optional(
+                "school",
+                description=(
+                    "School name. Only needed when multiple schools are "
+                    "configured; omit if there's just one."
+                ),
+            ): str,
         }
     )
 
@@ -52,8 +89,10 @@ class GetSchoolMealTool(BaseKRTool):
         llm_context: llm.LLMContext,
     ) -> dict[str, Any]:
         store = self.store
-        coord = store.get("coordinator")
-        if coord is None or coord.data is None:
+        coord, err = _resolve_school_coordinator(store, tool_input.tool_args.get("school"))
+        if err:
+            return self.error(err)
+        if coord.data is None:
             return self.error("학교 데이터가 아직 준비되지 않았습니다.")
 
         iso = _resolve_iso_date(tool_input.tool_args["when"])
@@ -121,6 +160,13 @@ class GetSchoolTimetableTool(BaseKRTool):
                     "use the first configured class."
                 ),
             ): str,
+            vol.Optional(
+                "school",
+                description=(
+                    "School name. Only needed when multiple schools are "
+                    "configured; omit if there's just one."
+                ),
+            ): str,
         }
     )
 
@@ -131,8 +177,10 @@ class GetSchoolTimetableTool(BaseKRTool):
         llm_context: llm.LLMContext,
     ) -> dict[str, Any]:
         store = self.store
-        coord = store.get("coordinator")
-        if coord is None or coord.data is None:
+        coord, err = _resolve_school_coordinator(store, tool_input.tool_args.get("school"))
+        if err:
+            return self.error(err)
+        if coord.data is None:
             return self.error("학교 데이터가 아직 준비되지 않았습니다.")
 
         iso = _resolve_iso_date(tool_input.tool_args["when"])
