@@ -118,6 +118,20 @@ There is no automated test suite. The integration is validated by:
 
 When adding a new service: also append the etype to `llm_api/const.py` (API name + `api_prompt`), add a `<service>_tool.py` with one or more `BaseKRTool` subclasses, and register them in `llm_api/tools.py:TOOLS_BY_ETYPE`. The tool's `name` and `parameters` (`vol.Schema`) are exposed verbatim to the conversation agent.
 
+## Release workflow
+
+This repo (and other `ha-*` HACS components, excluding `ha-app*`) ships on a
+two-track rolling draft release, maintained by release-drafter since
+`15ae319` (#31): a `rc` (prerelease) draft and a `stable` draft, both updated
+continuously as PRs merge to `main`.
+
+1. Verify locally with the devcontainer (`scripts/develop`) before merging —
+   see Testing above.
+2. Once merged and the `rc` draft looks right, publish it as a prerelease
+   from the GitHub Releases UI.
+3. After the prerelease has been exercised with no issues, promote/publish
+   the corresponding `stable` draft.
+
 ## When in doubt
 
 - Localization broken? Check rule (2) above before anything else.
