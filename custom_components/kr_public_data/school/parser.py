@@ -258,23 +258,19 @@ def parse_school_info(api_data: dict[str, Any]) -> dict[str, str]:
     }
 
 
-def parse_class_info(api_data: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def parse_timetable_classes(api_data: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """
-    Parse NEIS class info API data (for high school).
+    Parse NEIS timetable rows into the set of grade/class combinations present.
+
+    High school rows carry both CLASS_NM (homeroom) and CLRM_NM (the room a
+    given period happens to be taught in, due to elective/moving classes) —
+    only CLASS_NM identifies the actual 반, so CLRM_NM is ignored here.
 
     Args:
-        api_data: List of class info rows from NEIS API
+        api_data: List of timetable rows from NEIS API (elsTimetable/misTimetable/hisTimetable)
 
     Returns:
-        List of class information:
-        [
-            {
-                "grade": int,
-                "class_num": int,
-                "class_name": str,
-            },
-            ...
-        ]
+        List of {"grade": int, "class_num": int}
     """
     classes = []
 
@@ -282,13 +278,7 @@ def parse_class_info(api_data: list[dict[str, Any]]) -> list[dict[str, Any]]:
         try:
             grade = int(row.get("GRADE", 1))
             class_num = int(row.get("CLASS_NM", 1))
-            class_name = row.get("DDDEP_NM", "").strip()  # Department name
-
-            classes.append({
-                "grade": grade,
-                "class_num": class_num,
-                "class_name": class_name,
-            })
+            classes.append({"grade": grade, "class_num": class_num})
         except (ValueError, AttributeError):
             continue
 

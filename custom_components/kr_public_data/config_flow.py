@@ -149,6 +149,51 @@ async def _bus_stop_routes(session, api_key: str, city_code: str, node_id: str) 
             for r in routes]
 
 
+# ── 학교: 학년/반 선택지는 NEIS 시간표(elsTimetable/misTimetable/hisTimetable)로
+# 실제 존재하는 반만 보여준다. classInfo 엔드포인트는 신뢰할 수 없어(고교 CLRM_NM
+# 혼용, 자료 공백 등) 쓰지 않는다 — 시간표는 매 교시 CLASS_NM(학급)을 싣고 있고
+# (고교는 CLRM_NM도 같이 실리지만 그건 이동수업 강의실일 뿐, 반 식별은 여전히
+# CLASS_NM), 개설된 반이라면 어느 평일이든 교시가 잡혀 있다.
+# 오늘부터 며칠간 하루씩 조회해 자료가 있는 첫날을 채택하고, 그래도 특정
+# 학년 자료가 없으면 그 학년만 1~20반 풀레인지로 폴백한다.
+
+async def _school_class_options(session, api_key: str, region_code: str, school_code: str,
+                                 school_level: str, max_g: int) -> dict[str, str]:
+    from datetime import datetime, timedelta
+    from .school.api import NeisApiClient, KST
+    from .school.parser import parse_timetable_classes
+    c = NeisApiClient(session, api_key)
+    combo_opts: dict[str, str] = {}
+
+    rows: list[dict] = []
+    today = datetime.now(KST).date()
+    for offset in range(7):
+        d = today + timedelta(days=offset)
+        try:
+            rows = await c.get_timetable_classes(region_code, school_code, school_level, d)
+        except Exception as err:
+            _LOGGER.warning("get_timetable_classes(%s, %s, %s) failed: %s",
+                             region_code, school_code, d, err)
+            rows = []
+        if rows:
+            break
+
+    # Group by grade
+    by_grade: dict[int, set[int]] = {g: set() for g in range(1, max_g + 1)}
+    for info in parse_timetable_classes(rows):
+        g = info["grade"]
+        if g in by_grade:
+            by_grade[g].add(info["class_num"])
+
+    for g in range(1, max_g + 1):
+        classes = sorted(by_grade[g]) if by_grade[g] else range(1, 21)
+        if not by_grade[g]:
+            _LOGGER.info("timetable: no data for grade %s, falling back to 1-20", g)
+        for cl in classes:
+            combo_opts[f"{g}-{cl}"] = f"{g}학년 {cl}반"
+    return combo_opts
+
+
 _REGION_GRID = {
 "11B10101": (60, 127),  # 서울
 "11B20201": (55, 124),  # 인천
@@ -511,12 +556,10 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 self._data["class"] = selected[0].split("-")[1]
             return await self.async_step_school_periods()
         max_g = 6 if self._data["school_level"] == "elementary" else 3
-        # Build "학년-반" combo options
-        combo_opts = {}
-        for g in range(1, max_g + 1):
-            for cl in range(1, 21):
-                key = f"{g}-{cl}"
-                combo_opts[key] = f"{g}학년 {cl}반"
+        combo_opts = await _school_class_options(
+            async_get_clientsession(self.hass), self._data["neis_api_key"],
+            self._data["region_code"], self._data["school_code"],
+            self._data["school_level"], max_g)
         return self.async_show_form(step_id="school_class", data_schema=vol.Schema({
             vol.Required("grade_classes"): cv.multi_select(combo_opts),
         }))
@@ -1453,10 +1496,12 @@ class SchoolSubentryFlowHandler(config_entries.ConfigSubentryFlow):
                 self._data["class"] = selected[0].split("-")[1]
             return await self.async_step_periods()
         max_g = 6 if self._data["school_level"] == "elementary" else 3
-        combo_opts = {}
-        for g in range(1, max_g + 1):
-            for cl in range(1, 21):
-                combo_opts[f"{g}-{cl}"] = f"{g}학년 {cl}반"
+        entry = self._get_entry()
+        api_key = entry.data.get("neis_api_key") or entry.data.get("api_key", "")
+        combo_opts = await _school_class_options(
+            async_get_clientsession(self.hass), api_key,
+            self._data["region_code"], self._data["school_code"],
+            self._data["school_level"], max_g)
         return self.async_show_form(step_id="class", data_schema=vol.Schema({
             vol.Required("grade_classes"): cv.multi_select(combo_opts),
         }))
@@ -1493,10 +1538,12 @@ class SchoolSubentryFlowHandler(config_entries.ConfigSubentryFlow):
             return self.async_update_and_abort(
                 self._get_entry(), subentry, data_updates=updates)
         max_g = 6 if d.get("school_level") == "elementary" else 3
-        combo_opts = {}
-        for g in range(1, max_g + 1):
-            for cl in range(1, 21):
-                combo_opts[f"{g}-{cl}"] = f"{g}학년 {cl}반"
+        entry = self._get_entry()
+        api_key = entry.data.get("neis_api_key") or entry.data.get("api_key", "")
+        combo_opts = await _school_class_options(
+            async_get_clientsession(self.hass), api_key,
+            d.get("region_code", ""), d.get("school_code", ""),
+            d.get("school_level", ""), max_g)
         return self.async_show_form(step_id="reconfigure", data_schema=vol.Schema({
             vol.Required("grade_classes", default=d.get("grade_classes", [])):
                 cv.multi_select(combo_opts),
@@ -1534,7 +1581,7 @@ class KRPublicDataOptionsFlow(config_entries.OptionsFlow):
             self.hass.config_entries.async_update_entry(self._entry, data=new_data)
             return self.async_create_entry(title="", data=user_input)
 
-        schema = self._build_schema(etype)
+        schema = await self._build_schema(etype)
         if schema is None:
             return self.async_abort(reason="no_options")
 
@@ -1585,7 +1632,7 @@ class KRPublicDataOptionsFlow(config_entries.OptionsFlow):
             step_id="pharmacy_region_edit",
             data_schema=vol.Schema(_pharmacy_location_fields(self.hass, region)))
 
-    def _build_schema(self, etype):
+    async def _build_schema(self, etype):
         d = self._entry.data
 
         if etype == ENTRY_WEATHER:
@@ -1643,10 +1690,11 @@ class KRPublicDataOptionsFlow(config_entries.OptionsFlow):
                 })
             import homeassistant.helpers.config_validation as cv
             max_g = 6 if d.get("school_level") == "elementary" else 3
-            combo_opts = {}
-            for g in range(1, max_g + 1):
-                for cl in range(1, 21):
-                    combo_opts[f"{g}-{cl}"] = f"{g}학년 {cl}반"
+            api_key = d.get("neis_api_key") or d.get("api_key", "")
+            combo_opts = await _school_class_options(
+                async_get_clientsession(self.hass), api_key,
+                d.get("region_code", ""), d.get("school_code", ""),
+                d.get("school_level", ""), max_g)
             cur = d.get("grade_classes", [])
             return vol.Schema({
                 vol.Required("neis_api_key",
