@@ -79,3 +79,36 @@ class FuelLowSensor(CoordinatorEntity[FuelCoordinator], SensorEntity):
                  "address": i.get("address")} for i in items[:5]
             ]
         return attrs
+
+
+class FuelLowLocationSensor(CoordinatorEntity[FuelCoordinator], SensorEntity):
+    """최저가 주유소 위치 - latitude/longitude 속성으로 지도 카드에 핀 표시."""
+    _attr_has_entity_name = True
+    _attr_icon = "mdi:map-marker"
+
+    def __init__(self, coordinator, sido, fuel_code):
+        super().__init__(coordinator)
+        self._key = f"low_{sido}_{fuel_code}"
+        self._attr_unique_id = f"{DOMAIN}_fuel_low_location_{sido}_{fuel_code}"
+        self._attr_name = "최저가 주유소"
+        self._attr_device_info = fuel_device(sido, fuel_code)
+
+    @property
+    def native_value(self):
+        items = (self.coordinator.data or {}).get(self._key, [])
+        return items[0].get("station_name") if items else None
+
+    @property
+    def extra_state_attributes(self):
+        items = (self.coordinator.data or {}).get(self._key, [])
+        if not items:
+            return {}
+        top = items[0]
+        attrs: dict[str, Any] = {
+            "address": top.get("address", ""),
+            "price": top.get("price", ""),
+        }
+        if "latitude" in top and "longitude" in top:
+            attrs["latitude"] = top["latitude"]
+            attrs["longitude"] = top["longitude"]
+        return attrs

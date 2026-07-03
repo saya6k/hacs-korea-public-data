@@ -8,6 +8,8 @@ from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import (
+    BooleanSelector, LocationSelector, LocationSelectorConfig,
+    NumberSelector, NumberSelectorConfig, NumberSelectorMode,
     SelectOptionDict, SelectSelector, SelectSelectorConfig, SelectSelectorMode,
     TextSelector, TextSelectorConfig, TextSelectorType,
 )
@@ -57,6 +59,24 @@ def _sido_selector():
 
 def _password_selector():
     return TextSelector(TextSelectorConfig(type=TextSelectorType.PASSWORD))
+
+
+def _pharmacy_location_fields(hass, region: dict | None = None):
+    """지도에서 직접 찍은 위치 기준 반경 내 약국을 개별 위치 센서로 만들지 여부 + 위치/반경.
+
+    zone.home으로 고정하지 않고 LocationSelector로 위치를 직접 지정하게 한다.
+    기존 위치가 없으면(신규) hass.config의 홈 좌표를 지도 초기값으로만 사용한다.
+    """
+    region = region or {}
+    loc = region.get("location") or {}
+    return {
+        vol.Optional("location_sensors", default=region.get("location_sensors", False)): BooleanSelector(),
+        vol.Optional("location", default={
+            "latitude": loc.get("latitude", hass.config.latitude),
+            "longitude": loc.get("longitude", hass.config.longitude),
+            "radius": loc.get("radius", region.get("radius", 1000)),
+        }): LocationSelector(LocationSelectorConfig(radius=True)),
+    }
 
 
 # ── 버스: TAGO(전국)와 서울(ws.bus.go.kr) 두 소스를 한 검색 흐름으로 통합.
@@ -359,7 +379,7 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         ]
 
         if user_input is not None:
-            api_key = user_input["api_key"]
+            api_key = user_input["opinet_api_key"]
             sidos = user_input.get("sido_codes", [])
             fuels = user_input.get("fuel_codes", [])
             if not isinstance(sidos, list):
@@ -369,22 +389,22 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             if not sidos or not fuels:
                 errors["base"] = "no_selection"
             elif await validate_opinet(api_key):
-                # Build all combinations
-                configs = []
-                for s in sidos:
-                    for f in fuels:
-                        configs.append({"sido_code": s, "fuel_code": f})
+                # 지역(시도)마다 subentry, 유종은 그 안에서 multi-select로 관리.
                 return self.async_create_entry(
                     title="유가정보",
-                    data={CONF_ENTRY_TYPE: ENTRY_FUEL,
-                          "api_key": api_key, "configs": configs})
+                    data={CONF_ENTRY_TYPE: ENTRY_FUEL, "opinet_api_key": api_key},
+                    subentries=[
+                        {"subentry_type": "fuel_region", "title": SIDO_CODES.get(s, s),
+                         "data": {"sido_code": s, "fuel_codes": fuels}, "unique_id": s}
+                        for s in sidos
+                    ])
             else:
                 errors["base"] = "cannot_connect"
 
         return self.async_show_form(
             step_id="fuel",
             data_schema=vol.Schema({
-                vol.Required("api_key"): _password_selector(),
+                vol.Required("opinet_api_key"): _password_selector(),
                 vol.Required("sido_codes"): SelectSelector(
                     SelectSelectorConfig(options=sido_options, multiple=True,
                                          mode=SelectSelectorMode.DROPDOWN)),
@@ -671,7 +691,7 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
     async def async_step_pharmacy_sgg(self, user_input=None) -> FlowResult:
-        """Step 2: 기초자치단체 체크리스트 → 시군구별 subentry."""
+        """Step 2: 기초자치단체 체크리스트 → regions 리스트 (subentry 없이 entry.data에 flat 저장)."""
         import homeassistant.helpers.config_validation as cv
         errors: dict[str, str] = {}
         if user_input is not None:
@@ -680,19 +700,20 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 errors["base"] = "no_selection"
             else:
                 sido = self._region_sido
+                location_sensors = user_input["location_sensors"]
+                location = user_input["location"]
+                self._data["regions"] = [
+                    {"sido": sido, "sgg": sgg,
+                     "location_sensors": location_sensors, "location": dict(location)}
+                    for sgg in selected
+                ]
                 return self.async_create_entry(
-                    title=f"약국 정보 - {sido}",
-                    data=self._data,
-                    subentries=[
-                        {"subentry_type": "region", "title": f"{sido} {sgg}",
-                         "data": {"sido": sido, "sgg": sgg},
-                         "unique_id": f"{sido}_{sgg}"}
-                        for sgg in selected
-                    ])
+                    title=f"약국 정보 - {sido}", data=self._data)
         labels = {s: s for s in self._sgg_names}
         return self.async_show_form(step_id="pharmacy_sgg",
             data_schema=vol.Schema({
                 vol.Required("sgg_list"): cv.multi_select(labels),
+                **_pharmacy_location_fields(self.hass),
             }),
             errors=errors)
 
@@ -803,18 +824,21 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_earthquake(self, user_input=None) -> FlowResult:
         errors: dict[str, str] = {}
         if user_input is not None:
+            loc = user_input["location"]
             return self.async_create_entry(title="지진 정보",
                 data={CONF_ENTRY_TYPE: ENTRY_EARTHQUAKE,
                       "api_key": user_input["api_key"],
-                      "home_latitude": user_input.get("latitude", 37.5665),
-                      "home_longitude": user_input.get("longitude", 126.978),
-                      "radius_km": user_input.get("radius_km", 200),
+                      "home_latitude": loc["latitude"],
+                      "home_longitude": loc["longitude"],
+                      "radius_km": loc["radius"] / 1000,
                       "min_magnitude": user_input.get("min_magnitude", 3.0)})
         return self.async_show_form(step_id="earthquake", data_schema=vol.Schema({
             vol.Required("api_key"): _password_selector(),
-            vol.Optional("latitude", default=37.5665): vol.Coerce(float),
-            vol.Optional("longitude", default=126.978): vol.Coerce(float),
-            vol.Optional("radius_km", default=200): vol.Coerce(int),
+            vol.Required("location", default={
+                "latitude": self.hass.config.latitude,
+                "longitude": self.hass.config.longitude,
+                "radius": 200000,
+            }): LocationSelector(LocationSelectorConfig(radius=True)),
             vol.Optional("min_magnitude", default=3.0): vol.Coerce(float),
         }), errors=errors)
 
@@ -862,8 +886,8 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @callback
     def async_get_supported_subentry_types(cls, config_entry):
         etype = config_entry.data.get(CONF_ENTRY_TYPE)
-        if etype == ENTRY_PHARMACY:
-            return {"region": RegionSubentryFlowHandler}
+        if etype == ENTRY_FUEL:
+            return {"fuel_region": FuelRegionSubentryFlowHandler}
         if etype == ENTRY_DISASTER:
             return {"region": DisasterRegionSubentryFlowHandler}
         if etype == ENTRY_SCHOOL:
@@ -882,44 +906,55 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return {}
 
 
-class RegionSubentryFlowHandler(config_entries.ConfigSubentryFlow):
-    """Add one 기초자치단체 region to a pharmacy/disaster entry."""
-
-    def __init__(self):
-        self._sido = ""
-        self._sgg_names: list[str] = []
+class FuelRegionSubentryFlowHandler(config_entries.ConfigSubentryFlow):
+    """Add one 시도 region (+ 유종 목록) to a fuel entry."""
 
     async def async_step_user(self, user_input=None):
+        from .fuel import SIDO_CODES, FUEL_TYPES
         errors: dict[str, str] = {}
+        sido_options = [SelectOptionDict(value=k, label=v) for k, v in SIDO_CODES.items()]
+        fuel_options = [SelectOptionDict(value=k, label=v) for k, v in FUEL_TYPES.items()]
         if user_input is not None:
-            self._sido = user_input["sido"]
-            self._sgg_names = await _async_fetch_sgg_names(self._sido)
-            if not self._sgg_names:
-                errors["base"] = "cannot_connect"
-            else:
-                return await self.async_step_sgg()
-        return self.async_show_form(step_id="user", data_schema=vol.Schema({
-            vol.Required("sido", default="서울특별시"): _sido_selector(),
-        }), errors=errors)
-
-    async def async_step_sgg(self, user_input=None):
-        if user_input is not None:
-            sgg = user_input["sgg"]
+            sido = user_input["sido_code"]
+            fuels = user_input.get("fuel_codes", [])
             entry = self._get_entry()
             for sub in entry.subentries.values():
-                if (sub.data.get("sido") == self._sido
-                        and sub.data.get("sgg") == sgg):
+                if sub.data.get("sido_code") == sido:
                     return self.async_abort(reason="already_configured")
-            return self.async_create_entry(
-                title=f"{self._sido} {sgg}",
-                data={"sido": self._sido, "sgg": sgg},
-                unique_id=f"{self._sido}_{sgg}")
-        sgg_opts = [SelectOptionDict(value=s, label=s) for s in self._sgg_names]
-        return self.async_show_form(step_id="sgg", data_schema=vol.Schema({
-            vol.Required("sgg"): SelectSelector(
-                SelectSelectorConfig(options=sgg_opts,
+            if not fuels:
+                errors["base"] = "no_selection"
+            else:
+                return self.async_create_entry(
+                    title=SIDO_CODES.get(sido, sido),
+                    data={"sido_code": sido, "fuel_codes": fuels},
+                    unique_id=sido)
+        return self.async_show_form(step_id="user", data_schema=vol.Schema({
+            vol.Required("sido_code", default="01"): SelectSelector(
+                SelectSelectorConfig(options=sido_options, mode=SelectSelectorMode.DROPDOWN)),
+            vol.Required("fuel_codes"): SelectSelector(
+                SelectSelectorConfig(options=fuel_options, multiple=True,
                                      mode=SelectSelectorMode.DROPDOWN)),
-        }))
+        }), errors=errors)
+
+    async def async_step_reconfigure(self, user_input=None):
+        """이미 등록된 지역의 유종 목록을 수정 (지역을 다시 추가하면 already_configured로 막히므로)."""
+        from .fuel import FUEL_TYPES
+        subentry = self._get_reconfigure_subentry()
+        d = subentry.data
+        fuel_options = [SelectOptionDict(value=k, label=v) for k, v in FUEL_TYPES.items()]
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            fuels = user_input.get("fuel_codes", [])
+            if not fuels:
+                errors["base"] = "no_selection"
+            else:
+                return self.async_update_and_abort(
+                    self._get_entry(), subentry, data_updates={"fuel_codes": fuels})
+        return self.async_show_form(step_id="reconfigure", data_schema=vol.Schema({
+            vol.Required("fuel_codes", default=d.get("fuel_codes", [])): SelectSelector(
+                SelectSelectorConfig(options=fuel_options, multiple=True,
+                                     mode=SelectSelectorMode.DROPDOWN)),
+        }), errors=errors)
 
 
 class DisasterRegionSubentryFlowHandler(config_entries.ConfigSubentryFlow):
@@ -1470,14 +1505,23 @@ class KRPublicDataOptionsFlow(config_entries.OptionsFlow):
 
     def __init__(self, config_entry):
         self._entry = config_entry
+        self._pharmacy_region_idx: int | None = None
 
     async def async_step_init(self, user_input=None):
         """Main options step - show editable fields based on entry type."""
         etype = self._entry.data.get(CONF_ENTRY_TYPE)
 
+        if etype == ENTRY_PHARMACY:
+            return await self.async_step_pharmacy_options(user_input)
+
         if user_input is not None:
             if user_input.get("air_station") == "none":
                 user_input["air_station"] = ""
+            if etype == ENTRY_EARTHQUAKE and "location" in user_input:
+                loc = user_input.pop("location")
+                user_input["home_latitude"] = loc["latitude"]
+                user_input["home_longitude"] = loc["longitude"]
+                user_input["radius_km"] = loc["radius"] / 1000
             # Merge new options into data
             new_data = {**self._entry.data, **user_input}
             self.hass.config_entries.async_update_entry(self._entry, data=new_data)
@@ -1488,6 +1532,51 @@ class KRPublicDataOptionsFlow(config_entries.OptionsFlow):
             return self.async_abort(reason="no_options")
 
         return self.async_show_form(step_id="init", data_schema=schema)
+
+    async def async_step_pharmacy_options(self, user_input=None):
+        """약국: API 키 편집. 지역이 하나면 그 지역의 위치 센서 설정도 같은 화면에서 편집."""
+        d = self._entry.data
+        regions = d.get("regions", [])
+        if user_input is not None:
+            new_data = {**d, "api_key": user_input["api_key"]}
+            if len(regions) == 1:
+                new_data["regions"] = [{**regions[0],
+                                        "location_sensors": user_input["location_sensors"],
+                                        "location": dict(user_input["location"])}]
+            self.hass.config_entries.async_update_entry(self._entry, data=new_data)
+            if len(regions) > 1:
+                self._pharmacy_region_idx = int(user_input["region"])
+                return await self.async_step_pharmacy_region_edit()
+            return self.async_create_entry(title="", data={})
+
+        schema = {vol.Required("api_key", default=d.get("api_key", "")): _password_selector()}
+        if len(regions) == 1:
+            schema.update(_pharmacy_location_fields(self.hass, regions[0]))
+        elif len(regions) > 1:
+            region_opts = [
+                SelectOptionDict(value=str(i), label=f"{r.get('sido', '')} {r.get('sgg', '')}")
+                for i, r in enumerate(regions)
+            ]
+            schema[vol.Required("region", default="0")] = SelectSelector(
+                SelectSelectorConfig(options=region_opts, mode=SelectSelectorMode.DROPDOWN))
+        return self.async_show_form(step_id="pharmacy_options", data_schema=vol.Schema(schema))
+
+    async def async_step_pharmacy_region_edit(self, user_input=None):
+        """다중 지역 엔트리에서, 고른 지역의 위치 센서 설정(location_sensors/radius) 편집."""
+        regions = self._entry.data.get("regions", [])
+        idx = self._pharmacy_region_idx
+        region = regions[idx]
+        if user_input is not None:
+            new_regions = list(regions)
+            new_regions[idx] = {**region,
+                                "location_sensors": user_input["location_sensors"],
+                                "location": dict(user_input["location"])}
+            new_data = {**self._entry.data, "regions": new_regions}
+            self.hass.config_entries.async_update_entry(self._entry, data=new_data)
+            return self.async_create_entry(title="", data={})
+        return self.async_show_form(
+            step_id="pharmacy_region_edit",
+            data_schema=vol.Schema(_pharmacy_location_fields(self.hass, region)))
 
     def _build_schema(self, etype):
         d = self._entry.data
@@ -1513,13 +1602,22 @@ class KRPublicDataOptionsFlow(config_entries.OptionsFlow):
             })
 
         elif etype == ENTRY_FUEL:
+            if self._entry.subentries:
+                # 지역/유종은 fuel_region subentry에서 편집 — 여기서는 키만 편집.
+                return vol.Schema({
+                    vol.Required("opinet_api_key",
+                                 default=d.get("opinet_api_key") or d.get("api_key", "")):
+                        _password_selector(),
+                })
             from .fuel import SIDO_CODES, FUEL_TYPES
             sido_opts = [SelectOptionDict(value=k, label=v) for k, v in SIDO_CODES.items()]
             fuel_opts = [SelectOptionDict(value=k, label=v) for k, v in FUEL_TYPES.items()]
             cur_sidos = list(set(c["sido_code"] for c in d.get("configs", [])))
             cur_fuels = list(set(c["fuel_code"] for c in d.get("configs", [])))
             return vol.Schema({
-                vol.Required("api_key", default=d.get("api_key", "")): _password_selector(),
+                vol.Required("opinet_api_key",
+                             default=d.get("opinet_api_key") or d.get("api_key", "")):
+                    _password_selector(),
                 vol.Required("sido_codes", default=cur_sidos): SelectSelector(
                     SelectSelectorConfig(options=sido_opts, multiple=True,
                                          mode=SelectSelectorMode.DROPDOWN)),
@@ -1557,9 +1655,15 @@ class KRPublicDataOptionsFlow(config_entries.OptionsFlow):
                     _password_selector(),
             })
 
-        elif etype == ENTRY_PHARMACY:
+        elif etype == ENTRY_EARTHQUAKE:
             return vol.Schema({
                 vol.Required("api_key", default=d.get("api_key", "")): _password_selector(),
+                vol.Required("location", default={
+                    "latitude": d.get("home_latitude", self.hass.config.latitude),
+                    "longitude": d.get("home_longitude", self.hass.config.longitude),
+                    "radius": d.get("radius_km", 200) * 1000,
+                }): LocationSelector(LocationSelectorConfig(radius=True)),
+                vol.Optional("min_magnitude", default=d.get("min_magnitude", 3.0)): vol.Coerce(float),
             })
 
         elif etype == ENTRY_SAFETY_ALERT:

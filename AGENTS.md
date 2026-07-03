@@ -29,12 +29,13 @@ ha_korean_public_data/
 │   │   ├── render.py                   ← SVG table/card → data: URL helpers
 │   │   ├── tools.py                    ← TOOLS_BY_ETYPE registry
 │   │   └── <service>_tool.py           ← one llm.Tool subclass per service
-│   └── <service>/                      ← one sub-package per public-data source:
-│       ├── airkorea/      ├── arisu/        ├── disaster/    ├── earthquake/
-│       ├── fuel/          ├── gasapp/       ├── kepco/       ├── kma_weather/
-│       ├── pharmacy/      ├── safety_alert/ ├── school/      ├── transit/
-│       └── weather/
-│       (typical: __init__.py, api.py, coordinator.py, sensor.py, services.py)
+│   └── <service>/                      ← one sub-package per public-data source,
+│       │                                 each with its own AGENTS.md:
+│       ├── airkorea/      ├── arisu/        ├── bus/         ├── disaster/
+│       ├── earthquake/    ├── fuel/         ├── gasapp/      ├── kepco/
+│       ├── kma_weather/   ├── pharmacy/     ├── safety_alert/├── school/
+│       ├── transit/       └── weather/
+│       (typical: __init__.py, api.py, coordinator.py, sensor.py, services.py, AGENTS.md)
 ├── .devcontainer/
 ├── scripts/
 │   ├── setup                           ← installs HA + dev deps in the container
@@ -56,17 +57,28 @@ ha_korean_public_data/
 
 ## Service quirks
 
-- **`transit`** is subway-only (bus arrival tracking and the 환승경로/`bus_api_key` transfer-path actions were removed in 4.6): stations are `subway_station` subentries (`{"station", "lines"}`), one `SubwayCoordinator` per station subentry. Entities: one device per (station, line), with 4 sensors under it — 상행/하행 (외선/내선 for 2호선, see `line_directions()`) × next/next-next train. The subentry flow discovers a station's lines from live arrivals (`subway_api.discover_lines`), which returns empty after service hours — the line multi-select lets the user override. Legacy entries (`subway_items` in entry data) load through a fallback path with the old per-direction devices; legacy bus entities are gone.
-- **`kepco`**: authenticates with username/password against 사이버지점 (no API key). Login can fail silently — `__init__.py` swallows the exception so the entry still loads with stale data.
-- **`gasapp`**: requires an OAuth-style token + member-id + contract number captured from the mobile app. There is no public OAuth endpoint.
-- **`airkorea` / `kma_weather`**: share the same 공공데이터포털 service key. The config flow lets you reuse one key across multiple regions/stations.
-- **`weather_warning` vs `kma_weather`**: `weather_warning` is the alert/특보 stream (event entities); `kma_weather` is the forecast (weather entity). They are independent entries.
-- **`pharmacy`**: the `search_pharmacy` action is registered globally on entry setup; only one pharmacy entry should exist per HA instance. Its `api_key` is editable via the options flow.
-- **Secret field names aren't all `api_key`.** `bus` uses `api_key` (renamed from `service_key` in 4.8), `school` uses `neis_api_key`, `disaster` uses `safety_api_key` (safetydata.go.kr, a separate site/key from the 공공데이터포털 key most other services share). Dispatch code and options-flow defaults always try the current name first and fall back to the old one (e.g. `entry.data.get("safety_api_key") or entry.data.get("api_key")`) so pre-4.8 entries keep working — don't remove those fallbacks.
-- **`pharmacy` / `disaster` regions are config subentries.** The main entry holds the API key; each 기초자치단체 (시군구) is a `region` subentry (`{"sido", "sgg"}`), added via the checklist in the config flow or the "지역 추가" subentry flow (`RegionSubentryFlowHandler` for pharmacy, `DisasterRegionSubentryFlowHandler` for disaster). Entities are registered with `config_subentry_id` so removing a subentry cleans up its device. The 시군구 list is fetched live from the safekorea region API (`safety_alert/region_api.py`). Legacy entries (pre-subentry `q0`/`q1` or `region_filter` in entry data) still load through fallback paths in `__init__.py`/`sensor.py`/`event.py` — don't remove them.
-- **`disaster`** polls once per entry: a single coordinator fetches all messages and each subentry's entities filter with `disaster/coordinator.py:filter_messages` (시군구, 시도 전체, 전국 match). `pharmacy` is the opposite — the API queries per region, so it's one coordinator per subentry. A `disaster` region subentry can also cover a whole 광역자치단체 (`sgg=""`, matches any district in that sido) — pick "전체" in the sgg selector; this is disaster-only, pharmacy's region subentry doesn't support it. Entry titles are just "재난정보" (no sido suffix), since one entry's subentries can span multiple sido. `disaster` also has a `geo_location` platform (`disaster/geo_location.py`): one entity per active message matching a subentry's region, dynamically added/removed as messages enter/leave the coordinator's rolling fetch window. Since 재난문자 messages carry only a text area name (no coordinates), entities are placed at a static 시도-centroid (`SIDO_CENTROIDS`), not the precise incident location — precise per-event coordinates (e.g. for 지진) would need the separate 지진통보 feed (safetydata.go.kr dataSn=38), whose request/response spec isn't public yet.
-- **`kma_weather` / `weather_warning` / `airkorea` regions are also subentries**, but with a single coordinator per entry (like `disaster`): `kma_weather` uses `region` subentries (`{"sido", "name", "nx", "ny"}` from the built-in `SIDO_LIST`), `weather_warning` uses `area` subentries (`{"area_code"}` from `weather/AREA_CODES`), `airkorea` uses `station` subentries (`{"sido", "stationName"}` from `STATIONS_BY_SIDO`). `__init__.py` rebuilds the coordinator's region/station list from `entry.subentries` and stores a `region_subs`/`areas`/`station_subs` map; platform shims register each subentry's entities with `config_subentry_id`. Legacy entries (`regions`/`area_codes`/`stations` lists in entry data, no subentries) still load through fallback paths — don't remove them.
-- **`school` (NEIS) supports multiple schools per entry via `school` subentries** (since 4.8), structured like `transit`/`pharmacy` — one `SchoolCoordinator` per subentry, not a single shared one. Subentry data holds `{"region_code", "school_code", "school_name", "school_level", "grade_classes", "address", "phone", "period_1".."period_7", "lunch_start", "lunch_end"}`; the entry itself only holds `neis_api_key`. `SchoolSubentryFlowHandler` ("학교 추가") walks NEIS search → school select → 학년/반 select → 교시 시간 to add another school, and is the only subentry flow so far implementing `async_step_reconfigure` (edits `grade_classes` on an existing school) — copy its `_get_reconfigure_subentry()` / `async_update_and_abort()` pattern if you add editing to another subentry type. Legacy pre-subentry entries (all fields flat in `entry.data`) still load through a fallback path in `__init__.py`/`sensor.py`/`calendar.py` — don't remove it. `llm_api/school_tool.py` picks which school's coordinator to use via an optional `school` tool parameter resolved against `store["school_subs"]` (see rule 7 above).
+Each service's specific gotchas (auth quirks, subentry shape, legacy fallbacks) live in its own `custom_components/kr_public_data/<service>/AGENTS.md` — **read the relevant one before touching that service.** Index:
+
+| Service | Doc | One-line hook |
+|---|---|---|
+| `airkorea` | [`airkorea/AGENTS.md`](custom_components/kr_public_data/airkorea/AGENTS.md) | 대기질, shares service key with `kma_weather`, `station` subentries |
+| `arisu` | [`arisu/AGENTS.md`](custom_components/kr_public_data/arisu/AGENTS.md) | 상수도, HTML-scraped (no API key), single coordinator |
+| `bus` | [`bus/AGENTS.md`](custom_components/kr_public_data/bus/AGENTS.md) | 버스, the only entry type with 2 subentry types |
+| `disaster` | [`disaster/AGENTS.md`](custom_components/kr_public_data/disaster/AGENTS.md) | 긴급재난문자, `region` subentries, single coordinator + filter, `geo_location` platform |
+| `earthquake` | [`earthquake/AGENTS.md`](custom_components/kr_public_data/earthquake/AGENTS.md) | 지진정보, simplest service — no regions/subentries at all |
+| `fuel` | [`fuel/AGENTS.md`](custom_components/kr_public_data/fuel/AGENTS.md) | 유가정보 (Opinet), `fuel_region` subentries, KATEC→WGS84 coordinate conversion |
+| `gasapp` | [`gasapp/AGENTS.md`](custom_components/kr_public_data/gasapp/AGENTS.md) | 가스앱, mobile-app-only OAuth token, no public endpoint |
+| `kepco` | [`kepco/AGENTS.md`](custom_components/kr_public_data/kepco/AGENTS.md) | 한전, username/password auth, silent login failure |
+| `kma_weather` | [`kma_weather/AGENTS.md`](custom_components/kr_public_data/kma_weather/AGENTS.md) | 날씨예보 (forecast), `region` subentries |
+| `pharmacy` | [`pharmacy/AGENTS.md`](custom_components/kr_public_data/pharmacy/AGENTS.md) | 약국정보, flat `regions` list (not subentries), radius-based location sensors |
+| `safety_alert` | [`safety_alert/AGENTS.md`](custom_components/kr_public_data/safety_alert/AGENTS.md) | 안전알림, flat `regions` list |
+| `school` | [`school/AGENTS.md`](custom_components/kr_public_data/school/AGENTS.md) | NEIS 학교정보, `school` subentries + the reconfigure pattern to copy |
+| `transit` | [`transit/AGENTS.md`](custom_components/kr_public_data/transit/AGENTS.md) | 지하철, `subway_station` subentries |
+| `weather` | [`weather/AGENTS.md`](custom_components/kr_public_data/weather/AGENTS.md) | 기상특보 (`weather_warning`, alert stream), `area` subentries |
+
+Cross-cutting: **secret field names aren't all `api_key`.** `bus` uses `api_key` (renamed from `service_key` in 4.8), `school` uses `neis_api_key`, `disaster` uses `safety_api_key`, `fuel` uses `opinet_api_key` (renamed from `api_key` in 4.9). Dispatch code and options-flow defaults always try the current name first and fall back to the old one (e.g. `entry.data.get("safety_api_key") or entry.data.get("api_key")`) so pre-rename entries keep working — don't remove those fallbacks. See each service's own doc for its exact field name.
+
+Cross-cutting: **`region` is a subentry_type string shared by several entry types** (`disaster`, `kma_weather`, and — before its 4.9 rewrite — `pharmacy`) whenever their region shape happens to match `{"sido", "sgg"}`. `config_subentries.region` translations in `strings.json`/`ko.json` are shared across all of them — check who's still using it before changing that block. Other subentry_type strings (`fuel_region`, `subway_station`, `station`, `area`, `school`, `city_bus_stop`, `intercity_bus_route`) are each scoped to one entry type.
 
 ## Config-flow conventions
 
@@ -112,4 +124,4 @@ When adding a new service: also append the etype to `llm_api/const.py` (API name
 - A service won't load? Check the `etype == ENTRY_<X>` branch in `__init__.py` — most failures are config-data shape mismatches against what the coordinator expects.
 - API returning 403/SSL errors? The endpoint probably needs `curl_cffi` with a browser impersonation profile, not plain HTTP.
 - LLM tool returns blank UI? Confirm the response includes `featured_image` *or* `results[].image_url` — the voice-satellite card matches against those exact keys (plus `forecast` for weather and `query_type` for financial).
-- Adding a new service? Update `const.py`, `__init__.py` dispatch, `PLATFORM_MAP`, `config_flow.py`, `strings.json`, every file under `translations/`, **and** `llm_api/const.py` + `llm_api/tools.py` + a `<service>_tool.py`.
+- Adding a new service? Update `const.py`, `__init__.py` dispatch, `PLATFORM_MAP`, `config_flow.py`, `strings.json`, every file under `translations/`, `llm_api/const.py` + `llm_api/tools.py` + a `<service>_tool.py`, **and** add a `custom_components/kr_public_data/<service>/AGENTS.md` + an index row above.

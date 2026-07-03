@@ -41,5 +41,25 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
             for st in store.get("stations", []):
                 entities.append(AirAlertBinarySensor(c, st["stationName"], sido))
 
+    elif etype == ENTRY_PHARMACY:
+        from .pharmacy.binary_sensor import PharmacyOpenBinarySensor
+        from .pharmacy.sensor import region_nearby_pharmacies
+        from .pharmacy.device import pharmacy_region_device
+        for i, region in enumerate(store.get("regions", [])):
+            if not region.get("location_sensors"):
+                continue
+            coord = store["coordinators"].get(i)
+            if not coord:
+                continue
+            device_info = pharmacy_region_device(region.get("sido", ""), region.get("sgg", ""))
+            nearby = region_nearby_pharmacies(hass, region, coord)
+            ents = [PharmacyOpenBinarySensor(coord, p["hpid"], p["name"], device_info)
+                    for p in nearby if p.get("hpid")]
+            sub_id = region.get("subentry_id")
+            if sub_id:
+                async_add_entities(ents, config_subentry_id=sub_id)
+            else:
+                entities += ents
+
     if entities:
         async_add_entities(entities)

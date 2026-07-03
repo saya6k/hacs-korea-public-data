@@ -40,7 +40,7 @@
         }
       },
       "transit_station": {
-        "title": "역 추가",
+        "title": "지하철역 추가",
         "data": {
           "station": "역 이름"
         }
@@ -54,7 +54,7 @@
       "fuel": {
         "title": "유가정보 설정",
         "data": {
-          "api_key": "Opinet API 키",
+          "opinet_api_key": "Opinet API 키",
           "sido_codes": "지역",
           "fuel_codes": "유종"
         }
@@ -145,7 +145,12 @@
       "pharmacy_sgg": {
         "title": "기초자치단체 선택 (복수 가능)",
         "data": {
-          "sgg_list": "시군구"
+          "sgg_list": "시군구",
+          "location_sensors": "약국별 위치 센서 생성",
+          "location": "기준 위치 및 반경"
+        },
+        "data_description": {
+          "location_sensors": "아래 반경 내 약국마다 위치 센서를 하나씩 만듭니다 - 센서(엔티티) 개수가 많이 늘어날 수 있습니다."
         }
       },
       "airkorea": {
@@ -173,9 +178,7 @@
         "title": "지진 정보 설정",
         "data": {
           "api_key": "공공데이터포털 서비스 키 (Decoding)",
-          "latitude": "위도",
-          "longitude": "경도",
-          "radius_km": "반경 (km)",
+          "location": "기준 위치 및 반경",
           "min_magnitude": "최소 진도"
         }
       },
@@ -311,13 +314,13 @@
       }
     },
     "subway_station": {
-      "entry_type": "역",
+      "entry_type": "지하철역",
       "initiate_flow": {
-        "user": "역 추가"
+        "user": "지하철역 추가"
       },
       "step": {
         "user": {
-          "title": "역 추가",
+          "title": "지하철역 추가",
           "data": {
             "station": "역 이름"
           }
@@ -339,7 +342,7 @@
     "city_bus_stop": {
       "entry_type": "정류장",
       "initiate_flow": {
-        "user": "정류장 추가"
+        "user": "버스 정류장 추가"
       },
       "step": {
         "user": {
@@ -373,7 +376,7 @@
     "intercity_bus_route": {
       "entry_type": "구간",
       "initiate_flow": {
-        "user": "구간 추가"
+        "user": "시외/고속버스 구간 추가"
       },
       "step": {
         "user": {
@@ -463,12 +466,61 @@
       "abort": {
         "already_configured": "이미 설정되어 있습니다."
       }
+    },
+    "fuel_region": {
+      "entry_type": "지역",
+      "initiate_flow": {
+        "user": "지역 추가"
+      },
+      "step": {
+        "user": {
+          "title": "지역 및 유종",
+          "data": {
+            "sido_code": "지역",
+            "fuel_codes": "유종"
+          }
+        },
+        "reconfigure": {
+          "title": "유종 수정",
+          "data": {
+            "fuel_codes": "유종"
+          }
+        }
+      },
+      "error": {
+        "no_selection": "하나 이상 선택하세요."
+      },
+      "abort": {
+        "already_configured": "이미 설정되어 있습니다."
+      }
     }
   },
   "options": {
     "step": {
       "init": {
         "title": "설정 수정"
+      },
+      "pharmacy_options": {
+        "title": "설정 수정",
+        "data": {
+          "api_key": "키",
+          "region": "지역",
+          "location_sensors": "약국별 위치 센서 생성",
+          "location": "기준 위치 및 반경"
+        },
+        "data_description": {
+          "location_sensors": "아래 반경 내 약국마다 위치 센서를 하나씩 만듭니다 - 센서(엔티티) 개수가 많이 늘어날 수 있습니다."
+        }
+      },
+      "pharmacy_region_edit": {
+        "title": "위치 센서 설정",
+        "data": {
+          "location_sensors": "약국별 위치 센서 생성",
+          "location": "기준 위치 및 반경"
+        },
+        "data_description": {
+          "location_sensors": "아래 반경 내 약국마다 위치 센서를 하나씩 만듭니다 - 센서(엔티티) 개수가 많이 늘어날 수 있습니다."
+        }
       }
     }
   },
