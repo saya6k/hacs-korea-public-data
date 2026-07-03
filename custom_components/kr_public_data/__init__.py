@@ -98,8 +98,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         if school_subs:
             await async_first_refresh_all(
                 [info["coordinator"] for info in school_subs.values()], "school")
-            # LLM tools only know a single "coordinator" — point it at the
-            # first school until the tools learn to disambiguate.
+            # "coordinator" is a single-school fallback for callers that
+            # don't disambiguate by name; llm_api/school_tool.py picks the
+            # right one itself via store["school_subs"].
             first = next(iter(school_subs.values()))
             store = {"school_subs": school_subs, "coordinator": first["coordinator"]}
         else:
