@@ -20,23 +20,6 @@ from ..const import (
 
 SOURCE = "kr_public_data"
 
-API_NAMES: dict[str, str] = {
-    ENTRY_KMA_WEATHER: "한국 공공데이터: 기상청 날씨",
-    ENTRY_WEATHER: "한국 공공데이터: 기상특보",
-    ENTRY_AIRKOREA: "한국 공공데이터: 대기질",
-    ENTRY_TRANSIT: "한국 공공데이터: 대중교통",
-    ENTRY_FUEL: "한국 공공데이터: 유가정보",
-    ENTRY_SCHOOL: "한국 공공데이터: 학교 급식·시간표",
-    ENTRY_DISASTER: "한국 공공데이터: 재난문자",
-    ENTRY_SAFETY_ALERT: "한국 공공데이터: 안전디딤돌 경보",
-    ENTRY_KEPCO: "한국 공공데이터: 한전 전기 사용량",
-    ENTRY_GASAPP: "한국 공공데이터: 도시가스 요금",
-    ENTRY_ARISU: "한국 공공데이터: 아리수 수도 요금",
-    ENTRY_PHARMACY: "한국 공공데이터: 운영중인 약국",
-    ENTRY_EARTHQUAKE: "한국 공공데이터: 최근 지진",
-    ENTRY_BUS: "한국 공공데이터: 버스 도착정보",
-}
-
 API_DESCRIPTIONS: dict[str, str] = {
     ENTRY_KMA_WEATHER: "Korean Meteorological Administration weather forecast.",
     ENTRY_WEATHER: "Korean Meteorological Administration severe weather warnings.",

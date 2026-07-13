@@ -4,7 +4,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from .const import *
-from .llm_api import async_cleanup_llm_api, async_setup_llm_api
+from .llm_api import async_register_llm_api
 
 PLATFORM_MAP = {
     ENTRY_WEATHER: [Platform.EVENT, Platform.CALENDAR, Platform.BINARY_SENSOR],
@@ -108,7 +108,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             await async_first_refresh_all(
                 [info["coordinator"] for info in school_subs.values()], "school")
             # "coordinator" is a single-school fallback for callers that
-            # don't disambiguate by name; llm_api/school_tool.py picks the
+            # don't disambiguate by name; llm/school_tool.py picks the
             # right one itself via store["school_subs"].
             first = next(iter(school_subs.values()))
             store = {"school_subs": school_subs, "coordinator": first["coordinator"]}
@@ -301,7 +301,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.data[DOMAIN][entry.entry_id] = store
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORM_MAP.get(etype, []))
-    store["unregister_llm"] = await async_setup_llm_api(hass, entry, etype)
+    async_register_llm_api(hass, entry, etype)
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     return True
 
@@ -312,8 +312,6 @@ async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> Non
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     etype = entry.data.get(CONF_ENTRY_TYPE)
-    store = hass.data.get(DOMAIN, {}).get(entry.entry_id, {}) or {}
-    async_cleanup_llm_api(store.get("unregister_llm"))
     if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORM_MAP.get(etype, [])):
         hass.data[DOMAIN].pop(entry.entry_id, None)
         _async_remove_orphan_services(hass, entry, etype)
