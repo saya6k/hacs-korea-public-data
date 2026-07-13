@@ -22,10 +22,13 @@ ha_korean_public_data/
 │   │                                   ← shared platform shims; per-service entity
 │   │                                     classes live in the sub-package
 │   ├── utils.py
-│   ├── llm_api/                        ← per-entry LLM API + tools (intents)
-│   │   ├── __init__.py                 ← async_setup_llm_api / cleanup
+│   ├── llm_api.py                      ← thin opt-in llm.API shell, one per config entry
+│   ├── llm/                            ← lazy LLM tools platform (HA 2026.8+, imported
+│   │   │                                 only on the first LLM request — see AGENTS.md
+│   │   │                                 "LLM API registration" below)
+│   │   ├── __init__.py                 ← async_get_tools platform hook
 │   │   ├── base_tool.py                ← BaseKRTool reads coordinator data
-│   │   ├── const.py                    ← API names + per-service api_prompt
+│   │   ├── const.py                    ← per-service api_prompt (API names live in llm_api.py)
 │   │   ├── render.py                   ← SVG table/card → data: URL helpers
 │   │   ├── tools.py                    ← TOOLS_BY_ETYPE registry
 │   │   └── <service>_tool.py           ← one llm.Tool subclass per service
@@ -52,8 +55,8 @@ ha_korean_public_data/
 4. **Coordinators per service.** Each sub-package owns its own `DataUpdateCoordinator` subclass in `<service>/coordinator.py`. Entities read `self.coordinator.data[...]`; they do not call APIs directly. Multi-region services keep a dict of coordinators keyed by region/station/stop and store it in `hass.data[DOMAIN][entry.entry_id]`.
 5. **Cloud polling, not push.** `manifest.json` declares `iot_class: cloud_polling`. Don't introduce websockets / MQTT without coordinating with the user — most Korean public APIs only support polling, and rate limits are tight.
 6. **HTTP client: `curl_cffi`.** Several Korean government APIs reject default Python TLS fingerprints. Use `curl_cffi` (already in `requirements`) for the API calls that need browser-like TLS, not `aiohttp`/`requests`. Stick with whichever the existing `<service>/api.py` already uses.
-7. **LLM tools read from coordinators, not APIs.** Each tool in `llm_api/<service>_tool.py` looks its data up via `self.store["coordinator"].data` (or `subway_coords`/`coordinators`/`school_subs` for multi-instance services). Tools must not call APIs directly — that's the coordinator's job, and it keeps polling under HA's control. When a service can have multiple sub-resources (subentries) with separate coordinators, don't just default to the first one: accept an optional disambiguation parameter and resolve it by name, erroring with the list of configured names when it's ambiguous — see `llm_api/school_tool.py:_resolve_school_coordinator`.
-8. **LLM tool result schema follows voice-satellite-card-llm-tools.** Return either `forecast` (weather card UI), `query_type`+financial fields (financial card UI), `results: [{image_url}]` (grid), or `featured_image` (single panel). The voice-satellite card auto-renders these without modification. For tools without a native card UI, generate an SVG via `llm_api/render.py` (`svg_table` or `svg_card`) and put the resulting `data:` URL in `featured_image` or each `results[].image_url`. Always include an `instruction` field telling the LLM the visual is already shown so it keeps the spoken reply brief.
+7. **LLM tools read from coordinators, not APIs.** Each tool in `llm/<service>_tool.py` looks its data up via `self.store["coordinator"].data` (or `subway_coords`/`coordinators`/`school_subs` for multi-instance services). Tools must not call APIs directly — that's the coordinator's job, and it keeps polling under HA's control. When a service can have multiple sub-resources (subentries) with separate coordinators, don't just default to the first one: accept an optional disambiguation parameter and resolve it by name, erroring with the list of configured names when it's ambiguous — see `llm/school_tool.py:_resolve_school_coordinator`.
+8. **LLM tool result schema follows voice-satellite-card-llm-tools.** Return either `forecast` (weather card UI), `query_type`+financial fields (financial card UI), `results: [{image_url}]` (grid), or `featured_image` (single panel). The voice-satellite card auto-renders these without modification. For tools without a native card UI, generate an SVG via `llm/render.py` (`svg_table` or `svg_card`) and put the resulting `data:` URL in `featured_image` or each `results[].image_url`. Always include an `instruction` field telling the LLM the visual is already shown so it keeps the spoken reply brief.
 
 ## Service quirks
 
@@ -128,9 +131,14 @@ continuously as PRs merge to `main`.
 
 ## LLM API registration
 
-`llm_api/__init__.py` registers one `llm.API` per *added* config entry. The API id is `kr_public_data__<etype>__<entry_id>`, so every entry gets a unique surface and unloading one entry doesn't disturb others. `__init__.py:async_setup_entry` calls `async_setup_llm_api(...)` after coordinator first refresh and stores the unregister callback in `store["unregister_llm"]`; `async_unload_entry` invokes it before unloading platforms. The `conversation` HA component is declared as a manifest dependency so `homeassistant.helpers.llm` is guaranteed to be importable.
+Built on HA's LLM tools platform (home-assistant/architecture#1412, shipping 2026.8.0b0 — this repo's floor per `hacs.json`). Two pieces, split deliberately so tool code stays lazily loaded:
 
-When adding a new service: also append the etype to `llm_api/const.py` (API name + `api_prompt`), add a `<service>_tool.py` with one or more `BaseKRTool` subclasses, and register them in `llm_api/tools.py:TOOLS_BY_ETYPE`. The tool's `name` and `parameters` (`vol.Schema`) are exposed verbatim to the conversation agent.
+- **`llm_api.py`** — a thin shell. Registers one opt-in `llm.API` per *added* config entry (id `kr_public_data__<etype>__<entry_id>`, name from `API_NAMES`), called synchronously from `__init__.py:async_setup_entry` via `async_register_llm_api(hass, entry, etype)` after the platform forward. Registration/cleanup rides `entry.async_on_unload(...)` — no manual `store["unregister_llm"]` bookkeeping. This module must never import the `llm/` package or `homeassistant.components.llm` at module scope: the one call that needs the latter (`async_get_tools`, the platform aggregator) is deferred inside `_ServiceAPI.async_get_api_instance`, which only runs once a conversation agent actually resolves this API — by then HA's own `llm` integration is already loaded.
+- **`llm/`** — the lazy platform package. `llm/__init__.py` exposes the `async_get_tools(hass, llm_context, api_id) -> LLMTools | None` hook that HA's `llm` integration discovers via `LazyIntegrationPlatforms` and imports **only on the first LLM request**, never at `kr_public_data` setup. It returns `None` for any `api_id` that isn't ours (in particular `assist` — these tools are never contributed to the shared Assist API) or that doesn't resolve to a currently-loaded entry of the matching etype, and otherwise builds tools from `TOOLS_BY_ETYPE[etype]` with the prompt from `API_PROMPTS[etype]`.
+
+Every registered API is also auto-exposed over MCP at `/api/mcp/<api_id>` once the user sets up the MCP Server integration — no extra work needed. The `conversation` HA component stays a manifest dependency; it depends on `llm` transitively, so `homeassistant.helpers.llm` is guaranteed importable.
+
+When adding a new service: add its display name to `API_NAMES` in `llm_api.py` and its `api_prompt` to `API_PROMPTS` in `llm/const.py`, add a `<service>_tool.py` with one or more `BaseKRTool` subclasses, and register them in `llm/tools.py:TOOLS_BY_ETYPE`. The tool's `name` and `parameters` (`vol.Schema`) are exposed verbatim to the conversation agent.
 
 ## Release workflow
 
@@ -152,4 +160,4 @@ continuously as PRs merge to `main`.
 - A service won't load? Check the `etype == ENTRY_<X>` branch in `__init__.py` — most failures are config-data shape mismatches against what the coordinator expects.
 - API returning 403/SSL errors? The endpoint probably needs `curl_cffi` with a browser impersonation profile, not plain HTTP.
 - LLM tool returns blank UI? Confirm the response includes `featured_image` *or* `results[].image_url` — the voice-satellite card matches against those exact keys (plus `forecast` for weather and `query_type` for financial).
-- Adding a new service? Update `const.py`, `__init__.py` dispatch, `PLATFORM_MAP`, `config_flow.py`, `strings.json`, every file under `translations/`, `llm_api/const.py` + `llm_api/tools.py` + a `<service>_tool.py`, **and** add a `custom_components/kr_public_data/<service>/AGENTS.md` + an index row above.
+- Adding a new service? Update `const.py`, `__init__.py` dispatch, `PLATFORM_MAP`, `config_flow.py`, `strings.json`, every file under `translations/`, `llm_api.py` (`API_NAMES`) + `llm/const.py` (`API_PROMPTS`) + `llm/tools.py` + a `<service>_tool.py`, **and** add a `custom_components/kr_public_data/<service>/AGENTS.md` + an index row above.

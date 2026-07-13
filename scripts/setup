@@ -57,8 +57,15 @@ fi
 # serialx.platforms.serial_esphome). HA does not list it in its core wheel,
 # so default_config triggers a ModuleNotFoundError at startup unless we
 # install it explicitly here.
-python3 -m pip install \
-  "homeassistant>=2026.4.0" \
+#
+# hacs.json's floor is 2026.8.0b0 (the LLM tools platform, see llm_api.py),
+# which isn't on PyPI as a release yet — under PEP 440, `2026.8.0.devN`
+# sorts *below* `2026.8.0b0`, so `--pre "homeassistant>=2026.8.0.dev0"` is
+# needed to pick up the pre-release dev/beta builds in the meantime. Once
+# 2026.8.0b0 (or later) is a normal PyPI release, drop --pre and change
+# this back to "homeassistant>=2026.8.0b0".
+python3 -m pip install --pre \
+  "homeassistant>=2026.8.0.dev0" \
   "aioesphomeapi" \
   "curl_cffi>=0.7.0" \
   "beautifulsoup4>=4.12.0" \
