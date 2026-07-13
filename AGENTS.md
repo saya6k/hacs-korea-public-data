@@ -115,20 +115,6 @@ There is no automated test suite. The integration is validated by:
 2. Adding each service via Settings → Devices & Services with real API keys.
 3. Watching `home-assistant.log` for coordinator update failures and HTTP errors.
 
-## Release workflow
-
-This repo (and other `ha-*` HACS components, excluding `ha-app*`) ships on a
-two-track rolling draft release, maintained by release-drafter since
-`15ae319` (#31): a `rc` (prerelease) draft and a `stable` draft, both updated
-continuously as PRs merge to `main`.
-
-1. Verify locally with the devcontainer (`scripts/develop`) before merging —
-   see Testing above.
-2. Once merged and the `rc` draft looks right, publish it as a prerelease
-   from the GitHub Releases UI.
-3. After the prerelease has been exercised with no issues, promote/publish
-   the corresponding `stable` draft.
-
 ## LLM API registration
 
 Built on HA's LLM tools platform (home-assistant/architecture#1412, shipping 2026.8.0b0 — this repo's floor per `hacs.json`). Two pieces, split deliberately so tool code stays lazily loaded:
