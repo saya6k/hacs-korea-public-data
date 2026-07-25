@@ -84,8 +84,6 @@ config flow가 각 서비스에 필요한 키를 안내합니다.
 
 ## 개발
 
-아키텍처와 컨벤션은 `AGENTS.md` 참조.
-
 실제 Home Assistant 설치에 대해 테스트하기 위한 devcontainer가 제공됩니다. VS Code에서 Dev Containers 확장으로 폴더를 열고 실행:
 
 ```bash

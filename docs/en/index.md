@@ -84,8 +84,6 @@ The result schema follows [voice-satellite-card-llm-tools](https://github.com/jx
 
 ## Development
 
-See `AGENTS.md` for architecture and conventions.
-
 A devcontainer is provided for testing against a real Home Assistant install. Open the folder in VS Code with the Dev Containers extension and run:
 
 ```bash

@@ -1,1 +1,0 @@
-- [Publishing conventions](publishing-conventions.md) — docs→Pages URL convention + the two repo settings a new ha-* repo needs
