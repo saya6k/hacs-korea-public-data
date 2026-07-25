@@ -6,7 +6,6 @@
 # Tracked directories
 !/.github/
 !/.devcontainer/
-!/.agents/
 !/custom_components/
 !/docs/
 !/scripts/
@@ -21,20 +20,16 @@
 !/zensical.en.toml
 !/zensical.ko.toml
 
-# AGENTS.md is the agent source of truth. CLAUDE.md / GEMINI.md are local
-# symlinks to it; .gemini and .claude's per-item symlinks are local per-tool
-# scaffolding into .agents. Only .claude/settings.json (Claude-specific,
-# shared) is tracked; settings.local.json stays per-developer.
-!/AGENTS.md
-!/.claude
-/.claude/*
-!/.claude/settings.json
-
 # Noise inside tracked directories
 __pycache__/
 *.py[cod]
 .DS_Store
 
-# .agents is the agent source of truth (skills/, workflows/, agents/, memory/).
-# Per-developer local settings never belong in it.
-/.agents/settings.local.json
+# Agent/AI scaffolding is local-only, never tracked: AGENTS.md (and its
+# CLAUDE.md / GEMINI.md symlinks) at any depth, plus .agents/ and the per-tool
+# directories that link into it. The top-level `/*` rule already covers
+# .agents, .claude and .gemini; this catches the nested AGENTS.md files under
+# custom_components/.
+AGENTS.md
+CLAUDE.md
+GEMINI.md
