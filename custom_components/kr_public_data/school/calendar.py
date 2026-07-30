@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, time, date, timedelta
+from datetime import date, datetime, time
 from zoneinfo import ZoneInfo
 
 from homeassistant.components.calendar import CalendarEntity, CalendarEvent
@@ -8,7 +8,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from ..const import DOMAIN
+from custom_components.kr_public_data.const import DOMAIN
+
 from .coordinator import SchoolCoordinator
 from .device import school_device
 
@@ -28,7 +29,9 @@ class SchoolCalendar(CoordinatorEntity, CalendarEntity):
     ) -> None:
         super().__init__(coordinator)
         self.data_source = data
-        self._attr_unique_id = f"{DOMAIN}_school_{data['region_code']}_{data['school_code']}_{data.get('grade', 1)}_calendar"
+        self._attr_unique_id = (
+            f"{DOMAIN}_school_{data['region_code']}_{data['school_code']}"
+            f"_{data.get('grade', 1)}_calendar")
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -113,7 +116,9 @@ class SchoolClassCalendar(CoordinatorEntity, CalendarEntity):
         parts = self._gc.split("-")
         self._grade = parts[0] if parts else "1"
         self._cls = parts[1] if len(parts) > 1 else "1"
-        self._attr_unique_id = f"{DOMAIN}_class_{data['region_code']}_{data['school_code']}_{self._gc}_schedule"
+        self._attr_unique_id = (
+            f"{DOMAIN}_class_{data['region_code']}_{data['school_code']}"
+            f"_{self._gc}_schedule")
         self._attr_name = f"{self._grade}학년 {self._cls}반 시간표"
 
     @property
@@ -186,7 +191,8 @@ class SchoolClassCalendar(CoordinatorEntity, CalendarEntity):
 
         # Get translated lunch text (defaults to Korean if translation unavailable)
         try:
-            lunch_text = hass.localize("component.kr_public_data.calendar.school.lunch") or "점심시간"
+            lunch_text = hass.localize(
+                "component.kr_public_data.calendar.school.lunch") or "점심시간"
         except Exception:
             lunch_text = "점심시간"
 
@@ -242,7 +248,7 @@ class SchoolClassCalendar(CoordinatorEntity, CalendarEntity):
                             end=datetime.combine(day_date, lunch_end, tzinfo=KST),
                         )
                     )
-            except Exception as e:
+            except Exception:
                 # Skip malformed schedule data
                 continue
 

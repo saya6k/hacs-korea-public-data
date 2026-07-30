@@ -1,12 +1,16 @@
 """KEPCO coordinator - curl_cffi imported via executor to avoid blocking."""
 from __future__ import annotations
+
 import logging
 from datetime import timedelta
+
 from homeassistant.core import HomeAssistant
+
+from custom_components.kr_public_data.exceptions import KrAuthError
+from custom_components.kr_public_data.resilience import ResilientCoordinator
+
 from . import KEPCO_SCAN_INTERVAL
 from .exceptions import KepcoAuthError
-from ..exceptions import KrAuthError
-from ..resilience import ResilientCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -43,7 +47,7 @@ class KepcoCoordinator(ResilientCoordinator):
             recent = await self._client.async_get_recent_usage()
             usage = await self._client.async_get_usage_info()
             return {"recent_usage": recent, "usage_info": usage}
-        except Exception as e:
+        except Exception:
             # Session may have expired: one re-login attempt before giving up.
             try:
                 if await self.async_login():

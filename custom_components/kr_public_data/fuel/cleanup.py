@@ -8,10 +8,13 @@ subentry's data shrinks - so a removed fuel_code's device/entities would
 otherwise stick around as orphans forever.
 """
 from __future__ import annotations
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import device_registry as dr, entity_registry as er
-from ..const import DOMAIN
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
+
+from custom_components.kr_public_data.const import DOMAIN
 
 # Order matters: "_fuel_low_location_" must be checked before "_fuel_low_"
 # since it's a superstring of it.

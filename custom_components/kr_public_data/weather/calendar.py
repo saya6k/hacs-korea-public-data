@@ -1,14 +1,18 @@
 """Weather warning calendar entity - one per area."""
 from __future__ import annotations
-from datetime import datetime, timedelta
+
+from datetime import timedelta
+
 from homeassistant.components.calendar import CalendarEntity, CalendarEvent
-from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
-from ..const import DOMAIN
-from . import EVENT_TYPE_CANCELLED, EVENT_TYPE_KO, EVENT_TYPE_NONE, WARNING_TYPES, AREA_CODES
+
+from custom_components.kr_public_data.const import DOMAIN
+
+from . import AREA_CODES, EVENT_TYPE_CANCELLED, EVENT_TYPE_KO, EVENT_TYPE_NONE, WARNING_TYPES
 from .coordinator import WeatherWarningCoordinator
 from .device import weather_device
+
 
 class KMAWeatherCalendar(CoordinatorEntity[WeatherWarningCoordinator], CalendarEntity):
     _attr_has_entity_name = True

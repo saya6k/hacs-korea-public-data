@@ -1,12 +1,15 @@
 """Arisu coordinator."""
 from __future__ import annotations
+
 import logging
 from datetime import timedelta
-from homeassistant.core import HomeAssistant
+
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+
+from custom_components.kr_public_data.resilience import ResilientCoordinator
+
 from . import ARISU_SCAN_INTERVAL
 from .api import ArisuApiClient
-from ..resilience import ResilientCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 

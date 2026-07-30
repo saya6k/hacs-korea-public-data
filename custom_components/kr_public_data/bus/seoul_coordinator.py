@@ -1,12 +1,16 @@
 """Seoul city bus arrival coordinator - one call already covers next+next-next."""
 from __future__ import annotations
+
 import logging
 from datetime import timedelta
+
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+
+from custom_components.kr_public_data.resilience import ResilientCoordinator
+
 from . import CITY_BUS_SCAN_INTERVAL
 from .seoul_api import fetch_stop_arrivals
-from ..resilience import ResilientCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 

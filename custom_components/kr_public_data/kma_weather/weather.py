@@ -1,12 +1,17 @@
 """KMA Weather entity - full attributes."""
 from __future__ import annotations
+
 from typing import Any
+
 from homeassistant.components.weather import (
-    WeatherEntity, WeatherEntityFeature, Forecast,
+    Forecast,
+    WeatherEntity,
+    WeatherEntityFeature,
 )
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from ..const import DOMAIN
+
+from custom_components.kr_public_data.const import DOMAIN
 
 CONDITION_MAP = {
     "sunny": "sunny", "partlycloudy": "partlycloudy", "cloudy": "cloudy",

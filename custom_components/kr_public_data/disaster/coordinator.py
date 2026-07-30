@@ -1,12 +1,13 @@
 """Disaster message coordinator - resilient to intermittent SSL errors."""
 from __future__ import annotations
+
 import logging
 from datetime import timedelta
 
-from homeassistant.core import HomeAssistant
+from custom_components.kr_public_data.resilience import ResilientCoordinator
+
 from . import DISASTER_SCAN_INTERVAL
 from .api import fetch_disaster_messages
-from ..resilience import ResilientCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -24,8 +25,8 @@ def filter_messages(msgs, sido="", sgg="", legacy=""):
         out = []
         for m in msgs:
             area = m.get("area") or ""
-            for part in area.split(","):
-                part = part.strip()
+            for raw_part in area.split(","):
+                part = raw_part.strip()
                 if "전국" in part or (
                         sido_short in part
                         and (not sgg or sgg in part or "전체" in part)):

@@ -7,7 +7,8 @@ import voluptuous as vol
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import llm
 
-from ..const import ENTRY_EARTHQUAKE
+from custom_components.kr_public_data.const import ENTRY_EARTHQUAKE
+
 from .base_tool import BaseKRTool
 from .render import svg_table
 

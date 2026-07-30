@@ -1,12 +1,13 @@
 """Safety Alert coordinator."""
 from __future__ import annotations
+
 import logging
 from datetime import timedelta
 
-from homeassistant.core import HomeAssistant
+from custom_components.kr_public_data.resilience import ResilientCoordinator
+
 from . import SAFETY_SCAN_INTERVAL
 from .api import SafetyAlertApiClient
-from ..resilience import ResilientCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 

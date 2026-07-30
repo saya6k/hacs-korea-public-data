@@ -2,7 +2,17 @@
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from .const import *
+
+from .const import (
+    CONF_ENTRY_TYPE,
+    DOMAIN,
+    ENTRY_AIRKOREA,
+    ENTRY_DISASTER,
+    ENTRY_EARTHQUAKE,
+    ENTRY_SAFETY_ALERT,
+    ENTRY_WEATHER,
+)
+
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
                             async_add_entities: AddEntitiesCallback) -> None:

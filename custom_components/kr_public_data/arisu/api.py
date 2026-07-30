@@ -2,15 +2,16 @@
 
 from __future__ import annotations
 
+import logging
 import re
 from datetime import datetime, timedelta
-from typing import Dict, Any
+from typing import Any
 
 import aiohttp
 from bs4 import BeautifulSoup
 
 from .exceptions import ArisuConnectionError, ArisuDataError
-import logging
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -29,7 +30,7 @@ class ArisuApiClient:
 
     async def async_get_water_bill_data(
         self, customer_number: str, customer_name: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get water bill information from Arisu for current and previous month."""
         current_date = datetime.now()
         current_month = current_date.strftime("%Y-%m")
@@ -42,7 +43,8 @@ class ArisuApiClient:
         pprevious_month = pprevious_date.strftime("%Y-%m")
 
         _LOGGER.debug(
-            f"Trying to get Arisu data for {customer_name} (#{customer_number}): current month={current_month}, previous month={previous_month}"
+            f"Trying to get Arisu data for {customer_name} (#{customer_number}): "
+            f"current month={current_month}, previous month={previous_month}"
         )
 
         # 현재 월 먼저 시도
@@ -88,13 +90,14 @@ class ArisuApiClient:
         # 둘 다 실패하면 오류 반환
         return {
             "success": False,
-            "error": f"No bill data found for {current_month} and {previous_month} {pprevious_month}",
+            "error": (f"No bill data found for {current_month} and "
+                      f"{previous_month} {pprevious_month}"),
             "tried_months": [current_month, previous_month, pprevious_month],
         }
 
     async def async_get_water_bill(
         self, customer_number: str, customer_name: str, billing_month: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get water bill information from Arisu."""
         try:
             # Step 1: 초기 페이지 접속으로 세션 설정
@@ -119,7 +122,9 @@ class ArisuApiClient:
             }
 
             headers = {
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+                "Accept": ("text/html,application/xhtml+xml,application/xml;q=0.9,"
+                           "image/avif,image/webp,image/apng,*/*;q=0.8,"
+                           "application/signed-exchange;v=b3;q=0.7"),
                 "Accept-Language": "ko-KR,ko;q=0.9,en;q=0.8",
                 "Cache-Control": "max-age=0",
                 "Connection": "keep-alive",
@@ -131,11 +136,14 @@ class ArisuApiClient:
                 "Sec-Fetch-Site": "same-origin",
                 "Sec-Fetch-User": "?1",
                 "Upgrade-Insecure-Requests": "1",
-                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+                "User-Agent": ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                               "AppleWebKit/537.36 (KHTML, like Gecko) "
+                               "Chrome/138.0.0.0 Safari/537.36"),
             }
 
             _LOGGER.debug(
-                f"Sending Arisu request with customer_number: {customer_number}, customer_name: {customer_name}, billing_month: {billing_month}"
+                f"Sending Arisu request with customer_number: {customer_number}, "
+                f"customer_name: {customer_name}, billing_month: {billing_month}"
             )
 
             async with self._session.post(
@@ -158,27 +166,32 @@ class ArisuApiClient:
                     return self._parse_html_response(html_content)
                 else:
                     _LOGGER.warning(
-                        f"No bill data structure found for customer: {customer_name} (#{customer_number})"
+                        f"No bill data structure found for customer: "
+                        f"{customer_name} (#{customer_number})"
                     )
                     return {"success": False, "error": "No bill data structure found"}
 
         except aiohttp.ClientError as e:
             _LOGGER.error(f"Arisu API request failed: {e}")
-            raise ArisuConnectionError(f"Request failed: {e}")
+            raise ArisuConnectionError(f"Request failed: {e}") from e
         except Exception as e:
             _LOGGER.error(f"Unexpected error in Arisu API request: {e}")
-            raise ArisuDataError(f"Unexpected error: {e}")
+            raise ArisuDataError(f"Unexpected error: {e}") from e
 
     async def _init_session(self) -> None:
         """Initialize session by visiting the main page first."""
         try:
             headers = {
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+                "Accept": ("text/html,application/xhtml+xml,application/xml;q=0.9,"
+                           "image/avif,image/webp,image/apng,*/*;q=0.8,"
+                           "application/signed-exchange;v=b3;q=0.7"),
                 "Accept-Language": "ko-KR,ko;q=0.9,en;q=0.8",
                 "Cache-Control": "max-age=0",
                 "Connection": "keep-alive",
                 "Upgrade-Insecure-Requests": "1",
-                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "User-Agent": ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                               "AppleWebKit/537.36 (KHTML, like Gecko) "
+                               "Chrome/120.0.0.0 Safari/537.36"),
             }
 
             async with self._session.get(
@@ -195,7 +208,7 @@ class ArisuApiClient:
             _LOGGER.warning(f"Failed to initialize session: {e}")
             # 세션 초기화 실패해도 계속 진행
 
-    def _parse_html_response(self, html_content: str) -> Dict[str, Any]:
+    def _parse_html_response(self, html_content: str) -> dict[str, Any]:
         """Parse HTML response to extract water bill information based on HAR analysis."""
         try:
             soup = BeautifulSoup(html_content, "html.parser")
@@ -228,9 +241,9 @@ class ArisuApiClient:
 
         except Exception as e:
             _LOGGER.error(f"Error parsing HTML response: {e}")
-            raise ArisuDataError(f"HTML parsing failed: {e}")
+            raise ArisuDataError(f"HTML parsing failed: {e}") from e
 
-    def _extract_customer_info_from_har(self, soup: BeautifulSoup) -> Dict[str, str]:
+    def _extract_customer_info_from_har(self, soup: BeautifulSoup) -> dict[str, str]:
         """Extract customer information based on HAR file structure."""
         info = {}
 
@@ -269,7 +282,7 @@ class ArisuApiClient:
 
         return info
 
-    def _extract_usage_info_from_har(self, soup: BeautifulSoup) -> Dict[str, Any]:
+    def _extract_usage_info_from_har(self, soup: BeautifulSoup) -> dict[str, Any]:
         """Extract usage information based on HAR file structure."""
         usage = {}
 
@@ -284,11 +297,10 @@ class ArisuApiClient:
                     if len(cells) >= 2:
                         # 사용량 값 추출
                         for i, cell in enumerate(cells):
-                            if "사용량" in cell.get_text():
-                                if i + 1 < len(cells):
-                                    usage_value = cells[i + 1].get_text(strip=True)
-                                    if usage_value and usage_value.isdigit():
-                                        usage["current_usage"] = int(usage_value)
+                            if "사용량" in cell.get_text() and i + 1 < len(cells):
+                                usage_value = cells[i + 1].get_text(strip=True)
+                                if usage_value and usage_value.isdigit():
+                                    usage["current_usage"] = int(usage_value)
 
             # 지침 정보 추출 (HAR에서 확인된 패턴)
             meter_readings = soup.find_all(
@@ -313,7 +325,7 @@ class ArisuApiClient:
 
         return usage
 
-    def _extract_arrears_info_from_har(self, soup: BeautifulSoup) -> Dict[str, Any]:
+    def _extract_arrears_info_from_har(self, soup: BeautifulSoup) -> dict[str, Any]:
         """Extract arrears information based on HAR file structure."""
         arrears = {}
 

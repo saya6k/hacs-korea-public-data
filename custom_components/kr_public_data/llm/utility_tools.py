@@ -7,8 +7,9 @@ import voluptuous as vol
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import llm
 
-from ..const import ENTRY_ARISU, ENTRY_GASAPP, ENTRY_KEPCO
-from ..utils import get_value_from_path
+from custom_components.kr_public_data.const import ENTRY_ARISU, ENTRY_GASAPP, ENTRY_KEPCO
+from custom_components.kr_public_data.utils import get_value_from_path
+
 from .base_tool import BaseKRTool
 from .render import svg_card
 

@@ -1,7 +1,10 @@
 """KEPCO device."""
 from __future__ import annotations
+
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
-from ..const import DOMAIN
+
+from custom_components.kr_public_data.const import DOMAIN
+
 
 def kepco_device_info(username: str) -> DeviceInfo:
     return DeviceInfo(

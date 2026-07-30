@@ -1,6 +1,8 @@
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.device_registry import DeviceInfo
-from ..const import DOMAIN
+
+from custom_components.kr_public_data.const import DOMAIN
+
 
 def school_device(data: dict) -> DeviceInfo:
     """Device per school. Name = school name."""

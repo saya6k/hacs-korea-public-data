@@ -1,16 +1,18 @@
 """AirKorea sensors + binary_sensor + event + calendar."""
 from __future__ import annotations
-from datetime import datetime, date, timedelta
-from typing import Any
+
+from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
-from homeassistant.components.sensor import SensorEntity, SensorStateClass
-from homeassistant.components.binary_sensor import BinarySensorEntity, BinarySensorDeviceClass
-from homeassistant.components.event import EventEntity
+
+from homeassistant.components.binary_sensor import BinarySensorDeviceClass, BinarySensorEntity
 from homeassistant.components.calendar import CalendarEntity, CalendarEvent
+from homeassistant.components.event import EventEntity
+from homeassistant.components.sensor import SensorEntity, SensorStateClass
+from homeassistant.core import callback
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from homeassistant.core import callback
-from ..const import DOMAIN
+
+from custom_components.kr_public_data.const import DOMAIN
 
 KST = ZoneInfo("Asia/Seoul")
 
@@ -83,7 +85,7 @@ class AirQualitySensor(CoordinatorEntity, SensorEntity):
     def native_value(self):
         data = (self.coordinator.data or {}).get("stations", {}).get(self._station, {})
         val = data.get(self._field, "")
-        if val == "-" or val == "":
+        if val in {"-", ""}:
             return None
         try:
             return float(val)
@@ -131,7 +133,7 @@ class AirAlertBinarySensor(CoordinatorEntity, BinarySensorEntity):
 
 class AirAlertEvent(CoordinatorEntity, EventEntity):
     _attr_has_entity_name = True
-    _attr_event_types = ["air_quality_alert"]
+    _attr_event_types = ["air_quality_alert"]  # noqa: RUF012  HA entity-attribute convention; the base class owns the name
     _attr_icon = "mdi:smog"
     def __init__(self, coordinator, station_name, sido=""):
         super().__init__(coordinator)
@@ -225,17 +227,21 @@ class AirForecastCalendar(CoordinatorEntity, CalendarEntity):
 # ===== Living Weather Index Sensors =====
 
 def _uv_grade(val):
-    if val is None: return None
+    if val is None:
+        return None
     from . import UV_GRADES
     for threshold, label in UV_GRADES:
-        if val < threshold: return label
+        if val < threshold:
+            return label
     return "위험"
 
 def _stag_grade(val):
-    if val is None: return None
+    if val is None:
+        return None
     from . import STAG_GRADES
     for threshold, label in STAG_GRADES:
-        if val <= threshold: return label
+        if val <= threshold:
+            return label
     return "매우높음"
 
 def _get_current_index_value(data: dict) -> int | None:

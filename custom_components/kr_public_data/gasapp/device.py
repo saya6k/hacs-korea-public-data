@@ -1,16 +1,17 @@
 """GasApp device for Home Assistant integration."""
 
+import logging
 from datetime import datetime
-from typing import Optional
 
 import aiohttp
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
+from custom_components.kr_public_data.const import DOMAIN
+
 from .api import GasAppApiClient
 from .exceptions import GasAppAuthError, GasAppConnectionError, GasAppDataError
-from ..const import DOMAIN
-import logging
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -89,23 +90,23 @@ class GasAppDevice:
             _LOGGER.error(
                 f"Authentication error for GasApp {self.use_contract_num}: {err}"
             )
-            raise UpdateFailed(f"Authentication failed: {err}")
+            raise UpdateFailed(f"Authentication failed: {err}") from err
 
         except (GasAppConnectionError, GasAppDataError) as err:
             self._available = False
             _LOGGER.error(
                 f"Error updating GasApp data for {self.use_contract_num}: {err}"
             )
-            raise UpdateFailed(f"Error communicating with GasApp API: {err}")
+            raise UpdateFailed(f"Error communicating with GasApp API: {err}") from err
 
         except Exception as err:
             self._available = False
             _LOGGER.error(
                 f"Unexpected error updating GasApp data for {self.use_contract_num}: {err}"
             )
-            raise UpdateFailed(f"Unexpected error: {err}")
+            raise UpdateFailed(f"Unexpected error: {err}") from err
 
-    def get_current_month_usage(self) -> Optional[str]:
+    def get_current_month_usage(self) -> str | None:
         """Get current month's gas usage."""
         if not self.data.get("current_bill"):
             return None
@@ -117,7 +118,7 @@ class GasAppDevice:
             return latest.get("usageQty")
         return None
 
-    def get_current_month_charge(self) -> Optional[int]:
+    def get_current_month_charge(self) -> int | None:
         """Get current month's gas charge amount."""
         if not self.data.get("current_bill"):
             return None
@@ -128,13 +129,13 @@ class GasAppDevice:
             return latest.get("chargeAmtQty")
         return None
 
-    def get_bill_title(self) -> Optional[str]:
+    def get_bill_title(self) -> str | None:
         """Get bill title."""
         if not self.data.get("current_bill"):
             return None
         return self.data["current_bill"].get("title1")
 
-    def get_total_charge(self) -> Optional[str]:
+    def get_total_charge(self) -> str | None:
         """Get total charge for current month."""
         if not self.data.get("current_bill"):
             return None

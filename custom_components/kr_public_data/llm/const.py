@@ -1,7 +1,7 @@
 """Constants for kr_public_data LLM API tools."""
 from __future__ import annotations
 
-from ..const import (
+from custom_components.kr_public_data.const import (
     ENTRY_AIRKOREA,
     ENTRY_ARISU,
     ENTRY_BUS,

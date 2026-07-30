@@ -1,13 +1,15 @@
 """Disaster sensors + event entity."""
 from __future__ import annotations
-from typing import Any
-from homeassistant.components.sensor import SensorEntity
+
 from homeassistant.components.event import EventEntity
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.components.sensor import SensorEntity
 from homeassistant.core import callback
-from ..const import DOMAIN
-from .device import disaster_device, region_label
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
+
+from custom_components.kr_public_data.const import DOMAIN
+
 from .coordinator import DisasterCoordinator, filter_messages
+from .device import disaster_device, region_label
 
 
 class DisasterRegionEntity(CoordinatorEntity[DisasterCoordinator]):
@@ -61,7 +63,7 @@ class DisasterCountSensor(DisasterRegionEntity, SensorEntity):
         return len(self._messages)
 
 class DisasterEvent(DisasterRegionEntity, EventEntity):
-    _attr_event_types = ["emergency", "urgent", "safety", "disaster_info"]
+    _attr_event_types = ["emergency", "urgent", "safety", "disaster_info"]  # noqa: RUF012
     _attr_icon = "mdi:alert-circle"
     def __init__(self, coordinator, region="", sido="", sgg=""):
         super().__init__(coordinator, region, sido, sgg)

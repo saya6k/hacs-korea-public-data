@@ -10,6 +10,7 @@ profiles in order and reuse the first one that works for the rest of the
 process lifetime.
 """
 from __future__ import annotations
+
 import asyncio
 import json
 import logging
@@ -92,7 +93,7 @@ async def _fetch_with_profile(profile: str, params: dict[str, str]) -> str:
 
 
 async def fetch_disaster_messages(api_key: str, count: int = 30) -> list[dict[str, Any]]:
-    global _working_profile
+    global _working_profile  # noqa: PLW0603  cache of the last profile that worked
     params = {"serviceKey": api_key, "numOfRows": str(count), "pageNo": "1"}
 
     # Build the order to try: known-good first, then the rest.
@@ -109,7 +110,7 @@ async def fetch_disaster_messages(api_key: str, count: int = 30) -> list[dict[st
                 _LOGGER.info("Disaster API: using impersonation profile %s", profile)
                 _working_profile = profile
             return _parse_payload(text)
-        except Exception as err:  # noqa: BLE001 — curl_cffi raises plain Exception subclasses
+        except Exception as err:
             last_err = err
             _LOGGER.debug(
                 "Disaster API attempt %d with %s failed: %s",

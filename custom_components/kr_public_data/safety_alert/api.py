@@ -12,9 +12,10 @@ If we still get redirected to main.do or get a non-listing page back, we
 surface the rejection rather than silently returning nothing.
 """
 from __future__ import annotations
+
 import logging
 import re
-from typing import Dict, Any, Optional, List
+from typing import Any
 
 from bs4 import BeautifulSoup
 from curl_cffi import requests as cffi_requests
@@ -43,9 +44,10 @@ def _label_value(infolist, label: str) -> str:
     return ""
 
 
-def _parse_list_html(html: str) -> List[Dict[str, str]]:
+def _parse_list_html(html: str) -> list[dict[str, str]]:
     soup = BeautifulSoup(html, "html.parser")
-    # Each message is an <li> inside the listing whose <div class="brd-context"> wraps the title + meta.
+    # Each message is an <li> inside the listing whose
+    # <div class="brd-context"> wraps the title + meta.
     items = []
     for li in soup.select("li"):
         ctx = li.find("div", class_="brd-context")
@@ -80,9 +82,9 @@ class SafetyAlertApiClient:
 
     async def async_get_safety_alerts(
         self, area_code: str = "1100000000",
-        area_code2: Optional[str] = None,
-        area_code3: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        area_code2: str | None = None,
+        area_code3: str | None = None,
+    ) -> dict[str, Any]:
         params = {
             "menuSn": "34",
             "currentPage": "1",

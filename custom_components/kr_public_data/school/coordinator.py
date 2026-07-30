@@ -1,11 +1,16 @@
 """School data coordinator - supports multiple grade+class combos."""
 from __future__ import annotations
+
+import contextlib
 import logging
-from datetime import timedelta, datetime, date
+from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
+
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from ..const import DOMAIN
-from ..resilience import ResilientCoordinator
+
+from custom_components.kr_public_data.const import DOMAIN
+from custom_components.kr_public_data.resilience import ResilientCoordinator
+
 from .api import NeisApiClient
 from .parser import parse_lunch_menu, parse_school_calendar, parse_timetable
 
@@ -56,11 +61,9 @@ class SchoolCoordinator(ResilientCoordinator):
         cal = []
         cur = sy_start
         while cur <= sy_end:
-            try:
+            with contextlib.suppress(Exception):
                 cal.extend(await self.client.get_schedule_month(
                     self.rc, self.sc, cur.year, cur.month))
-            except Exception:
-                pass
             cur = date(cur.year + (1 if cur.month == 12 else 0),
                        1 if cur.month == 12 else cur.month + 1, 1)
 
@@ -70,12 +73,10 @@ class SchoolCoordinator(ResilientCoordinator):
             g, cl = gc.split("-")
             tt = []
             for mon in mondays:
-                try:
+                with contextlib.suppress(Exception):
                     tt.extend(await self.client.get_timetable(
                         self.rc, self.sc, self.level, int(g), cl,
                         mon, mon + timedelta(days=6)))
-                except Exception:
-                    pass
             timetables[gc] = parse_timetable(tt)
 
         # Use first grade for calendar filtering

@@ -1,0 +1,96 @@
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+
+[tool.ruff.lint]
+# Pinned explicitly rather than inherited from ruff's defaults: those widened
+# in 0.16, so an unpinned set makes a routine ruff upgrade rewrite CI's verdict
+# on untouched code. This is the same set the sibling ha-* integrations use.
+select = [
+  "E", "F", "W",      # pycodestyle / pyflakes
+  "I",                # isort
+  "UP",               # pyupgrade
+  "B",                # bugbear
+  "SIM",              # simplify
+  "RUF",              # ruff-specific
+  "PL",               # pylint subset
+  "ANN",              # annotations
+  "ASYNC",
+  "TID",
+]
+ignore = [
+  "ANN401",  # Any allowed in narrow places
+  "PLR2004", # magic numbers in tests are fine
+
+  # ── Waived for this repo only; the sibling ha-* integrations enforce both.
+  #
+  # ANN: 575 unannotated signatures across 66 files. This integration has no
+  # test suite, so annotating them wholesale would be a large unverifiable
+  # diff landed alongside the lint rollout. Kept in `select` so the intent is
+  # recorded, and lifted in a follow-up that does the annotating on its own.
+  "ANN",
+
+  # PLC0415: 168 function-level imports, and they are the architecture, not
+  # an oversight. This integration fans out to 17 independent public-data
+  # domains (bus, pharmacy, fuel, kepco, …); config_flow.py and __init__.py
+  # pull in only the domains a given config entry actually uses. Hoisting
+  # them would make every HA start pay for all 17 plus their transitive
+  # deps. A handful of genuine strays (stdlib imports inside a function)
+  # ride along under the same waiver.
+  "PLC0415",
+]
+# × is the multiplication sign in a Korean-language code comment, where it is
+# the ordinary typography. It is never an identifier or parsed input, so the
+# homoglyph confusion RUF001-003 guards against does not apply.
+allowed-confusables = ["×"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["ANN", "PL", "S"]
+
+# The PLR complexity caps below are waived per file, not silenced globally.
+# Every one of them is a dispatch table over the 17 domains, or an API-shaped
+# function whose size comes from the surface it mirrors, so splitting it would
+# scatter one contract across several call sites without removing a branch.
+# Anything new should still meet the caps.
+
+# The platform entry points are one `if etype == ENTRY_*` arm per domain. The
+# branch count *is* the domain count, and each arm is the only place that
+# domain's lazy imports and entity construction live.
+"custom_components/kr_public_data/__init__.py" = ["PLR0912", "PLR0915"]
+"custom_components/kr_public_data/sensor.py" = ["PLR0912", "PLR0915"]
+"custom_components/kr_public_data/binary_sensor.py" = ["PLR0912"]
+"custom_components/kr_public_data/event.py" = ["PLR0912"]
+# Same shape: async_get_supported_subentry_types and _build_schema each return
+# a different handler/schema per domain. _school_class_options takes the NEIS
+# timetable lookup's own parameters (region, school, level, grade span).
+"custom_components/kr_public_data/config_flow.py" = ["PLR0911", "PLR0912", "PLR0913", "PLR0917"]
+# Entity constructors whose extra arguments are the description fields — name,
+# unit, icon, device_class, state_class — that HA's EntityDescription would
+# otherwise carry. These predate that refactor.
+"custom_components/kr_public_data/arisu/sensor.py" = ["PLR0913", "PLR0917"]
+"custom_components/kr_public_data/bus/intercity_sensor.py" = ["PLR0913", "PLR0917"]
+"custom_components/kr_public_data/gasapp/device.py" = ["PLR0913", "PLR0917"]
+"custom_components/kr_public_data/gasapp/sensor.py" = ["PLR0913", "PLR0917"]
+"custom_components/kr_public_data/kepco/sensor.py" = ["PLR0913", "PLR0917"]
+"custom_components/kr_public_data/transit/sensor.py" = ["PLR0913", "PLR0917"]
+"custom_components/kr_public_data/weather/event.py" = ["PLR0913", "PLR0917"]
+# The arguments are the upstream request's own query parameters.
+"custom_components/kr_public_data/pharmacy/api.py" = ["PLR0913", "PLR0917"]
+"custom_components/kr_public_data/school/api.py" = ["PLR0913", "PLR0917"]
+# svg_table/svg_card take their layout options keyword-only, one per knob.
+"custom_components/kr_public_data/llm/render.py" = ["PLR0913"]
+# KMA fans out over regions plus the air-quality and living-index endpoints,
+# each with its own key; parse_weather walks the forecast category grid.
+"custom_components/kr_public_data/kma_weather/api.py" = ["PLR0912", "PLR0915"]
+"custom_components/kr_public_data/kma_weather/coordinator.py" = ["PLR0912", "PLR0913", "PLR0917"]
+# LLM tools validate a batch of independent preconditions and return a
+# distinct error for each, so the return and branch counts track the number of
+# documented failure modes.
+"custom_components/kr_public_data/llm/kma_weather_tool.py" = ["PLR0912", "PLR0915"]
+"custom_components/kr_public_data/llm/school_tool.py" = ["PLR0911"]
+# Arisu has no API — the usage figures are scraped out of the billing page's
+# table, one branch per layout the site has been seen to serve.
+"custom_components/kr_public_data/arisu/api.py" = ["PLR0912"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["custom_components.kr_public_data"]

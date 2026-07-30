@@ -17,6 +17,7 @@
 !/LICENSE
 !/README.md
 !/hacs.json
+!/pyproject.toml
 !/zensical.en.toml
 !/zensical.ko.toml
 

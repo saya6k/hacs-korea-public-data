@@ -7,8 +7,9 @@ import voluptuous as vol
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import llm
 
-from ..const import ENTRY_FUEL
-from ..fuel import FUEL_TYPES, SIDO_CODES
+from custom_components.kr_public_data.const import ENTRY_FUEL
+from custom_components.kr_public_data.fuel import FUEL_TYPES, SIDO_CODES
+
 from .base_tool import BaseKRTool
 from .render import svg_table
 
@@ -77,7 +78,8 @@ class GetFuelPricesTool(BaseKRTool):
 
         # Build a table with the national average + cheapest per combo
         rows = [
-            [a["fuel_name"], _fmt_price(a["price"]), _fmt_diff(a["change_vs_yesterday"]), "전국 평균"]
+            [a["fuel_name"], _fmt_price(a["price"]),
+             _fmt_diff(a["change_vs_yesterday"]), "전국 평균"]
             for a in national_avg
         ]
         for combo in low_by_combo:

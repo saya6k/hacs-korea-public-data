@@ -1,9 +1,12 @@
 """Pharmacy sensor - counts open pharmacies."""
 from __future__ import annotations
+
 from homeassistant.components.sensor import SensorEntity, SensorStateClass
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util.location import distance
-from ..const import DOMAIN
+
+from custom_components.kr_public_data.const import DOMAIN
+
 from .device import pharmacy_region_device
 
 

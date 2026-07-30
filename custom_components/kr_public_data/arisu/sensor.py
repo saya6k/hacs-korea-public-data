@@ -1,8 +1,10 @@
 """Arisu sensors."""
-from homeassistant.components.sensor import SensorEntity, SensorStateClass
+from homeassistant.components.sensor import SensorEntity
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from ..const import DOMAIN
+
+from custom_components.kr_public_data.const import DOMAIN
+
 
 def arisu_device(customer_number):
     return DeviceInfo(identifiers={(DOMAIN, f"arisu_{customer_number}")},

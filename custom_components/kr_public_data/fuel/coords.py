@@ -6,6 +6,7 @@ Mercator grid (lat0=38N, lon0=128E, k0=0.9999, false easting/northing
 back to Bessel lat/lon, then a 7-parameter Bursa-Wolf datum shift to WGS84.
 """
 from __future__ import annotations
+
 import math
 
 _A = 6377397.155  # Bessel 1841 semi-major axis

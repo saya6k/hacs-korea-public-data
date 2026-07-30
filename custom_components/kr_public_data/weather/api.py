@@ -1,13 +1,23 @@
 """KMA Weather Warning API client."""
 from __future__ import annotations
+
 import logging
 from datetime import datetime
 from typing import Any
+
 import aiohttp
-from . import (KMA_API_BASE, EVENT_TYPE_ADVISORY, EVENT_TYPE_CANCELLED,
-               EVENT_TYPE_NONE, EVENT_TYPE_PRE_ADVISORY, EVENT_TYPE_PRE_WARNING,
-               EVENT_TYPE_WARNING)
-from ..exceptions import KrTransientError, raise_for_result_code
+
+from custom_components.kr_public_data.exceptions import KrTransientError, raise_for_result_code
+
+from . import (
+    EVENT_TYPE_ADVISORY,
+    EVENT_TYPE_CANCELLED,
+    EVENT_TYPE_NONE,
+    EVENT_TYPE_PRE_ADVISORY,
+    EVENT_TYPE_PRE_WARNING,
+    EVENT_TYPE_WARNING,
+    KMA_API_BASE,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -34,12 +44,15 @@ async def validate_kma_api(api_key: str, area_code: str) -> bool:
     params = {"serviceKey": api_key, "numOfRows": "1", "pageNo": "1",
               "areaCode": area_code, "warningType": "1", "dataType": "json"}
     try:
-        async with aiohttp.ClientSession() as s:
-            async with s.get(KMA_API_BASE, params=params, timeout=aiohttp.ClientTimeout(total=15)) as r:
-                if r.status != 200:
-                    return False
-                d = await r.json(content_type=None)
-                return d.get("response", {}).get("header", {}).get("resultCode") in ("00", "03")
+        async with (
+            aiohttp.ClientSession() as s,
+            s.get(KMA_API_BASE, params=params,
+                  timeout=aiohttp.ClientTimeout(total=15)) as r,
+        ):
+            if r.status != 200:
+                return False
+            d = await r.json(content_type=None)
+            return d.get("response", {}).get("header", {}).get("resultCode") in ("00", "03")
     except Exception:
         return False
 

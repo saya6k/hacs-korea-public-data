@@ -7,13 +7,14 @@ import voluptuous as vol
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import llm
 
-from ..const import ENTRY_WEATHER
-from ..weather import (
+from custom_components.kr_public_data.const import ENTRY_WEATHER
+from custom_components.kr_public_data.weather import (
     AREA_CODES,
     EVENT_TYPE_KO,
     EVENT_TYPE_NONE,
     WARNING_TYPES,
 )
+
 from .base_tool import BaseKRTool
 from .render import svg_card, svg_table
 

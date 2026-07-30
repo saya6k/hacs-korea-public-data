@@ -1,12 +1,16 @@
 """AirKorea actions - living index forecast with region selection."""
 from __future__ import annotations
+
 import logging
-import voluptuous as vol
+
 import aiohttp
+import voluptuous as vol
 from homeassistant.core import HomeAssistant, ServiceCall, ServiceResponse, SupportsResponse
-from ..const import DOMAIN
-from .api import fetch_uv_index, fetch_air_stagnation
+
+from custom_components.kr_public_data.const import DOMAIN
+
 from . import SIDO_AREA_CODE
+from .api import fetch_air_stagnation, fetch_uv_index
 
 _LOGGER = logging.getLogger(__name__)
 

@@ -2,7 +2,16 @@
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from .const import *
+
+from .const import (
+    CONF_ENTRY_TYPE,
+    DOMAIN,
+    ENTRY_AIRKOREA,
+    ENTRY_PHARMACY,
+    ENTRY_SAFETY_ALERT,
+    ENTRY_WEATHER,
+)
+
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
                             async_add_entities: AddEntitiesCallback) -> None:
@@ -43,8 +52,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
 
     elif etype == ENTRY_PHARMACY:
         from .pharmacy.binary_sensor import PharmacyOpenBinarySensor
-        from .pharmacy.sensor import region_nearby_pharmacies
         from .pharmacy.device import pharmacy_device
+        from .pharmacy.sensor import region_nearby_pharmacies
         for i, region in enumerate(store.get("regions", [])):
             if not region.get("location_sensors"):
                 continue
@@ -52,7 +61,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
             if not coord:
                 continue
             nearby = region_nearby_pharmacies(hass, region, coord)
-            ents = [PharmacyOpenBinarySensor(coord, p["hpid"], p["name"], pharmacy_device(p["hpid"], p["name"]))
+            ents = [PharmacyOpenBinarySensor(coord, p["hpid"], p["name"],
+                                             pharmacy_device(p["hpid"], p["name"]))
                     for p in nearby if p.get("hpid")]
             sub_id = region.get("subentry_id")
             if sub_id:

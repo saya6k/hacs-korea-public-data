@@ -1,9 +1,13 @@
 """School sensors (lunch + info)."""
 from datetime import date
+
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from ..const import DOMAIN
+
+from custom_components.kr_public_data.const import DOMAIN
+
 from .device import school_device
+
 
 class SchoolLunchSensor(CoordinatorEntity, SensorEntity):
     _attr_icon = "mdi:food"

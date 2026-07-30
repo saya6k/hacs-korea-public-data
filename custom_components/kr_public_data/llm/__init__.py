@@ -17,7 +17,8 @@ from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.llm import LLMContext
 
-from ..const import CONF_ENTRY_TYPE, DOMAIN
+from custom_components.kr_public_data.const import CONF_ENTRY_TYPE, DOMAIN
+
 from .const import API_PROMPTS
 from .tools import TOOLS_BY_ETYPE
 

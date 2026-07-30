@@ -1,9 +1,11 @@
 """GasApp sensors."""
-from homeassistant.components.sensor import SensorEntity, SensorStateClass
+from homeassistant.components.sensor import SensorEntity
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from ..const import DOMAIN
-from ..utils import get_value_from_path
+
+from custom_components.kr_public_data.const import DOMAIN
+from custom_components.kr_public_data.utils import get_value_from_path
+
 
 def gasapp_device(contract_num):
     return DeviceInfo(identifiers={(DOMAIN, f"gasapp_{contract_num}")},

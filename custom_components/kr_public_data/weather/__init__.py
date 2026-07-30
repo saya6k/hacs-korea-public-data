@@ -50,12 +50,12 @@ EVENT_TYPE_KO = {
 # ===== Weather Platform handler (for KMA Weather Forecast) =====
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up weather platform entities for KMA Weather Forecast."""
-    from ..const import DOMAIN, CONF_ENTRY_TYPE, ENTRY_KMA_WEATHER
+    from custom_components.kr_public_data.const import CONF_ENTRY_TYPE, DOMAIN, ENTRY_KMA_WEATHER
     if entry.data.get(CONF_ENTRY_TYPE) != ENTRY_KMA_WEATHER:
         return
     store = hass.data[DOMAIN][entry.entry_id]
-    from ..kma_weather import region_key
-    from ..kma_weather.weather import KMAWeather
+    from custom_components.kr_public_data.kma_weather import region_key
+    from custom_components.kr_public_data.kma_weather.weather import KMAWeather
     c = store["coordinator"]
     region_subs = store.get("region_subs") or {}
     for sub_id, r in region_subs.items():

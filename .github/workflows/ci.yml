@@ -22,3 +22,6 @@ concurrency:
 jobs:
   validate:
     uses: ./.github/workflows/validate.yml
+
+  lint:
+    uses: ./.github/workflows/lint.yml

@@ -1,6 +1,8 @@
 """Subway device helpers."""
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
-from ..const import DOMAIN
+
+from custom_components.kr_public_data.const import DOMAIN
+
 from . import SUBWAY_LINES
 
 
