@@ -18,7 +18,7 @@ class FuelAvgSensor(CoordinatorEntity[FuelCoordinator], SensorEntity):
     _attr_native_unit_of_measurement = "원/L"
     _attr_icon = "mdi:gas-station"
 
-    def __init__(self, coordinator, sido, fuel_code):
+    def __init__(self, coordinator: FuelCoordinator, sido: str, fuel_code: str) -> None:
         super().__init__(coordinator)
         self._fuel_code = fuel_code
         self._attr_unique_id = f"{DOMAIN}_fuel_avg_{sido}_{fuel_code}"
@@ -26,7 +26,7 @@ class FuelAvgSensor(CoordinatorEntity[FuelCoordinator], SensorEntity):
         self._attr_device_info = fuel_device(sido, fuel_code)
 
     @property
-    def native_value(self):
+    def native_value(self) -> float | None:
         for item in (self.coordinator.data or {}).get("average", []):
             if item.get("product_code") == self._fuel_code:
                 try:
@@ -36,7 +36,7 @@ class FuelAvgSensor(CoordinatorEntity[FuelCoordinator], SensorEntity):
         return None
 
     @property
-    def extra_state_attributes(self):
+    def extra_state_attributes(self) -> dict[str, Any]:
         for item in (self.coordinator.data or {}).get("average", []):
             if item.get("product_code") == self._fuel_code:
                 return {"diff": item.get("diff", "")}
@@ -49,7 +49,7 @@ class FuelLowSensor(CoordinatorEntity[FuelCoordinator], SensorEntity):
     _attr_native_unit_of_measurement = "원/L"
     _attr_icon = "mdi:gas-station-outline"
 
-    def __init__(self, coordinator, sido, fuel_code):
+    def __init__(self, coordinator: FuelCoordinator, sido: str, fuel_code: str) -> None:
         super().__init__(coordinator)
         self._key = f"low_{sido}_{fuel_code}"
         self._attr_unique_id = f"{DOMAIN}_fuel_low_{sido}_{fuel_code}"
@@ -57,7 +57,7 @@ class FuelLowSensor(CoordinatorEntity[FuelCoordinator], SensorEntity):
         self._attr_device_info = fuel_device(sido, fuel_code)
 
     @property
-    def native_value(self):
+    def native_value(self) -> float | None:
         items = (self.coordinator.data or {}).get(self._key, [])
         if items:
             try:
@@ -67,7 +67,7 @@ class FuelLowSensor(CoordinatorEntity[FuelCoordinator], SensorEntity):
         return None
 
     @property
-    def extra_state_attributes(self):
+    def extra_state_attributes(self) -> dict[str, Any]:
         items = (self.coordinator.data or {}).get(self._key, [])
         if not items:
             return {}
@@ -89,7 +89,7 @@ class FuelLowLocationSensor(CoordinatorEntity[FuelCoordinator], SensorEntity):
     _attr_has_entity_name = True
     _attr_icon = "mdi:map-marker"
 
-    def __init__(self, coordinator, sido, fuel_code):
+    def __init__(self, coordinator: FuelCoordinator, sido: str, fuel_code: str) -> None:
         super().__init__(coordinator)
         self._key = f"low_{sido}_{fuel_code}"
         self._attr_unique_id = f"{DOMAIN}_fuel_low_location_{sido}_{fuel_code}"
@@ -97,12 +97,12 @@ class FuelLowLocationSensor(CoordinatorEntity[FuelCoordinator], SensorEntity):
         self._attr_device_info = fuel_device(sido, fuel_code)
 
     @property
-    def native_value(self):
+    def native_value(self) -> str | None:
         items = (self.coordinator.data or {}).get(self._key, [])
         return items[0].get("station_name") if items else None
 
     @property
-    def extra_state_attributes(self):
+    def extra_state_attributes(self) -> dict[str, Any]:
         items = (self.coordinator.data or {}).get(self._key, [])
         if not items:
             return {}

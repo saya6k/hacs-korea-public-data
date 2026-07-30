@@ -9,9 +9,11 @@ out, the entity is removed.
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 from homeassistant.components.geo_location import GeolocationEvent
 from homeassistant.core import callback
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from custom_components.kr_public_data.const import DOMAIN
 
@@ -50,7 +52,7 @@ class DisasterGeoLocationManager:
     """Adds/removes one geolocation entity per active message in a region."""
 
     def __init__(self, coordinator: DisasterCoordinator, sido: str, sgg: str,
-                 label: str, async_add_entities) -> None:
+                 label: str, async_add_entities: AddEntitiesCallback) -> None:
         self._coordinator = coordinator
         self._sido = sido
         self._sgg = sgg
@@ -97,7 +99,7 @@ class DisasterGeoLocationEntity(GeolocationEvent):
         self._attr_latitude, self._attr_longitude = SIDO_CENTROIDS.get(sido, (None, None))
 
     @property
-    def extra_state_attributes(self):
+    def extra_state_attributes(self) -> dict[str, Any]:
         return {
             "message": self._message.get("message", ""),
             "area": self._message.get("area", ""),

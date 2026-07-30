@@ -20,18 +20,18 @@ class SafetyAlertBinarySensor(CoordinatorEntity[SafetyAlertCoordinator], BinaryS
     _attr_device_class = BinarySensorDeviceClass.SAFETY
     _attr_icon = "mdi:alert"
 
-    def __init__(self, coordinator, area_code, area_name):
+    def __init__(self, coordinator: SafetyAlertCoordinator, area_code: str, area_name: str) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{DOMAIN}_safety_{area_code}"
         self._attr_name = "알림 상태"
         self._attr_device_info = safety_alert_device(area_code, area_name)
 
     @property
-    def is_on(self):
+    def is_on(self) -> bool:
         return (self.coordinator.data or {}).get("has_data", False)
 
     @property
-    def extra_state_attributes(self):
+    def extra_state_attributes(self) -> dict[str, Any]:
         data = self.coordinator.data or {}
         return {"count": data.get("count", 0)}
 
@@ -40,21 +40,21 @@ class SafetyAlertTextSensor(CoordinatorEntity[SafetyAlertCoordinator], SensorEnt
     _attr_has_entity_name = True
     _attr_icon = "mdi:message-alert"
 
-    def __init__(self, coordinator, area_code, area_name):
+    def __init__(self, coordinator: SafetyAlertCoordinator, area_code: str, area_name: str) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{DOMAIN}_safety_text_{area_code}"
         self._attr_name = "최신 알림"
         self._attr_device_info = safety_alert_device(area_code, area_name)
 
     @property
-    def native_value(self):
+    def native_value(self) -> str:
         alerts = (self.coordinator.data or {}).get("alerts", [])
         if not alerts:
             return "알림 없음"
         return alerts[0].get("MSG_CN", "")[:255]
 
     @property
-    def extra_state_attributes(self):
+    def extra_state_attributes(self) -> dict[str, Any]:
         alerts = (self.coordinator.data or {}).get("alerts", [])
         if not alerts:
             return {}
@@ -83,7 +83,7 @@ class SafetyAlertEvent(CoordinatorEntity[SafetyAlertCoordinator], EventEntity):
     _attr_event_types = ["emergency", "urgent", "safety", "safety_alert"]  # noqa: RUF012
     _attr_icon = "mdi:alert-circle"
 
-    def __init__(self, coordinator, area_code, area_name):
+    def __init__(self, coordinator: SafetyAlertCoordinator, area_code: str, area_name: str) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{DOMAIN}_safety_event_{area_code}"
         self._attr_name = "알림 이벤트"
@@ -91,7 +91,7 @@ class SafetyAlertEvent(CoordinatorEntity[SafetyAlertCoordinator], EventEntity):
         self._last_id = None
 
     @callback
-    def _handle_coordinator_update(self):
+    def _handle_coordinator_update(self) -> None:
         alerts = (self.coordinator.data or {}).get("alerts", [])
         if not alerts:
             return
@@ -123,12 +123,12 @@ class SafetyAlertCountSensor(CoordinatorEntity[SafetyAlertCoordinator], SensorEn
     _attr_has_entity_name = True
     _attr_icon = "mdi:counter"
 
-    def __init__(self, coordinator, area_code, area_name):
+    def __init__(self, coordinator: SafetyAlertCoordinator, area_code: str, area_name: str) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{DOMAIN}_safety_count_{area_code}"
         self._attr_name = "활성 알림 수"
         self._attr_device_info = safety_alert_device(area_code, area_name)
 
     @property
-    def native_value(self):
+    def native_value(self) -> int:
         return (self.coordinator.data or {}).get("count", 0)

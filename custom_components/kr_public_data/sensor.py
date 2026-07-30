@@ -1,6 +1,9 @@
 """Sensor platform dispatcher."""
+from __future__ import annotations
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
@@ -171,9 +174,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
         )
         c = store["coordinator"]
 
-        def _station_sensors(name):
-            sensors = [AirQualitySensor(c, name, field, label, unit)
-                       for field, label, unit in POLLUTANTS]
+        def _station_sensors(name: str) -> list[Entity]:
+            sensors: list[Entity] = [AirQualitySensor(c, name, field, label, unit)
+                                     for field, label, unit in POLLUTANTS]
             # Living index sensors per station (same data, different device)
             sensors += [UVIndexSensor(c, name), AirStagnationSensor(c, name)]
             return sensors

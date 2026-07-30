@@ -3,6 +3,9 @@ from __future__ import annotations
 
 import json
 import logging
+from typing import Any
+
+import aiohttp
 
 from .exceptions import KepcoAuthError
 
@@ -17,23 +20,23 @@ _LOGIN_FAIL_BODY_MARKERS = (
 )
 
 
-def _get_rsa_key():
+def _get_rsa_key() -> type:
     """Lazy import RSAKey to avoid triggering utils import chain."""
     from custom_components.kr_public_data.utils import RSAKey
     return RSAKey
 
 
 class KepcoApiClient:
-    def __init__(self, session):
+    def __init__(self, session: aiohttp.ClientSession) -> None:
         self._session = session
         self._username = None
         self._password = None
 
-    def set_credentials(self, username, password):
+    def set_credentials(self, username: str, password: str) -> None:
         self._username = username
         self._password = password
 
-    async def async_get_session_and_rsa_key(self):
+    async def async_get_session_and_rsa_key(self) -> tuple[str, str, str]:
         from bs4 import BeautifulSoup  # lazy import
         url = "https://pp.kepco.co.kr:8030/intro.do"
         result = await self._session.get(url=url)
@@ -49,7 +52,7 @@ class KepcoApiClient:
                 rsa_exponent_tag.get("value").strip(),
                 sessid_tag.get("value").strip())
 
-    async def async_login(self, username, password):
+    async def async_login(self, username: str, password: str) -> bool:
         self.set_credentials(username, password)
         try:
             rsa_modulus, rsa_exponent, sessid = await self.async_get_session_and_rsa_key()
@@ -97,7 +100,7 @@ class KepcoApiClient:
             _LOGGER.error("Login failed: %s", e)
             return False
 
-    async def _request(self, method, url, **kwargs):
+    async def _request(self, method: str, url: str, **kwargs: Any) -> Any:
         try:
             response = await self._session.request(method, url, **kwargs)
             return json.loads(response.text)
@@ -110,11 +113,11 @@ class KepcoApiClient:
                     _LOGGER.debug("KEPCO retry failed: %s", retry_err)
             raise
 
-    async def async_get_recent_usage(self):
+    async def async_get_recent_usage(self) -> Any:
         return await self._request(
             "POST", "https://pp.kepco.co.kr:8030/low/main/recent_usage.do", json={})
 
-    async def async_get_usage_info(self):
+    async def async_get_usage_info(self) -> Any:
         return await self._request(
             "POST", "https://pp.kepco.co.kr:8030/low/main/usage_info.do",
             json={"tou": "N"})

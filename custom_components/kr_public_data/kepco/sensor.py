@@ -1,21 +1,30 @@
 """KEPCO sensors."""
-from homeassistant.components.sensor import SensorEntity
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, SensorStateClass
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from custom_components.kr_public_data.const import DOMAIN
 from custom_components.kr_public_data.utils import get_value_from_path
 
+if TYPE_CHECKING:
+    from .coordinator import KepcoCoordinator
 
-def kepco_device(username):
+
+def kepco_device(username: str) -> DeviceInfo:
     return DeviceInfo(identifiers={(DOMAIN, f"kepco_{username}")},
                       name=f"한전 ({username})", manufacturer="한국전력공사",
                       model="KEPCO", entry_type=DeviceEntryType.SERVICE)
 
 class KepcoSensor(CoordinatorEntity, SensorEntity):
     _attr_has_entity_name = True
-    def __init__(self, coordinator, username, data_key, path, name,
-                 device_class=None, state_class=None, unit=None, icon=None):
+    def __init__(self, coordinator: KepcoCoordinator, username: str, data_key: str, path: str,
+                 name: str, device_class: SensorDeviceClass | None = None,
+                 state_class: SensorStateClass | None = None, unit: str | None = None,
+                 icon: str | None = None) -> None:
         super().__init__(coordinator)
         self._data_key = data_key
         self._path = path
@@ -28,6 +37,6 @@ class KepcoSensor(CoordinatorEntity, SensorEntity):
         self._attr_device_info = kepco_device(username)
 
     @property
-    def native_value(self):
+    def native_value(self) -> Any:
         data = (self.coordinator.data or {}).get(self._data_key, {})
         return get_value_from_path(data, self._path)

@@ -39,7 +39,7 @@ def _describe(err: Exception) -> str:
     return str(err) or type(err).__name__
 
 
-class ResilientCoordinator(DataUpdateCoordinator):
+class ResilientCoordinator[DataT](DataUpdateCoordinator[DataT]):
     """DataUpdateCoordinator with stale-keep, quota pause, and reauth mapping."""
 
     # Consecutive failures to tolerate (serving stale data) before the
@@ -53,7 +53,7 @@ class ResilientCoordinator(DataUpdateCoordinator):
         self._quota_issue_active = False
         self.last_success_time: datetime | None = None
 
-    async def _fetch(self):
+    async def _fetch(self) -> DataT:
         """Fetch fresh data. Subclasses must implement.
 
         Raise KrAuthError for credential/key problems, KrQuotaError when the
@@ -61,7 +61,7 @@ class ResilientCoordinator(DataUpdateCoordinator):
         """
         raise NotImplementedError
 
-    async def _async_update_data(self):
+    async def _async_update_data(self) -> DataT:
         if self._quota_blocked_until:
             if dt_util.utcnow().astimezone(TZ_ASIA_SEOUL) < self._quota_blocked_until:
                 return self._stale_or_fail("daily quota exhausted")
@@ -108,7 +108,7 @@ class ResilientCoordinator(DataUpdateCoordinator):
         else:
             ir.async_delete_issue(self.hass, DOMAIN, issue_id)
 
-    def _stale_or_fail(self, reason: str):
+    def _stale_or_fail(self, reason: str) -> DataT:
         if self.data is not None:
             return self.data
         raise UpdateFailed(f"{self.name}: {reason}")

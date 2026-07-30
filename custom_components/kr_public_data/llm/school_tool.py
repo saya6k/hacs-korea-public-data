@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import voluptuous as vol
 from homeassistant.core import HomeAssistant
@@ -13,6 +13,9 @@ from custom_components.kr_public_data.school import ALLERGY_MAP
 
 from .base_tool import BaseKRTool
 from .render import svg_card, svg_table
+
+if TYPE_CHECKING:
+    from custom_components.kr_public_data.school.coordinator import SchoolCoordinator
 
 _SCHOOL_ACCENT = "#0ea5e9"   # sky
 _MEAL_ACCENT = "#84cc16"     # lime
@@ -30,7 +33,9 @@ def _resolve_iso_date(when: str) -> str | None:
         return None
 
 
-def _resolve_school_coordinator(store: dict, school_name: str | None):
+def _resolve_school_coordinator(
+    store: dict, school_name: str | None
+) -> tuple[SchoolCoordinator | None, str | None]:
     """Pick the coordinator for the requested school.
 
     Returns (coordinator, error_message); error_message is None on success.

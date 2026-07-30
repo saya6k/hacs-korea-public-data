@@ -2,11 +2,16 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from custom_components.kr_public_data.const import DOMAIN
+
+if TYPE_CHECKING:
+    from .subway_coordinator import SubwayCoordinator
 
 KST = timezone(timedelta(hours=9))
 
@@ -15,8 +20,9 @@ class SubwayArrivalSensor(CoordinatorEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.TIMESTAMP
     _attr_icon = "mdi:subway-variant"
 
-    def __init__(self, coordinator, station, direction, line_id, index,
-                 device_info, name_prefix=""):
+    def __init__(self, coordinator: SubwayCoordinator, station: str, direction: str,
+                 line_id: str, index: int,
+                 device_info: DeviceInfo, name_prefix: str = "") -> None:
         super().__init__(coordinator)
         self._key = f"{direction}_{line_id or ''}"
         self._idx = index
@@ -36,7 +42,7 @@ class SubwayArrivalSensor(CoordinatorEntity, SensorEntity):
         return items[self._idx].get("arrival_time")
 
     @property
-    def extra_state_attributes(self):
+    def extra_state_attributes(self) -> dict[str, Any]:
         items = (self.coordinator.data or {}).get(self._key, [])
         if self._idx >= len(items):
             return {}

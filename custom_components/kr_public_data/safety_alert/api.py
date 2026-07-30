@@ -15,12 +15,16 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
+import aiohttp
 from bs4 import BeautifulSoup
 from curl_cffi import requests as cffi_requests
 
 from .exceptions import SafetyAlertConnectionError
+
+if TYPE_CHECKING:
+    from bs4 import Tag
 
 _LOGGER = logging.getLogger(__name__)
 _IMPERSONATE = "chrome"
@@ -33,7 +37,7 @@ _LIST_URL = f"{_BASE}/safekorea-kor/ctim/cmsg/calamitySms.do"
 _ONSUBMIT_ID = re.compile(r"onSubmit\(['\"]([^'\"]+)['\"]\)")
 
 
-def _label_value(infolist, label: str) -> str:
+def _label_value(infolist: Tag, label: str) -> str:
     """Return the text following <span>{label} : </span> in a brd-infolist block."""
     for p in infolist.find_all("p"):
         span = p.find("span")
@@ -76,7 +80,7 @@ def _parse_list_html(html: str) -> list[dict[str, str]]:
 
 
 class SafetyAlertApiClient:
-    def __init__(self, session=None) -> None:
+    def __init__(self, session: aiohttp.ClientSession | None = None) -> None:
         # session arg kept for backward compatibility; curl_cffi creates its own.
         self._session = session
 

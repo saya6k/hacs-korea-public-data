@@ -21,7 +21,7 @@ def _ay() -> int:
     return now.year - 1 if now.month < 2 or (now.month == 2 and now.day < 15) else now.year
 
 class NeisApiClient:
-    def __init__(self, session: ClientSession, api_key: str):
+    def __init__(self, session: ClientSession, api_key: str) -> None:
         self.session = session
         self.api_key = api_key
 
@@ -46,27 +46,29 @@ class NeisApiClient:
             rows.append({c.tag: c.text for c in row})
         return {"row": rows}
 
-    async def search_school(self, name: str):
+    async def search_school(self, name: str) -> list[dict[str, Any]]:
         return (await self._req(ENDPOINTS["school_info"], {"SCHUL_NM": name})).get("row", [])
 
-    async def get_school_info(self, rc: str, sc: str):
+    async def get_school_info(self, rc: str, sc: str) -> dict[str, Any] | None:
         rows = (await self._req(ENDPOINTS["school_info"],
                 {"ATPT_OFCDC_SC_CODE": rc, "SD_SCHUL_CODE": sc})).get("row", [])
         return rows[0] if rows else None
 
-    async def get_meal(self, rc, sc, s: date, e: date):
+    async def get_meal(self, rc: str, sc: str, s: date, e: date) -> list[dict[str, Any]]:
         return (await self._req(ENDPOINTS["meal"], {
             "ATPT_OFCDC_SC_CODE": rc, "SD_SCHUL_CODE": sc,
             "MLSV_FROM_YMD": s.strftime("%Y%m%d"), "MLSV_TO_YMD": e.strftime("%Y%m%d")
         })).get("row", [])
 
-    async def get_schedule_month(self, rc, sc, y, m):
+    async def get_schedule_month(self, rc: str, sc: str, y: int,
+                                 m: int) -> list[dict[str, Any]]:
         return (await self._req(ENDPOINTS["calendar"], {
             "ATPT_OFCDC_SC_CODE": rc, "SD_SCHUL_CODE": sc,
             "AA_YMD": f"{y:04d}{m:02d}"
         })).get("row", [])
 
-    async def get_timetable(self, rc, sc, level, grade, cls, s: date, e: date):
+    async def get_timetable(self, rc: str, sc: str, level: str, grade: int, cls: str,
+                            s: date, e: date) -> list[dict[str, Any]]:
         ep = ENDPOINTS["timetable"][level]
         p = {"ATPT_OFCDC_SC_CODE": rc, "SD_SCHUL_CODE": sc, "GRADE": str(grade),
              "TI_FROM_YMD": s.strftime("%Y%m%d"), "TI_TO_YMD": e.strftime("%Y%m%d"),
@@ -74,7 +76,8 @@ class NeisApiClient:
         p["CLRM_NM" if level == "high" else "CLASS_NM"] = str(cls)
         return (await self._req(ep, p)).get("row", [])
 
-    async def get_timetable_classes(self, rc, sc, level, d: date):
+    async def get_timetable_classes(self, rc: str, sc: str, level: str,
+                                    d: date) -> list[dict[str, Any]]:
         """Fetch one day's timetable rows for a whole school (no GRADE/CLASS_NM filter).
 
         Used to discover which grade/class combinations actually exist —

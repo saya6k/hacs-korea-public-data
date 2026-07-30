@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 from datetime import timedelta
+from typing import Any
 
 from homeassistant.core import HomeAssistant
 
@@ -18,7 +19,7 @@ _LOGGER = logging.getLogger(__name__)
 class KepcoCoordinator(ResilientCoordinator):
     stale_tolerance = 4
 
-    def __init__(self, hass: HomeAssistant, username: str, password: str):
+    def __init__(self, hass: HomeAssistant, username: str, password: str) -> None:
         super().__init__(hass, _LOGGER, name="kepco",
                          update_interval=timedelta(seconds=KEPCO_SCAN_INTERVAL))
         self._hass = hass
@@ -27,21 +28,21 @@ class KepcoCoordinator(ResilientCoordinator):
         self._session = None
         self._client = None
 
-    async def _ensure_client(self):
+    async def _ensure_client(self) -> None:
         """Create curl_cffi session in executor to avoid blocking event loop."""
         if self._client is None:
-            def _create_session():
+            def _create_session() -> Any:
                 import curl_cffi
                 return curl_cffi.AsyncSession()
             self._session = await self._hass.async_add_executor_job(_create_session)
             from .api import KepcoApiClient
             self._client = KepcoApiClient(self._session)
 
-    async def async_login(self):
+    async def async_login(self) -> bool:
         await self._ensure_client()
         return await self._client.async_login(self._username, self._password)
 
-    async def _fetch(self):
+    async def _fetch(self) -> dict[str, Any]:
         await self._ensure_client()
         try:
             recent = await self._client.async_get_recent_usage()

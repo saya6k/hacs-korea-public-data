@@ -1,4 +1,5 @@
 """GasApp API client for Home Assistant integration."""
+from __future__ import annotations
 
 import logging
 from typing import Any
@@ -13,14 +14,14 @@ _LOGGER = logging.getLogger(__name__)
 class GasAppApiClient:
     """API client for GasApp integration."""
 
-    def __init__(self, session: aiohttp.ClientSession):
+    def __init__(self, session: aiohttp.ClientSession) -> None:
         self._session = session
         self._token = None
         self._member_id = None
         self._use_contract_num = None
         self._base_url = "https://app.gasapp.co.kr/api"
 
-    def set_credentials(self, token: str, member_id: str, use_contract_num: str):
+    def set_credentials(self, token: str, member_id: str, use_contract_num: str) -> None:
         """Set authentication credentials."""
         self._token = token
         self._member_id = member_id
@@ -49,7 +50,7 @@ class GasAppApiClient:
             _LOGGER.error(f"Credential validation failed: {e}")
             return False
 
-    async def _request(self, method: str, endpoint: str, **kwargs) -> dict[str, Any]:
+    async def _request(self, method: str, endpoint: str, **kwargs: Any) -> dict[str, Any]:
         """Make an authenticated request to the GasApp API."""
         url = f"{self._base_url}/{endpoint}"
         headers = self._get_headers()

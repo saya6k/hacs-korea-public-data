@@ -19,7 +19,8 @@ class KMAWeatherEvent(CoordinatorEntity[WeatherWarningCoordinator], EventEntity)
     _attr_translation_key = "weather_warning"
     _attr_event_types = EVENT_TYPES
 
-    def __init__(self, coordinator, area_code, warning_code, warning_id, warning_name, icon):
+    def __init__(self, coordinator: WeatherWarningCoordinator, area_code: str,
+                 warning_code: str, warning_id: str, warning_name: str, icon: str) -> None:
         super().__init__(coordinator)
         self._area_code = area_code
         self._warning_code = warning_code
@@ -31,7 +32,7 @@ class KMAWeatherEvent(CoordinatorEntity[WeatherWarningCoordinator], EventEntity)
         self._last: str | None = None
 
     @callback
-    def _handle_coordinator_update(self):
+    def _handle_coordinator_update(self) -> None:
         if not self.coordinator.data:
             return
         area = self.coordinator.data.get(self._area_code, {})
@@ -49,7 +50,7 @@ class KMAWeatherEvent(CoordinatorEntity[WeatherWarningCoordinator], EventEntity)
         self.async_write_ha_state()
 
     @property
-    def extra_state_attributes(self):
+    def extra_state_attributes(self) -> dict[str, Any]:
         if not self.coordinator.data:
             return {}
         d = self.coordinator.data.get(self._area_code, {}).get(self._warning_code, {})

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timedelta, timezone
+from typing import Any
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -21,7 +22,7 @@ KST = timezone(timedelta(hours=9))
 INTERCITY_BUS_SCAN_INTERVAL = 300  # same-day schedule, doesn't need live-arrival cadence
 
 
-def _parse_plandtime(value) -> datetime | None:
+def _parse_plandtime(value: str | int) -> datetime | None:
     """Handles both the 12-digit (YYYYMMDDHHmm, express) and 14-digit
     (YYYYMMDDHHMMSS, intercity) forms seen live — only minute precision
     matters here, so seconds (if present) are ignored."""
@@ -61,7 +62,7 @@ class IntercityBusCoordinator(ResilientCoordinator):
         self._session = async_get_clientsession(hass)
         self.grades = grades  # ["source:gradeNm", ...]
 
-    async def _fetch(self):
+    async def _fetch(self) -> dict[str, Any]:
         raw = []
         for q in self._queries:
             items = await fetch_dispatches(self._session, self._api_key, q["source"],

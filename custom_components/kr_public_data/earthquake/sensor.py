@@ -1,6 +1,8 @@
 """Earthquake sensors + geolocation + event."""
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from homeassistant.components.event import EventEntity
 from homeassistant.core import callback
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
@@ -10,8 +12,11 @@ from custom_components.kr_public_data.const import DOMAIN
 
 from .api import haversine_km
 
+if TYPE_CHECKING:
+    from .coordinator import EarthquakeCoordinator
 
-def eq_device():
+
+def eq_device() -> DeviceInfo:
     return DeviceInfo(identifiers={(DOMAIN, "earthquake")},
                       name="지진 정보", manufacturer="기상청",
                       model="지진정보", entry_type=DeviceEntryType.SERVICE)
@@ -20,7 +25,8 @@ class EarthquakeEvent(CoordinatorEntity, EventEntity):
     _attr_has_entity_name = True
     _attr_event_types = ["earthquake_alert"]  # noqa: RUF012  HA entity-attribute convention; the base class owns the name
     _attr_icon = "mdi:earth-arrow-down"
-    def __init__(self, coordinator, home_lat, home_lon, radius_km, min_mag):
+    def __init__(self, coordinator: EarthquakeCoordinator, home_lat: float, home_lon: float,
+                 radius_km: float, min_mag: float) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{DOMAIN}_earthquake_event"
         self._attr_name = "지진 경보"
@@ -32,7 +38,7 @@ class EarthquakeEvent(CoordinatorEntity, EventEntity):
         self._last_dt = None
 
     @callback
-    def _handle_coordinator_update(self):
+    def _handle_coordinator_update(self) -> None:
         data = self.coordinator.data or []
         for eq in data:
             lat = eq.get("latitude")

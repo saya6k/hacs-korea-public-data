@@ -2,11 +2,16 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from custom_components.kr_public_data.const import DOMAIN
+
+if TYPE_CHECKING:
+    from .intercity_coordinator import IntercityBusCoordinator
 
 
 class IntercityBusDepartureSensor(CoordinatorEntity, SensorEntity):
@@ -14,8 +19,8 @@ class IntercityBusDepartureSensor(CoordinatorEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.TIMESTAMP
     _attr_icon = "mdi:bus-clock"
 
-    def __init__(self, coordinator, dep_name: str, arr_name: str, grade_key: str,
-                 index: int, device_info):
+    def __init__(self, coordinator: IntercityBusCoordinator, dep_name: str, arr_name: str,
+                 grade_key: str, index: int, device_info: DeviceInfo) -> None:
         super().__init__(coordinator)
         self._grade_key = grade_key  # "source:gradeNm"
         self._idx = index
@@ -25,7 +30,7 @@ class IntercityBusDepartureSensor(CoordinatorEntity, SensorEntity):
         self._attr_device_info = device_info
 
     @property
-    def _entry(self):
+    def _entry(self) -> tuple[datetime, dict[str, Any]] | None:
         items = (self.coordinator.data or {}).get(self._grade_key, [])
         if self._idx >= len(items):
             return None
@@ -37,7 +42,7 @@ class IntercityBusDepartureSensor(CoordinatorEntity, SensorEntity):
         return entry[0] if entry else None
 
     @property
-    def extra_state_attributes(self):
+    def extra_state_attributes(self) -> dict[str, Any]:
         entry = self._entry
         if entry is None:
             return {}
@@ -59,8 +64,8 @@ class IntercityBusFareSensor(CoordinatorEntity, SensorEntity):
     _attr_icon = "mdi:cash"
     _attr_native_unit_of_measurement = "원"
 
-    def __init__(self, coordinator, dep_name: str, arr_name: str, grade_key: str,
-                 index: int, device_info):
+    def __init__(self, coordinator: IntercityBusCoordinator, dep_name: str, arr_name: str,
+                 grade_key: str, index: int, device_info: DeviceInfo) -> None:
         super().__init__(coordinator)
         self._grade_key = grade_key
         self._idx = index

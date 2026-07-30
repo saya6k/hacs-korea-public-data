@@ -29,7 +29,7 @@ class WeatherWarningCoordinator(ResilientCoordinator):
         self._area_codes = area_codes
         self._session = async_get_clientsession(hass)
 
-    async def _fetch(self):
+    async def _fetch(self) -> dict[str, dict[int, dict[str, Any]]]:
         results: dict[str, dict[int, dict[str, Any]]] = {}
         previous = self.data or {}
         total = 0

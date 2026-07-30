@@ -1,9 +1,11 @@
 """GasApp device for Home Assistant integration."""
+from __future__ import annotations
 
 import logging
 from datetime import datetime
 
 import aiohttp
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
@@ -20,13 +22,13 @@ class GasAppDevice:
 
     def __init__(
         self,
-        hass,
+        hass: HomeAssistant,
         entry_id: str,
         token: str,
         member_id: str,
         use_contract_num: str,
         session: aiohttp.ClientSession,
-    ):
+    ) -> None:
         self.hass = hass
         self.entry_id = entry_id
         self.token = token
@@ -60,7 +62,7 @@ class GasAppDevice:
     def available(self) -> bool:
         return self._available
 
-    async def async_update(self):
+    async def async_update(self) -> None:
         """Fetch data from GasApp API."""
         try:
             # Get home data including bill information
@@ -141,7 +143,7 @@ class GasAppDevice:
             return None
         return self.data["current_bill"].get("title2")
 
-    async def async_close_session(self):
+    async def async_close_session(self) -> None:
         """Close the aiohttp session."""
         if self.session:
             await self.session.close()

@@ -8,7 +8,7 @@ built-in weather panel (matched by ``toolName.endsWith('get_weather_forecast')
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import Any
 
 import voluptuous as vol
@@ -69,7 +69,7 @@ def _describe_precipitation(prob: Any) -> str | None:
     return "almost guaranteed"
 
 
-def _resolve_target_date(range_value: str, today):
+def _resolve_target_date(range_value: str, today: date) -> date | None:
     if range_value == "week":
         return None
     if range_value == "today":

@@ -3,7 +3,9 @@ from __future__ import annotations
 
 import logging
 from datetime import timedelta
+from typing import Any
 
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from custom_components.kr_public_data.exceptions import KrTransientError
@@ -18,7 +20,8 @@ _LOGGER = logging.getLogger(__name__)
 class AirKoreaCoordinator(ResilientCoordinator):
     stale_tolerance = 4
 
-    def __init__(self, hass, api_key, stations, living_api_key="", sido=""):
+    def __init__(self, hass: HomeAssistant, api_key: str, stations: list[dict[str, Any]],
+                 living_api_key: str = "", sido: str = "") -> None:
         super().__init__(hass, _LOGGER, name="airkorea",
                          update_interval=timedelta(seconds=SCAN_INTERVAL))
         self._api_key = api_key
@@ -27,7 +30,7 @@ class AirKoreaCoordinator(ResilientCoordinator):
         self._area_code = SIDO_AREA_CODE.get(sido, "1100000000")
         self._session = async_get_clientsession(hass)
 
-    async def _fetch(self):
+    async def _fetch(self) -> dict[str, Any]:
         result = {"stations": {}, "forecast": [], "uv": {}, "stagnation": {}}
         previous = self.data or {}
         station_failures = 0

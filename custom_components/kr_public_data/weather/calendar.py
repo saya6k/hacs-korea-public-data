@@ -1,9 +1,11 @@
 """Weather warning calendar entity - one per area."""
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import datetime, timedelta
+from typing import Any
 
 from homeassistant.components.calendar import CalendarEntity, CalendarEvent
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
@@ -17,7 +19,7 @@ from .device import weather_device
 class KMAWeatherCalendar(CoordinatorEntity[WeatherWarningCoordinator], CalendarEntity):
     _attr_has_entity_name = True
 
-    def __init__(self, coordinator, area_code):
+    def __init__(self, coordinator: WeatherWarningCoordinator, area_code: str) -> None:
         super().__init__(coordinator)
         self._ac = area_code
         self._attr_unique_id = f"{DOMAIN}_{area_code}_calendar"
@@ -25,7 +27,7 @@ class KMAWeatherCalendar(CoordinatorEntity[WeatherWarningCoordinator], CalendarE
         self._attr_icon = "mdi:weather-lightning-rainy"
         self._attr_device_info = weather_device(area_code)
 
-    def _build(self):
+    def _build(self) -> list[CalendarEvent]:
         if not self.coordinator.data:
             return []
         area = self.coordinator.data.get(self._ac, {})
@@ -49,7 +51,7 @@ class KMAWeatherCalendar(CoordinatorEntity[WeatherWarningCoordinator], CalendarE
         return evts
 
     @property
-    def event(self):
+    def event(self) -> CalendarEvent | None:
         evts = self._build()
         if not evts:
             return None
@@ -62,5 +64,6 @@ class KMAWeatherCalendar(CoordinatorEntity[WeatherWarningCoordinator], CalendarE
                 return e
         return evts[-1] if evts else None
 
-    async def async_get_events(self, hass, start_date, end_date):
+    async def async_get_events(self, hass: HomeAssistant, start_date: datetime,
+                               end_date: datetime) -> list[Any]:
         return [e for e in self._build() if e.start <= end_date and e.end >= start_date]

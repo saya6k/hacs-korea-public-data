@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 from datetime import timedelta
+from typing import Any
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -27,7 +28,7 @@ class SeoulBusCoordinator(ResilientCoordinator):
         self._session = async_get_clientsession(hass)
         self.route_ids = route_ids  # [busRouteId, ...]
 
-    async def _fetch(self):
+    async def _fetch(self) -> dict[str, Any]:
         raw = await fetch_stop_arrivals(self._session, self._api_key, self._ars_id)
         return {item["busRouteId"]: item for item in raw
                 if item.get("busRouteId") in self.route_ids}
