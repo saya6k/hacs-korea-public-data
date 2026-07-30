@@ -1,6 +1,6 @@
 {
   "name": "ha_korean_public_data",
-  "image": "homeassistant/home-assistant:2026.8.0.dev202607120312",
+  "image": "ghcr.io/home-assistant/home-assistant:2026.8.0b0",
   "runArgs": ["--hostname=kr-public-data-dev", "--entrypoint", "/bin/bash", "-p", "8123:8123"],
   "overrideCommand": true,
   "postCreateCommand": "scripts/setup",
