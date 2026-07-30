@@ -2,18 +2,20 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime
-from typing import Dict, Any, Optional
+from typing import Any
 
 import aiohttp
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
+from custom_components.kr_public_data.const import DOMAIN
+
 from .api import ArisuApiClient
 from .exceptions import ArisuAuthError, ArisuConnectionError, ArisuDataError
-from ..const import DOMAIN
-import logging
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -39,8 +41,8 @@ class ArisuDevice:
         self._name: str = f"아리수 ({customer_number})"
         self._unique_id: str = f"arisu_{customer_number}"
         self._available: bool = True
-        self.data: Dict[str, Any] = {}
-        self._last_update_success: Optional[datetime] = None
+        self.data: dict[str, Any] = {}
+        self._last_update_success: datetime | None = None
 
     @property
     def unique_id(self) -> str:
@@ -67,7 +69,7 @@ class ArisuDevice:
         """Fetch data from Arisu API."""
         try:
             # Get water bill data (현재 월과 지난달 자동 조회)
-            bill_data: Dict[str, Any] = await self.api_client.async_get_water_bill_data(
+            bill_data: dict[str, Any] = await self.api_client.async_get_water_bill_data(
                 self.customer_number, self.customer_name
             )
 
@@ -88,19 +90,19 @@ class ArisuDevice:
             _LOGGER.error(
                 f"Authentication error for Arisu {self.customer_number}: {err}"
             )
-            raise UpdateFailed(f"Authentication failed: {err}")
+            raise UpdateFailed(f"Authentication failed: {err}") from err
 
         except (ArisuConnectionError, ArisuDataError) as err:
             self._available = False
             _LOGGER.error(f"Error updating Arisu data for {self.customer_number}: {err}")
-            raise UpdateFailed(f"Error communicating with Arisu API: {err}")
+            raise UpdateFailed(f"Error communicating with Arisu API: {err}") from err
 
         except Exception as err:
             self._available = False
             _LOGGER.error(
                 f"Unexpected error updating Arisu data for {self.customer_number}: {err}"
             )
-            raise UpdateFailed(f"Unexpected error: {err}")
+            raise UpdateFailed(f"Unexpected error: {err}") from err
 
     def get_total_amount(self) -> int:
         """Get total bill amount."""
@@ -108,21 +110,21 @@ class ArisuDevice:
             return 0
         return self.data["bill_data"].get("total_amount", 0)
 
-    def get_current_usage(self) -> Optional[int]:
+    def get_current_usage(self) -> int | None:
         """Get current water usage."""
         if not self.data.get("bill_data"):
             return None
         usage_info = self.data["bill_data"].get("usage_info", {})
         return usage_info.get("current_usage")
 
-    def get_customer_address(self) -> Optional[str]:
+    def get_customer_address(self) -> str | None:
         """Get customer address."""
         if not self.data.get("bill_data"):
             return None
         customer_info = self.data["bill_data"].get("customer_info", {})
         return customer_info.get("address")
 
-    def get_payment_method(self) -> Optional[str]:
+    def get_payment_method(self) -> str | None:
         """Get payment method."""
         if not self.data.get("bill_data"):
             return None
@@ -136,7 +138,7 @@ class ArisuDevice:
         arrears_info = self.data["bill_data"].get("arrears_info", {})
         return arrears_info.get("overdue_amount", 0)
 
-    def get_billing_month(self) -> Optional[str]:
+    def get_billing_month(self) -> str | None:
         """Get current billing month."""
         if not self.data.get("bill_data"):
             return None

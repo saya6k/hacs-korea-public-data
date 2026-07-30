@@ -1,6 +1,7 @@
 """Shared pharmacy region device info."""
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
-from ..const import DOMAIN
+
+from custom_components.kr_public_data.const import DOMAIN
 
 
 def pharmacy_region_device(q0: str, q1: str) -> DeviceInfo:

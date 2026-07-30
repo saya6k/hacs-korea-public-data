@@ -1,8 +1,8 @@
 """Parsers for NEIS API data."""
 import re
-from datetime import datetime, date
-from zoneinfo import ZoneInfo
+from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from . import ALLERGY_MAP
 
@@ -82,7 +82,8 @@ def parse_timetable(api_data: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return sorted(schedule_by_date.values(), key=lambda x: x["date"])
 
 
-def parse_school_calendar(api_data: list[dict[str, Any]], user_grade: int | None = None) -> list[dict[str, Any]]:
+def parse_school_calendar(api_data: list[dict[str, Any]],
+                          user_grade: int | None = None) -> list[dict[str, Any]]:
     """
     Parse NEIS school schedule API data.
 
@@ -128,11 +129,10 @@ def parse_school_calendar(api_data: list[dict[str, Any]], user_grade: int | None
                 applies_to_grades.append(grade)
 
         # Add grade indicator if event is for specific grades that don't include the user
-        if applies_to_grades and user_grade is not None:
-            if user_grade not in applies_to_grades:
-                # Event applies to other specific grades - add label
-                grade_str = ",".join(str(g) for g in sorted(applies_to_grades))
-                summary = f"[{grade_str}] {summary}"
+        if (applies_to_grades and user_grade is not None
+                and user_grade not in applies_to_grades):
+            grade_str = ",".join(str(g) for g in sorted(applies_to_grades))
+            summary = f"[{grade_str}] {summary}"
 
         events.append({
             "summary": summary,
@@ -191,8 +191,8 @@ def parse_lunch_menu(api_data: list[dict[str, Any]]) -> dict[str, dict[str, Any]
         raw_text_items = []
         allergy_codes = set()
 
-        for line in dish_name.split("<br/>"):
-            line = line.strip()
+        for raw_line in dish_name.split("<br/>"):
+            line = raw_line.strip()
             if not line:
                 continue
 

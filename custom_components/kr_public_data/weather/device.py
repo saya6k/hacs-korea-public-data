@@ -1,7 +1,10 @@
 """Weather device helpers."""
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
-from ..const import DOMAIN
+
+from custom_components.kr_public_data.const import DOMAIN
+
 from . import AREA_CODES
+
 
 def weather_device(area_code: str) -> DeviceInfo:
     name = AREA_CODES.get(area_code, area_code)

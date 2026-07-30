@@ -7,8 +7,9 @@ import voluptuous as vol
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import llm
 
-from ..airkorea import STAG_GRADES, UV_GRADES
-from ..const import ENTRY_AIRKOREA
+from custom_components.kr_public_data.airkorea import STAG_GRADES, UV_GRADES
+from custom_components.kr_public_data.const import ENTRY_AIRKOREA
+
 from .base_tool import BaseKRTool
 from .render import svg_table
 

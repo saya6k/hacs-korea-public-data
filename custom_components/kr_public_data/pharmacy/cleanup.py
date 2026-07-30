@@ -9,10 +9,14 @@ previously registered entities/devices on its own in that case, so without
 this pass they pile up as orphans across entry reloads.
 """
 from __future__ import annotations
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import device_registry as dr, entity_registry as er
-from ..const import DOMAIN
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
+
+from custom_components.kr_public_data.const import DOMAIN
+
 from .sensor import region_nearby_pharmacies
 
 _LOCATION_PREFIX = f"{DOMAIN}_pharmacy_location_"

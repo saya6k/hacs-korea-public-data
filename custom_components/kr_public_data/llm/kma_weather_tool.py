@@ -15,7 +15,8 @@ import voluptuous as vol
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import llm
 
-from ..const import ENTRY_KMA_WEATHER
+from custom_components.kr_public_data.const import ENTRY_KMA_WEATHER
+
 from .base_tool import BaseKRTool
 
 _LOGGER = logging.getLogger(__name__)
@@ -132,7 +133,7 @@ class GetKMAWeatherForecastTool(BaseKRTool):
 
         # Resolve region — data keys are region_key(r) ("시도 시군구" for
         # subentry regions, bare name for legacy), so match either form.
-        from ..kma_weather import region_key
+        from custom_components.kr_public_data.kma_weather import region_key
         region_name = None
         if wanted_region:
             if wanted_region in coord.data:

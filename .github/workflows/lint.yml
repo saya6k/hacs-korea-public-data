@@ -1,0 +1,32 @@
+name: Lint
+
+# Reusable: ruff lint. Called by ci.yml on every push/PR.
+#
+# Lint only — there is no pytest job because this integration has no test
+# suite yet. The rule set is pinned in pyproject.toml rather than inherited
+# from ruff's defaults, so upgrading ruff can't silently change CI's verdict
+# on untouched code.
+# yamllint disable-line rule:truthy
+on:
+  workflow_call:
+
+jobs:
+  ruff:
+    name: ruff
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v8.2.0
+
+      - name: Create the Python 3.14 environment
+        run: uv venv --python 3.14
+
+      - name: Install ruff
+        run: uv pip install ruff
+
+      # Call the venv binary directly — `uv run` would treat the repo as a
+      # project and editable-install it, but this is a custom_components
+      # layout, not a package.
+      - name: Ruff
+        run: .venv/bin/ruff check .

@@ -1,9 +1,9 @@
 """Utility functions - NO pytz, NO blocking imports."""
 from __future__ import annotations
+
 import random
-import re
 from datetime import datetime
-from typing import Dict, Any, Optional
+from typing import Any
 from zoneinfo import ZoneInfo
 
 TZ_ASIA_SEOUL = ZoneInfo("Asia/Seoul")
@@ -67,7 +67,7 @@ def _pkcs1pad2(s, n):
     return result
 
 
-def get_value_from_path(data: Dict[str, Any], path: str) -> Any:
+def get_value_from_path(data: dict[str, Any], path: str) -> Any:
     keys = path.split(".")
     current = data
     for key in keys:
@@ -80,7 +80,7 @@ def get_value_from_path(data: Dict[str, Any], path: str) -> Any:
     return current
 
 
-def parse_date_value(raw_value: str, current_year: int = None) -> Optional[datetime]:
+def parse_date_value(raw_value: str, current_year: int | None = None) -> datetime | None:
     if not raw_value:
         return None
     for fmt in ("%Y-%m-%d", "%Y%m%d", "%Y.%m.%d", "%m/%d"):

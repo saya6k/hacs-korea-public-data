@@ -7,7 +7,8 @@ from typing import Any
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import llm
 
-from ..const import DOMAIN
+from custom_components.kr_public_data.const import DOMAIN
+
 from .const import SOURCE
 
 _LOGGER = logging.getLogger(__name__)

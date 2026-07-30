@@ -1,14 +1,17 @@
 """GasApp coordinator."""
 from __future__ import annotations
+
 import logging
 from datetime import timedelta
-from homeassistant.core import HomeAssistant
+
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+
+from custom_components.kr_public_data.exceptions import KrAuthError
+from custom_components.kr_public_data.resilience import ResilientCoordinator
+
 from . import GASAPP_SCAN_INTERVAL
 from .api import GasAppApiClient
 from .exceptions import GasAppAuthError
-from ..exceptions import KrAuthError
-from ..resilience import ResilientCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 

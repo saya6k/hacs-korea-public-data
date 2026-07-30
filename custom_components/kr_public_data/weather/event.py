@@ -1,13 +1,18 @@
 """Weather warning event entities."""
 from __future__ import annotations
+
 from typing import Any
+
 from homeassistant.components.event import EventEntity
 from homeassistant.core import callback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from ..const import DOMAIN
-from . import EVENT_TYPE_NONE, EVENT_TYPES, WARNING_TYPES, AREA_CODES
+
+from custom_components.kr_public_data.const import DOMAIN
+
+from . import AREA_CODES, EVENT_TYPE_NONE, EVENT_TYPES
 from .coordinator import WeatherWarningCoordinator
 from .device import weather_device
+
 
 class KMAWeatherEvent(CoordinatorEntity[WeatherWarningCoordinator], EventEntity):
     _attr_has_entity_name = True

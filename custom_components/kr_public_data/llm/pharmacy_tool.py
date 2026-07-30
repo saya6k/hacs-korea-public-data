@@ -13,7 +13,8 @@ import voluptuous as vol
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import llm
 
-from ..const import ENTRY_PHARMACY
+from custom_components.kr_public_data.const import ENTRY_PHARMACY
+
 from .base_tool import BaseKRTool
 from .render import grid_results
 

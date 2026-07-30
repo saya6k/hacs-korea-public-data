@@ -1,15 +1,19 @@
 """KMA Weather API - full attributes including dew point + apparent temp."""
 from __future__ import annotations
-import logging
+
 import json
+import logging
 import math
 from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
+
 import aiohttp
+
+from custom_components.kr_public_data.exceptions import KrTransientError, raise_for_result_code
+
 from . import VILAGE_URL
-from ..exceptions import KrTransientError, raise_for_result_code
 
 _LOGGER = logging.getLogger(__name__)
 KST = ZoneInfo("Asia/Seoul")
@@ -40,7 +44,7 @@ def _base_time_vilage():
     return dt.strftime("%Y%m%d"), f"{base:02d}00"
 
 def _float(v):
-    if v is None or v == "" or v == "강수없음" or v == "적설없음":
+    if v is None or v in {"", "강수없음", "적설없음"}:
         return None
     try:
         f = float(v)
@@ -73,7 +77,9 @@ def _apparent_temp(temp, wind_speed, humidity):
         return round(wc, 1)
     elif temp >= 27:
         # Simplified heat index (Steadman)
-        hi = -8.785 + 1.611*temp + 2.339*rh - 0.1461*temp*rh - 0.01231*temp**2 - 0.01642*rh**2 + 0.002212*temp**2*rh + 0.000725*temp*rh**2 - 0.000003582*temp**2*rh**2
+        hi = (-8.785 + 1.611*temp + 2.339*rh - 0.1461*temp*rh
+              - 0.01231*temp**2 - 0.01642*rh**2 + 0.002212*temp**2*rh
+              + 0.000725*temp*rh**2 - 0.000003582*temp**2*rh**2)
         return round(hi, 1)
     return round(temp, 1)
 
@@ -176,7 +182,8 @@ def parse_weather(items: list[dict]) -> dict[str, Any]:
     for dt_str in sorted(by_date.keys()):
         entries = by_date[dt_str]
         temps = [e["temperature"] for e in entries if e["temperature"] is not None]
-        pops = [e["precipitation_probability"] for e in entries if e["precipitation_probability"] is not None]
+        pops = [e["precipitation_probability"] for e in entries
+                if e["precipitation_probability"] is not None]
         humids = [e["humidity"] for e in entries if e["humidity"] is not None]
         winds = [e["wind_speed"] for e in entries if e["wind_speed"] is not None]
 
@@ -185,9 +192,11 @@ def parse_weather(items: list[dict]) -> dict[str, Any]:
             if tt.startswith(dt_str.replace("-", "")):
                 raw = by_time[tt]
                 v = _float(raw.get("TMN"))
-                if v is not None: tmn = v
+                if v is not None:
+                    tmn = v
                 v = _float(raw.get("TMX"))
-                if v is not None: tmx = v
+                if v is not None:
+                    tmx = v
 
         conditions = [e["condition"] for e in entries if e["condition"]]
         day_cond = "cloudy"

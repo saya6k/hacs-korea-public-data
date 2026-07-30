@@ -1,5 +1,6 @@
 """KEPCO API client - NO module-level curl_cffi import."""
 from __future__ import annotations
+
 import json
 import logging
 
@@ -18,7 +19,7 @@ _LOGIN_FAIL_BODY_MARKERS = (
 
 def _get_rsa_key():
     """Lazy import RSAKey to avoid triggering utils import chain."""
-    from ..utils import RSAKey
+    from custom_components.kr_public_data.utils import RSAKey
     return RSAKey
 
 
@@ -110,7 +111,10 @@ class KepcoApiClient:
             raise
 
     async def async_get_recent_usage(self):
-        return await self._request("POST", "https://pp.kepco.co.kr:8030/low/main/recent_usage.do", json={})
+        return await self._request(
+            "POST", "https://pp.kepco.co.kr:8030/low/main/recent_usage.do", json={})
 
     async def async_get_usage_info(self):
-        return await self._request("POST", "https://pp.kepco.co.kr:8030/low/main/usage_info.do", json={"tou": "N"})
+        return await self._request(
+            "POST", "https://pp.kepco.co.kr:8030/low/main/usage_info.do",
+            json={"tou": "N"})

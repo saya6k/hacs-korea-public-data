@@ -8,8 +8,9 @@ import voluptuous as vol
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import llm
 
-from ..const import ENTRY_SCHOOL
-from ..school import ALLERGY_MAP
+from custom_components.kr_public_data.const import ENTRY_SCHOOL
+from custom_components.kr_public_data.school import ALLERGY_MAP
+
 from .base_tool import BaseKRTool
 from .render import svg_card, svg_table
 
@@ -48,7 +49,7 @@ def _resolve_school_coordinator(store: dict, school_name: str | None):
 
     if school_name:
         wanted = school_name.strip()
-        for info, name in zip(infos, names):
+        for info, name in zip(infos, names, strict=True):
             if wanted == name or wanted in name:
                 return info["coordinator"], None
         return None, f"'{school_name}' 학교를 찾을 수 없습니다. 등록된 학교: {', '.join(names)}"
@@ -211,7 +212,10 @@ class GetSchoolTimetableTool(BaseKRTool):
             )
 
         lessons = day.get("lessons") or []
-        rows = [[str(l.get("period") or ""), l.get("subject") or ""] for l in lessons]
+        rows = [
+            [str(lesson.get("period") or ""), lesson.get("subject") or ""]
+            for lesson in lessons
+        ]
         featured = svg_table(
             "시간표",
             ["교시", "과목"],

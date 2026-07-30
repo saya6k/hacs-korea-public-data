@@ -1,12 +1,16 @@
 """Subway arrival coordinator - uses bulk API, shared per station."""
 from __future__ import annotations
+
 import logging
 from datetime import timedelta
+
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+
+from custom_components.kr_public_data.resilience import ResilientCoordinator
+
 from . import SUBWAY_SCAN_INTERVAL
 from .subway_api import fetch_bulk_arrivals, filter_arrivals
-from ..resilience import ResilientCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 

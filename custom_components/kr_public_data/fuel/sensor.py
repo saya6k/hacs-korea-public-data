@@ -1,10 +1,13 @@
 """Fuel price sensors."""
 from __future__ import annotations
+
 from typing import Any
+
 from homeassistant.components.sensor import SensorEntity, SensorStateClass
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from ..const import DOMAIN
-from . import FUEL_TYPES, SIDO_CODES
+
+from custom_components.kr_public_data.const import DOMAIN
+
 from .coordinator import FuelCoordinator
 from .device import fuel_device
 

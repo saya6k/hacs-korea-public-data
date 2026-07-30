@@ -5,12 +5,16 @@ live countdown. "다음/다다음" here means the next two scheduled departures
 (by depPlandTime) that haven't passed yet, per selected grade (등급).
 """
 from __future__ import annotations
+
 import logging
 from datetime import datetime, timedelta, timezone
+
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+
+from custom_components.kr_public_data.resilience import ResilientCoordinator
+
 from .intercity_api import fetch_dispatches
-from ..resilience import ResilientCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 KST = timezone(timedelta(hours=9))
@@ -48,7 +52,8 @@ class IntercityBusCoordinator(ResilientCoordinator):
 
     def __init__(self, hass: HomeAssistant, api_key: str,
                  queries: list[dict[str, str]], grades: list[str]) -> None:
-        name_key = f"{queries[0]['depTerminalId']}_{queries[0]['arrTerminalId']}" if queries else "empty"
+        name_key = (f"{queries[0]['depTerminalId']}_{queries[0]['arrTerminalId']}"
+                    if queries else "empty")
         super().__init__(hass, _LOGGER, name=f"intercity_bus_{name_key}",
                          update_interval=timedelta(seconds=INTERCITY_BUS_SCAN_INTERVAL))
         self._api_key = api_key

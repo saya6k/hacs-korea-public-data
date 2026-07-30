@@ -15,7 +15,7 @@ from typing import Any
 
 import aiohttp
 
-from ..exceptions import KrQuotaError, KrTransientError
+from custom_components.kr_public_data.exceptions import KrQuotaError, KrTransientError
 
 _LOGGER = logging.getLogger(__name__)
 

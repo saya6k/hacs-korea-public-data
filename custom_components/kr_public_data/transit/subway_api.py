@@ -1,10 +1,14 @@
 """Seoul subway bulk arrival API client."""
 from __future__ import annotations
+
 import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any
+
 import aiohttp
-from ..exceptions import KrQuotaError
+
+from custom_components.kr_public_data.exceptions import KrQuotaError
+
 from . import SUBWAY_BULK_URL, SUBWAY_LINES
 
 _LOGGER = logging.getLogger(__name__)
@@ -14,15 +18,17 @@ KST = timezone(timedelta(hours=9))
 async def validate_seoul_api(api_key: str) -> bool:
     url = SUBWAY_BULK_URL.format(key=api_key, station="서울")
     try:
-        async with aiohttp.ClientSession() as s:
-            async with s.get(url, timeout=aiohttp.ClientTimeout(total=15)) as r:
-                if r.status != 200:
-                    return False
-                d = await r.json(content_type=None)
-                if "realtimeArrivalList" in d:
-                    return True
-                err = d.get("errorMessage", {})
-                return err.get("code") in ("INFO-200", "INFO-000")
+        async with (
+            aiohttp.ClientSession() as s,
+            s.get(url, timeout=aiohttp.ClientTimeout(total=15)) as r,
+        ):
+            if r.status != 200:
+                return False
+            d = await r.json(content_type=None)
+            if "realtimeArrivalList" in d:
+                return True
+            err = d.get("errorMessage", {})
+            return err.get("code") in ("INFO-200", "INFO-000")
     except Exception:
         return False
 

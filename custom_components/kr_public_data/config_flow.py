@@ -1,19 +1,45 @@
 """Config flow for 한국 공공데이터."""
 from __future__ import annotations
+
 import logging
 from typing import Any
+
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import (
-    BooleanSelector, LocationSelector, LocationSelectorConfig,
-    NumberSelector, NumberSelectorConfig, NumberSelectorMode,
-    SelectOptionDict, SelectSelector, SelectSelectorConfig, SelectSelectorMode,
-    TextSelector, TextSelectorConfig, TextSelectorType,
+    BooleanSelector,
+    LocationSelector,
+    LocationSelectorConfig,
+    SelectOptionDict,
+    SelectSelector,
+    SelectSelectorConfig,
+    SelectSelectorMode,
+    TextSelector,
+    TextSelectorConfig,
+    TextSelectorType,
 )
-from .const import *
+
+from .const import (
+    CONF_ENTRY_TYPE,
+    DOMAIN,
+    ENTRY_AIRKOREA,
+    ENTRY_ARISU,
+    ENTRY_BUS,
+    ENTRY_DISASTER,
+    ENTRY_EARTHQUAKE,
+    ENTRY_FUEL,
+    ENTRY_GASAPP,
+    ENTRY_KEPCO,
+    ENTRY_KMA_WEATHER,
+    ENTRY_PHARMACY,
+    ENTRY_SAFETY_ALERT,
+    ENTRY_SCHOOL,
+    ENTRY_TRANSIT,
+    ENTRY_WEATHER,
+)
 from .utils import sido_short_name
 
 _LOGGER = logging.getLogger(__name__)
@@ -97,7 +123,8 @@ def _pharmacy_location_fields(hass, region: dict | None = None):
     region = region or {}
     loc = region.get("location") or {}
     return {
-        vol.Optional("location_sensors", default=region.get("location_sensors", False)): BooleanSelector(),
+        vol.Optional("location_sensors",
+                     default=region.get("location_sensors", False)): BooleanSelector(),
         vol.Optional("location", default={
             "latitude": loc.get("latitude", hass.config.latitude),
             "longitude": loc.get("longitude", hass.config.longitude),
@@ -160,7 +187,8 @@ async def _bus_stop_routes(session, api_key: str, city_code: str, node_id: str) 
 async def _school_class_options(session, api_key: str, region_code: str, school_code: str,
                                  school_level: str, max_g: int) -> dict[str, str]:
     from datetime import datetime, timedelta
-    from .school.api import NeisApiClient, KST
+
+    from .school.api import KST, NeisApiClient
     from .school.parser import parse_timetable_classes
     c = NeisApiClient(session, api_key)
     combo_opts: dict[str, str] = {}
@@ -304,6 +332,7 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_transit_lines(self, user_input=None) -> FlowResult:
         """Step 3: 호선 선택 (감지된 노선이 기본값) → 역 subentry."""
         import homeassistant.helpers.config_validation as cv
+
         from .transit import SUBWAY_LINES
         errors: dict[str, str] = {}
         if user_input is not None:
@@ -408,6 +437,7 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_bus_routes(self, user_input=None) -> FlowResult:
         """Step 4: 노선 선택 (감지된 노선이 기본값) → 정류장 subentry."""
         import homeassistant.helpers.config_validation as cv
+
         from .bus import SEOUL_CITY_CODE
         errors: dict[str, str] = {}
         route_map = {r["id"]: r["label"] for r in self._bus_routes_found}
@@ -439,7 +469,7 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     # ══════════ 유가정보 ══════════
 
     async def async_step_fuel(self, user_input=None) -> FlowResult:
-        from .fuel import SIDO_CODES, FUEL_TYPES
+        from .fuel import FUEL_TYPES, SIDO_CODES
         from .fuel.api import validate_opinet
         errors: dict[str, str] = {}
 
@@ -553,7 +583,7 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._data["grade_classes"] = selected
             # For backward compat, set grade to first selection's grade
             if selected:
-                g, cl = selected[0].split("-")
+                g, _ = selected[0].split("-")
                 self._data["grade"] = int(g)
                 self._data["classes"] = [s.split("-")[1] for s in selected]
                 self._data["class"] = selected[0].split("-")[1]
@@ -740,7 +770,10 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
     async def async_step_pharmacy_sgg(self, user_input=None) -> FlowResult:
-        """Step 2: 기초자치단체 체크리스트 → regions 리스트 (subentry 없이 entry.data에 flat 저장)."""
+        """Step 2: 기초자치단체 체크리스트 → regions 리스트.
+
+        (subentry 없이 entry.data에 flat 저장)
+        """
         import homeassistant.helpers.config_validation as cv
         errors: dict[str, str] = {}
         if user_input is not None:
@@ -794,6 +827,7 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_airkorea_select(self, user_input=None) -> FlowResult:
         """Step 2: 측정소(시군구) 복수 선택."""
         import homeassistant.helpers.config_validation as cv
+
         from .airkorea import STATIONS_BY_SIDO
         if user_input is not None:
             selected = user_input.get("stations", [])
@@ -823,7 +857,7 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                           "api_key": user_input["api_key"]}
             self._kma_sido = user_input["sido"]
             return await self.async_step_kma_weather_sgg()
-        sido_opts = [SelectOptionDict(value=k, label=k) for k in SIDO_LIST.keys()]
+        sido_opts = [SelectOptionDict(value=k, label=k) for k in SIDO_LIST]
         return self.async_show_form(step_id="kma_weather", data_schema=vol.Schema({
             vol.Required("api_key"): _password_selector(),
             vol.Required("sido"): SelectSelector(
@@ -834,8 +868,9 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_kma_weather_sgg(self, user_input=None) -> FlowResult:
         """Step 2: 기초자치단체 + O3/UV 측정소 선택."""
         import homeassistant.helpers.config_validation as cv
+
+        from .airkorea import SIDO_AREA_CODE, STATIONS_BY_SIDO
         from .kma_weather import SIDO_LIST
-        from .airkorea import STATIONS_BY_SIDO, SIDO_AREA_CODE
         sgg_map = SIDO_LIST.get(self._kma_sido, {})
         if user_input is not None:
             selected = user_input.get("regions", [])
@@ -855,7 +890,7 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                      "unique_id": f"{self._kma_sido}_{r}"}
                     for r in selected if r in sgg_map
                 ])
-        labels = {k: k for k in sgg_map.keys()}
+        labels = {k: k for k in sgg_map}
         air_stations = STATIONS_BY_SIDO.get(sido_short_name(self._kma_sido), [])
         # "" is not usable as a select value in the frontend (it reads as
         # "no selection" and locks the field) — use a "none" sentinel.
@@ -959,7 +994,7 @@ class FuelRegionSubentryFlowHandler(config_entries.ConfigSubentryFlow):
     """Add one 시도 region (+ 유종 목록) to a fuel entry."""
 
     async def async_step_user(self, user_input=None):
-        from .fuel import SIDO_CODES, FUEL_TYPES
+        from .fuel import FUEL_TYPES, SIDO_CODES
         errors: dict[str, str] = {}
         sido_options = [SelectOptionDict(value=k, label=v) for k, v in SIDO_CODES.items()]
         fuel_options = [SelectOptionDict(value=k, label=v) for k, v in FUEL_TYPES.items()]
@@ -986,7 +1021,10 @@ class FuelRegionSubentryFlowHandler(config_entries.ConfigSubentryFlow):
         }), errors=errors)
 
     async def async_step_reconfigure(self, user_input=None):
-        """이미 등록된 지역의 유종 목록을 수정 (지역을 다시 추가하면 already_configured로 막히므로)."""
+        """이미 등록된 지역의 유종 목록을 수정.
+
+        (지역을 다시 추가하면 already_configured로 막히므로)
+        """
         from .fuel import FUEL_TYPES
         subentry = self._get_reconfigure_subentry()
         d = subentry.data
@@ -1184,6 +1222,7 @@ class SubwayStationSubentryFlowHandler(config_entries.ConfigSubentryFlow):
 
     async def async_step_lines(self, user_input=None):
         import homeassistant.helpers.config_validation as cv
+
         from .transit import SUBWAY_LINES
         errors: dict[str, str] = {}
         if user_input is not None:
@@ -1267,6 +1306,7 @@ class CityBusStopSubentryFlowHandler(config_entries.ConfigSubentryFlow):
 
     async def async_step_routes(self, user_input=None):
         import homeassistant.helpers.config_validation as cv
+
         from .bus import SEOUL_CITY_CODE
         errors: dict[str, str] = {}
         route_map = {r["id"]: r["label"] for r in self._routes_found}
@@ -1496,7 +1536,7 @@ class SchoolSubentryFlowHandler(config_entries.ConfigSubentryFlow):
             selected = user_input.get("grade_classes", [])
             self._data["grade_classes"] = selected
             if selected:
-                g, cl = selected[0].split("-")
+                g, _ = selected[0].split("-")
                 self._data["grade"] = int(g)
                 self._data["classes"] = [s.split("-")[1] for s in selected]
                 self._data["class"] = selected[0].split("-")[1]
@@ -1537,7 +1577,7 @@ class SchoolSubentryFlowHandler(config_entries.ConfigSubentryFlow):
             selected = user_input.get("grade_classes", [])
             updates = {"grade_classes": selected}
             if selected:
-                g, cl = selected[0].split("-")
+                g, _ = selected[0].split("-")
                 updates["grade"] = int(g)
                 updates["classes"] = [s.split("-")[1] for s in selected]
                 updates["class"] = selected[0].split("-")[1]
@@ -1658,7 +1698,8 @@ class KRPublicDataOptionsFlow(config_entries.OptionsFlow):
 
         elif etype == ENTRY_TRANSIT:
             return vol.Schema({
-                vol.Optional("seoul_api_key", default=d.get("seoul_api_key", "")): _password_selector(),
+                vol.Optional("seoul_api_key",
+                             default=d.get("seoul_api_key", "")): _password_selector(),
             })
 
         elif etype == ENTRY_FUEL:
@@ -1669,7 +1710,7 @@ class KRPublicDataOptionsFlow(config_entries.OptionsFlow):
                                  default=d.get("opinet_api_key") or d.get("api_key", "")):
                         _password_selector(),
                 })
-            from .fuel import SIDO_CODES, FUEL_TYPES
+            from .fuel import FUEL_TYPES, SIDO_CODES
             sido_opts = [SelectOptionDict(value=k, label=v) for k, v in SIDO_CODES.items()]
             fuel_opts = [SelectOptionDict(value=k, label=v) for k, v in FUEL_TYPES.items()]
             cur_sidos = list(set(c["sido_code"] for c in d.get("configs", [])))
@@ -1724,7 +1765,8 @@ class KRPublicDataOptionsFlow(config_entries.OptionsFlow):
                     "longitude": d.get("home_longitude", self.hass.config.longitude),
                     "radius": d.get("radius_km", 200) * 1000,
                 }): LocationSelector(LocationSelectorConfig(radius=True)),
-                vol.Optional("min_magnitude", default=d.get("min_magnitude", 3.0)): vol.Coerce(float),
+                vol.Optional("min_magnitude",
+                             default=d.get("min_magnitude", 3.0)): vol.Coerce(float),
             })
 
         elif etype == ENTRY_SAFETY_ALERT:
@@ -1761,7 +1803,8 @@ class KRPublicDataOptionsFlow(config_entries.OptionsFlow):
         elif etype == ENTRY_AIRKOREA:
             return vol.Schema({
                 vol.Required("api_key", default=d.get("api_key", "")): _password_selector(),
-                vol.Optional("living_api_key", default=d.get("living_api_key", "")): _password_selector(),
+                vol.Optional("living_api_key",
+                             default=d.get("living_api_key", "")): _password_selector(),
             })
 
         elif etype == ENTRY_KMA_WEATHER:
@@ -1782,7 +1825,8 @@ class KRPublicDataOptionsFlow(config_entries.OptionsFlow):
             return vol.Schema({
                 vol.Required("api_key", default=d.get("api_key", "")): _password_selector(),
                 vol.Optional("radius_km", default=d.get("radius_km", 200)): vol.Coerce(int),
-                vol.Optional("min_magnitude", default=d.get("min_magnitude", 3.0)): vol.Coerce(float),
+                vol.Optional("min_magnitude",
+                             default=d.get("min_magnitude", 3.0)): vol.Coerce(float),
             })
 
         elif etype == ENTRY_BUS:

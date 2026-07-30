@@ -8,7 +8,7 @@ addition to the LLM narration.
 from __future__ import annotations
 
 import base64
-from typing import Iterable, Sequence
+from collections.abc import Iterable, Sequence
 
 # Korean-capable system font stack (works on macOS, Windows, Android, iOS).
 _FONT = (

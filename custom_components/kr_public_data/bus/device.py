@@ -1,6 +1,7 @@
 """City bus device helpers."""
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
-from ..const import DOMAIN
+
+from custom_components.kr_public_data.const import DOMAIN
 
 
 def city_bus_route_device(node_id: str, node_name: str, route_id: str, route_no) -> DeviceInfo:

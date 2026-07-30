@@ -72,7 +72,7 @@ class _ServiceAPI(llm.API):
 
     async def async_get_api_instance(self, llm_context: llm.LLMContext) -> llm.APIInstance:
         """Return the instance of the API."""
-        from homeassistant.components.llm import (  # noqa: PLC0415
+        from homeassistant.components.llm import (
             async_get_tools as async_get_platform_tools,
         )
 

@@ -7,7 +7,8 @@ import voluptuous as vol
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import llm
 
-from ..const import ENTRY_DISASTER
+from custom_components.kr_public_data.const import ENTRY_DISASTER
+
 from .base_tool import BaseKRTool
 from .render import grid_results
 
@@ -41,7 +42,7 @@ class GetDisasterMessagesTool(BaseKRTool):
         if coord is None or coord.data is None:
             return self.error("재난문자 데이터가 아직 준비되지 않았습니다.")
 
-        from ..disaster.coordinator import filter_messages
+        from custom_components.kr_public_data.disaster.coordinator import filter_messages
         limit = tool_input.tool_args.get("limit") or 5
         msgs = coord.data or []
         regions = store.get("regions") or {}
@@ -53,7 +54,9 @@ class GetDisasterMessagesTool(BaseKRTool):
                         merged.append(m)
             merged.sort(key=lambda m: m.get("create_date", ""), reverse=True)
             msgs = merged
-            from ..disaster.device import region_label as _region_label
+            from custom_components.kr_public_data.disaster.device import (
+                region_label as _region_label,
+            )
             region_label = ", ".join(
                 _region_label(sido=r.get("sido", ""), sgg=r.get("sgg", ""))
                 for r in regions.values())

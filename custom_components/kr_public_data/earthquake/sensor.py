@@ -1,13 +1,15 @@
 """Earthquake sensors + geolocation + event."""
 from __future__ import annotations
-from typing import Any
-from homeassistant.components.geo_location import GeolocationEvent
+
 from homeassistant.components.event import EventEntity
+from homeassistant.core import callback
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from homeassistant.core import callback
-from ..const import DOMAIN
+
+from custom_components.kr_public_data.const import DOMAIN
+
 from .api import haversine_km
+
 
 def eq_device():
     return DeviceInfo(identifiers={(DOMAIN, "earthquake")},
@@ -16,7 +18,7 @@ def eq_device():
 
 class EarthquakeEvent(CoordinatorEntity, EventEntity):
     _attr_has_entity_name = True
-    _attr_event_types = ["earthquake_alert"]
+    _attr_event_types = ["earthquake_alert"]  # noqa: RUF012  HA entity-attribute convention; the base class owns the name
     _attr_icon = "mdi:earth-arrow-down"
     def __init__(self, coordinator, home_lat, home_lon, radius_km, min_mag):
         super().__init__(coordinator)

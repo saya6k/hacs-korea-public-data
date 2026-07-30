@@ -1,5 +1,7 @@
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
-from ..const import DOMAIN
+
+from custom_components.kr_public_data.const import DOMAIN
+
 
 def safety_alert_device(area_code, area_name):
     return DeviceInfo(

@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Dict, List
 
 from curl_cffi import requests as cffi_requests
 
@@ -36,7 +35,7 @@ class SafetyAlertRegionApiClient:
         self._session = session
 
     @staticmethod
-    def _headers() -> Dict[str, str]:
+    def _headers() -> dict[str, str]:
         return {
             "Accept": "application/json, text/plain, */*",
             "Origin": "https://www.safekorea.go.kr",
@@ -67,7 +66,7 @@ class SafetyAlertRegionApiClient:
             _LOGGER.warning("Region API %s failed: %s", url, e)
             return None
 
-    async def async_get_sido_list(self) -> List[Dict[str, str]]:
+    async def async_get_sido_list(self) -> list[dict[str, str]]:
         """Get list of sido (시도) regions.
 
         There is no JSON endpoint for the sido level — the options are
@@ -89,7 +88,7 @@ class SafetyAlertRegionApiClient:
         result.sort(key=lambda x: x["name"])
         return result
 
-    async def async_get_sgg_list(self, sido_code: str) -> List[Dict[str, str]]:
+    async def async_get_sgg_list(self, sido_code: str) -> list[dict[str, str]]:
         """Get list of sgg (시군구) regions for a given sido."""
         data = await self._post_json(
             f"{_BASE}/changeSidoList_new.do", {"sbLawArea1": sido_code})
@@ -104,7 +103,7 @@ class SafetyAlertRegionApiClient:
 
     async def async_get_emd_list(
         self, sido_code: str, sgg_code: str
-    ) -> List[Dict[str, str]]:
+    ) -> list[dict[str, str]]:
         """Get list of emd (읍면동) regions for a given sido and sgg."""
         data = await self._post_json(
             f"{_BASE}/changeSggList_new.do",

@@ -1,9 +1,28 @@
 """한국 공공데이터 - unified Korean public data integration."""
 from __future__ import annotations
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
-from .const import *
+
+from .const import (
+    CONF_ENTRY_TYPE,
+    DOMAIN,
+    ENTRY_AIRKOREA,
+    ENTRY_ARISU,
+    ENTRY_BUS,
+    ENTRY_DISASTER,
+    ENTRY_EARTHQUAKE,
+    ENTRY_FUEL,
+    ENTRY_GASAPP,
+    ENTRY_KEPCO,
+    ENTRY_KMA_WEATHER,
+    ENTRY_PHARMACY,
+    ENTRY_SAFETY_ALERT,
+    ENTRY_SCHOOL,
+    ENTRY_TRANSIT,
+    ENTRY_WEATHER,
+)
 from .llm_api import async_register_llm_api
 
 PLATFORM_MAP = {
@@ -35,8 +54,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     store: dict = {}
 
     if etype == ENTRY_WEATHER:
-        from .weather.coordinator import WeatherWarningCoordinator
         from .weather.cleanup import async_cleanup_stale_weather_entities
+        from .weather.coordinator import WeatherWarningCoordinator
         api_key = entry.data["api_key"]
         # 특보구역 per subentry; legacy entries keep area_codes in entry data.
         areas = {sub_id: sub.data["area_code"]
@@ -48,9 +67,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         async_cleanup_stale_weather_entities(hass, entry, area_codes)
 
     elif etype == ENTRY_TRANSIT:
+        from .resilience import async_first_refresh_all
         from .transit import line_directions
         from .transit.subway_coordinator import SubwayCoordinator
-        from .resilience import async_first_refresh_all
         seoul_key = entry.data.get("seoul_api_key", "")
         # 역 per subentry: one coordinator per station, subscribed to both
         # directions of every selected line.
@@ -80,8 +99,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                  "subway_items": legacy_items}
 
     elif etype == ENTRY_FUEL:
-        from .fuel.coordinator import FuelCoordinator
         from .fuel.cleanup import async_cleanup_stale_fuel_entities
+        from .fuel.coordinator import FuelCoordinator
         api_key = entry.data.get("opinet_api_key") or entry.data.get("api_key", "")
         # 지역(시도) per subentry, 유종은 그 안의 목록; 레거시 엔트리는 configs를 그대로 사용.
         configs = [{"sido_code": sub.data["sido_code"], "fuel_code": f}
@@ -97,8 +116,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         async_cleanup_stale_fuel_entities(hass, entry, configs)
 
     elif etype == ENTRY_SCHOOL:
-        from .school.coordinator import SchoolCoordinator
         from .resilience import async_first_refresh_all
+        from .school.coordinator import SchoolCoordinator
         api_key = entry.data.get("neis_api_key") or entry.data.get("api_key", "")
         # 학교 per subentry: one coordinator per school.
         school_subs = {sub_id: {"data": sub.data,
@@ -129,8 +148,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                  "region": entry.data.get("region_filter", "")}
 
     elif etype == ENTRY_SAFETY_ALERT:
-        from .safety_alert.coordinator import SafetyAlertCoordinator
         from .safety_alert.cleanup import async_cleanup_stale_safety_alert_entities
+        from .safety_alert.coordinator import SafetyAlertCoordinator
         regions = entry.data.get("regions", [])
         if not regions and entry.data.get("area_code"):
             regions = [{"code": entry.data["area_code"], "name": entry.data.get("area_name", "")}]
@@ -143,6 +162,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     elif etype == ENTRY_KEPCO:
         from homeassistant.exceptions import ConfigEntryAuthFailed
+
         from .kepco.coordinator import KepcoCoordinator
         from .kepco.exceptions import KepcoAuthError
         c = KepcoCoordinator(hass, entry.data["username"], entry.data["password"])
@@ -171,9 +191,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         store = {"coordinator": c}
 
     elif etype == ENTRY_PHARMACY:
+        from .pharmacy.cleanup import async_cleanup_stale_pharmacy_entities
         from .pharmacy.coordinator import PharmacyCoordinator
         from .pharmacy.services import async_register_pharmacy_service
-        from .pharmacy.cleanup import async_cleanup_stale_pharmacy_entities
         from .resilience import async_first_refresh_all
         api_key = entry.data["api_key"]
         # 지역은 entry.data["regions"]에 flat하게 저장 (subentry 없이 관리).
@@ -212,8 +232,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         async_register_airkorea_services(hass, api_key, living_key, sido)
 
     elif etype == ENTRY_KMA_WEATHER:
-        from .kma_weather.coordinator import KMAWeatherCoordinator
         from .airkorea import SIDO_AREA_CODE
+        from .kma_weather.coordinator import KMAWeatherCoordinator
         from .utils import sido_short_name
         api_key = entry.data["api_key"]
         # 시군구 region per subentry; legacy entries keep regions in entry data.
@@ -244,8 +264,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     elif etype == ENTRY_BUS:
         from .bus.city_coordinator import CityBusCoordinator
-        from .bus.seoul_coordinator import SeoulBusCoordinator
         from .bus.intercity_coordinator import IntercityBusCoordinator
+        from .bus.seoul_coordinator import SeoulBusCoordinator
         from .resilience import async_first_refresh_all
         service_key = entry.data.get("api_key") or entry.data.get("service_key", "")
         # 정류장 per subentry: one coordinator per stop, subscribed to every
@@ -312,7 +332,9 @@ async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> Non
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     etype = entry.data.get(CONF_ENTRY_TYPE)
-    if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORM_MAP.get(etype, [])):
+    unload_ok = await hass.config_entries.async_unload_platforms(
+        entry, PLATFORM_MAP.get(etype, []))
+    if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id, None)
         _async_remove_orphan_services(hass, entry, etype)
     return unload_ok

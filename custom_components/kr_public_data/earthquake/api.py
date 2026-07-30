@@ -1,13 +1,16 @@
 """Earthquake API - uses params= dict."""
 from __future__ import annotations
-import logging
+
 import json
+import logging
 import math
 import xml.etree.ElementTree as ET
-from typing import Any
+
 import aiohttp
+
+from custom_components.kr_public_data.exceptions import raise_for_result_code
+
 from . import EQ_URL
-from ..exceptions import raise_for_result_code
 
 _LOGGER = logging.getLogger(__name__)
 

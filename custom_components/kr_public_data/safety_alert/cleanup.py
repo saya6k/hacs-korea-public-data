@@ -8,10 +8,13 @@ situation as `weather`), so a full-entry diff against the forward-built
 expected id set is enough - no per-unique-id parsing needed.
 """
 from __future__ import annotations
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import device_registry as dr, entity_registry as er
-from ..const import DOMAIN
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
+
+from custom_components.kr_public_data.const import DOMAIN
 
 
 def async_cleanup_stale_safety_alert_entities(hass: HomeAssistant, entry: ConfigEntry,

@@ -1,15 +1,18 @@
 """KMA Weather coordinator - fetches forecast + O3 + UV in sync."""
 from __future__ import annotations
+
 import asyncio
 import logging
 import random
 from datetime import timedelta
-from homeassistant.core import HomeAssistant
+
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+
+from custom_components.kr_public_data.exceptions import KrTransientError
+from custom_components.kr_public_data.resilience import ResilientCoordinator
+
 from . import KMA_SCAN_INTERVAL, region_key
 from .api import fetch_vilage_forecast, parse_weather
-from ..exceptions import KrTransientError
-from ..resilience import ResilientCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -65,13 +68,13 @@ class KMAWeatherCoordinator(ResilientCoordinator):
         if self._air_station:
             await asyncio.sleep(random.uniform(*_REQUEST_JITTER))
             try:
-                from ..airkorea.api import fetch_realtime
+                from custom_components.kr_public_data.airkorea.api import fetch_realtime
                 air = await fetch_realtime(session, self._air_key, self._air_station)
                 if air:
                     o3 = air.get("o3Value")
                     if o3 and o3 != "-":
-                        for name in result:
-                            result[name]["ozone"] = float(o3)
+                        for region in result.values():
+                            region["ozone"] = float(o3)
             except Exception as e:
                 _LOGGER.debug("KMA O3 fetch: %s", e)
 
@@ -79,7 +82,7 @@ class KMAWeatherCoordinator(ResilientCoordinator):
         if self._area_no:
             await asyncio.sleep(random.uniform(*_REQUEST_JITTER))
             try:
-                from ..airkorea.api import fetch_uv_index
+                from custom_components.kr_public_data.airkorea.api import fetch_uv_index
                 uv = await fetch_uv_index(session, self._living_key, self._area_no)
                 if uv:
                     from datetime import datetime
@@ -91,8 +94,8 @@ class KMAWeatherCoordinator(ResilientCoordinator):
                         if val and str(val).strip():
                             try:
                                 uv_val = float(val)
-                                for name in result:
-                                    result[name]["uv_index"] = uv_val
+                                for region in result.values():
+                                    region["uv_index"] = uv_val
                                 break
                             except (ValueError, TypeError):
                                 pass

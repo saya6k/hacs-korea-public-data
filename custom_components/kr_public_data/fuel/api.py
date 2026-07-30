@@ -1,9 +1,12 @@
 """Opinet fuel price API client."""
 from __future__ import annotations
+
 import logging
 import xml.etree.ElementTree as ET
 from typing import Any
+
 import aiohttp
+
 from . import OPINET_AVG_URL, OPINET_LOWPRICE_URL
 from .coords import katec_to_wgs84
 
@@ -12,10 +15,9 @@ _LOGGER = logging.getLogger(__name__)
 async def validate_opinet(api_key: str) -> bool:
     params = {"code": api_key, "out": "xml"}
     try:
-        async with aiohttp.ClientSession() as s:
-            async with s.get(OPINET_AVG_URL, params=params,
-                             timeout=aiohttp.ClientTimeout(total=15)) as r:
-                return r.status == 200
+        async with aiohttp.ClientSession() as s, s.get(OPINET_AVG_URL, params=params,
+                         timeout=aiohttp.ClientTimeout(total=15)) as r:
+            return r.status == 200
     except Exception:
         return False
 

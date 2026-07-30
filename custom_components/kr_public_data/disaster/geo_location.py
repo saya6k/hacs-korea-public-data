@@ -7,12 +7,14 @@ stays inside the coordinator's rolling fetch window; once the message ages
 out, the entity is removed.
 """
 from __future__ import annotations
+
 import logging
 
 from homeassistant.components.geo_location import GeolocationEvent
 from homeassistant.core import callback
 
-from ..const import DOMAIN
+from custom_components.kr_public_data.const import DOMAIN
+
 from .coordinator import DisasterCoordinator, filter_messages
 from .device import disaster_device
 

@@ -1,12 +1,12 @@
 """Map ENTRY_* type to the list of llm.Tool factory callables it should expose."""
 from __future__ import annotations
 
-from typing import Callable
+from collections.abc import Callable
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import llm
 
-from ..const import (
+from custom_components.kr_public_data.const import (
     ENTRY_AIRKOREA,
     ENTRY_ARISU,
     ENTRY_BUS,

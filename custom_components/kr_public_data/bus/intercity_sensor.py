@@ -1,9 +1,12 @@
 """Intercity/express bus departure sensors - pure TIMESTAMP, no string values."""
 from __future__ import annotations
+
 from datetime import datetime
+
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from ..const import DOMAIN
+
+from custom_components.kr_public_data.const import DOMAIN
 
 
 class IntercityBusDepartureSensor(CoordinatorEntity, SensorEntity):
@@ -11,7 +14,8 @@ class IntercityBusDepartureSensor(CoordinatorEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.TIMESTAMP
     _attr_icon = "mdi:bus-clock"
 
-    def __init__(self, coordinator, dep_name: str, arr_name: str, grade_key: str, index: int, device_info):
+    def __init__(self, coordinator, dep_name: str, arr_name: str, grade_key: str,
+                 index: int, device_info):
         super().__init__(coordinator)
         self._grade_key = grade_key  # "source:gradeNm"
         self._idx = index
@@ -61,7 +65,8 @@ class IntercityBusFareSensor(CoordinatorEntity, SensorEntity):
         self._grade_key = grade_key
         self._idx = index
         suffix = "now" if index == 0 else "next"
-        self._attr_unique_id = f"{DOMAIN}_intercity_bus_{dep_name}_{arr_name}_{grade_key}_fare_{suffix}"
+        self._attr_unique_id = (
+            f"{DOMAIN}_intercity_bus_{dep_name}_{arr_name}_{grade_key}_fare_{suffix}")
         self._attr_name = "다음 요금" if index == 0 else "다다음 요금"
         self._attr_device_info = device_info
 

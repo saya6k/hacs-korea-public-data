@@ -2,7 +2,23 @@
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from .const import *
+
+from .const import (
+    CONF_ENTRY_TYPE,
+    DOMAIN,
+    ENTRY_AIRKOREA,
+    ENTRY_ARISU,
+    ENTRY_BUS,
+    ENTRY_DISASTER,
+    ENTRY_FUEL,
+    ENTRY_GASAPP,
+    ENTRY_KEPCO,
+    ENTRY_PHARMACY,
+    ENTRY_SAFETY_ALERT,
+    ENTRY_SCHOOL,
+    ENTRY_TRANSIT,
+)
+
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
                             async_add_entities: AddEntitiesCallback) -> None:
@@ -12,8 +28,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
 
     if etype == ENTRY_TRANSIT:
         from .transit import line_directions
-        from .transit.sensor import SubwayArrivalSensor
         from .transit.device import subway_device, subway_line_device
+        from .transit.sensor import SubwayArrivalSensor
         station_subs = store.get("station_subs") or {}
         for sub_id, info in station_subs.items():
             coord = info["coordinator"]
@@ -32,14 +48,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
             # legacy entry: per-(station, direction, line) devices
             for station, coord in store.get("subway_coords", {}).items():
                 for item in store.get("subway_items", []):
-                    if item["station"] != station: continue
+                    if item["station"] != station:
+                        continue
                     di = subway_device(item["station"], item["direction"], item.get("line_id",""))
                     for idx in range(2):
                         entities.append(SubwayArrivalSensor(
-                            coord, item["station"], item["direction"], item.get("line_id",""), idx, di))
+                            coord, item["station"], item["direction"],
+                            item.get("line_id",""), idx, di))
 
     elif etype == ENTRY_FUEL:
-        from .fuel.sensor import FuelAvgSensor, FuelLowSensor, FuelLowLocationSensor
+        from .fuel.sensor import FuelAvgSensor, FuelLowLocationSensor, FuelLowSensor
         c = store["coordinator"]
         if entry.subentries:
             for sub_id, sub in entry.subentries.items():
@@ -56,7 +74,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
                              FuelLowLocationSensor(c, cfg["sido_code"], cfg["fuel_code"])]
 
     elif etype == ENTRY_SCHOOL:
-        from .school.sensor import SchoolLunchSensor, SchoolInfoSensor
+        from .school.sensor import SchoolInfoSensor, SchoolLunchSensor
         school_subs = store.get("school_subs") or {}
         for sub_id, info in school_subs.items():
             coord = info["coordinator"]
@@ -69,7 +87,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
                         SchoolInfoSensor(store["coordinator"], entry.data)]
 
     elif etype == ENTRY_DISASTER:
-        from .disaster.sensor import DisasterMessageSensor, DisasterCountSensor
+        from .disaster.sensor import DisasterCountSensor, DisasterMessageSensor
         c = store["coordinator"]
         regions = store.get("regions") or {}
         for sub_id, r in regions.items():
@@ -82,7 +100,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
             entities = [DisasterMessageSensor(c, region), DisasterCountSensor(c, region)]
 
     elif etype == ENTRY_SAFETY_ALERT:
-        from .safety_alert.sensor import SafetyAlertTextSensor, SafetyAlertCountSensor
+        from .safety_alert.sensor import SafetyAlertCountSensor, SafetyAlertTextSensor
         for region in store.get("regions", []):
             coord = store["coordinators"].get(region["code"])
             if coord:
@@ -90,9 +108,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
                 entities.append(SafetyAlertCountSensor(coord, region["code"], region["name"]))
 
     elif etype == ENTRY_KEPCO:
-        from .kepco.sensor import KepcoSensor
         from homeassistant.components.sensor import SensorStateClass
-        c = store["coordinator"]; u = entry.data["username"]
+
+        from .kepco.sensor import KepcoSensor
+        c = store["coordinator"]
+        u = entry.data["username"]
         entities = [
             KepcoSensor(c, u, "usage_info", "result.SESS_CUSTNO", "고객번호"),
             KepcoSensor(c, u, "usage_info", "result.SESS_CNTR_KND_NM", "전력구분"),
@@ -106,20 +126,26 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
 
     elif etype == ENTRY_GASAPP:
         from .gasapp.sensor import GasAppSensor
-        c = store["coordinator"]; cn = entry.data["contract_num"]
+        c = store["coordinator"]
+        cn = entry.data["contract_num"]
         entities = [GasAppSensor(c, cn, "current_bill", "title1", "청구 제목"),
                     GasAppSensor(c, cn, "current_bill", "title2", "총 요금", unit="원")]
 
     elif etype == ENTRY_ARISU:
         from .arisu.sensor import ArisuSensor
-        c = store["coordinator"]; cn = entry.data["customer_number"]
+        c = store["coordinator"]
+        cn = entry.data["customer_number"]
         entities = [ArisuSensor(c, cn, "수도 요금", "total_amount", unit="원"),
                     ArisuSensor(c, cn, "사용량", "current_usage", unit="㎥"),
                     ArisuSensor(c, cn, "청구월", "billing_month")]
 
     elif etype == ENTRY_PHARMACY:
-        from .pharmacy.sensor import PharmacySensor, PharmacyLocationSensor, region_nearby_pharmacies
         from .pharmacy.device import pharmacy_device
+        from .pharmacy.sensor import (
+            PharmacyLocationSensor,
+            PharmacySensor,
+            region_nearby_pharmacies,
+        )
         for i, region in enumerate(store.get("regions", [])):
             coord = store["coordinators"].get(i)
             if not coord:
@@ -137,7 +163,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
                 entities += ents
 
     elif etype == ENTRY_AIRKOREA:
-        from .airkorea.sensor import AirQualitySensor, POLLUTANTS, UVIndexSensor, AirStagnationSensor
+        from .airkorea.sensor import (
+            POLLUTANTS,
+            AirQualitySensor,
+            AirStagnationSensor,
+            UVIndexSensor,
+        )
         c = store["coordinator"]
 
         def _station_sensors(name):
@@ -156,11 +187,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
                 entities += _station_sensors(st["stationName"])
 
     elif etype == ENTRY_BUS:
+        from .bus.device import (
+            city_bus_route_device,
+            intercity_bus_route_device,
+            seoul_bus_route_device,
+        )
+        from .bus.intercity_sensor import IntercityBusDepartureSensor, IntercityBusFareSensor
         from .bus.sensor import CityBusArrivalSensor
         from .bus.seoul_sensor import SeoulBusArrivalSensor
-        from .bus.intercity_sensor import IntercityBusDepartureSensor, IntercityBusFareSensor
-        from .bus.device import (city_bus_route_device, seoul_bus_route_device,
-                                 intercity_bus_route_device)
         stop_subs = store.get("stop_subs") or {}
         for sub_id, info in stop_subs.items():
             coord = info["coordinator"]
@@ -171,10 +205,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
             # One device per route; 2 sensors under it (next/next-next).
             for route in info["routes"]:
                 if seoul:
-                    di = seoul_bus_route_device(node_id, node_name, route["routeId"], route["routeNo"])
+                    di = seoul_bus_route_device(node_id, node_name,
+                                                route["routeId"], route["routeNo"])
                     sensor_cls = SeoulBusArrivalSensor
                 else:
-                    di = city_bus_route_device(node_id, node_name, route["routeId"], route["routeNo"])
+                    di = city_bus_route_device(node_id, node_name,
+                                               route["routeId"], route["routeNo"])
                     sensor_cls = CityBusArrivalSensor
                 for idx in range(2):
                     ents.append(sensor_cls(coord, node_id, route["routeId"], idx, di))
@@ -190,7 +226,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
             for grade in info["grades"]:
                 di = intercity_bus_route_device(dep_name, arr_name, grade)
                 for idx in range(2):
-                    ents.append(IntercityBusDepartureSensor(coord, dep_name, arr_name, grade, idx, di))
+                    ents.append(IntercityBusDepartureSensor(
+                        coord, dep_name, arr_name, grade, idx, di))
                     ents.append(IntercityBusFareSensor(coord, dep_name, arr_name, grade, idx, di))
             async_add_entities(ents, config_subentry_id=sub_id)
 

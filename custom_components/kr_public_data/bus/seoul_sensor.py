@@ -1,9 +1,12 @@
 """Seoul city bus sensors - pure TIMESTAMP, no string values."""
 from __future__ import annotations
+
 from datetime import datetime, timedelta, timezone
+
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from ..const import DOMAIN
+
+from custom_components.kr_public_data.const import DOMAIN
 
 KST = timezone(timedelta(hours=9))
 

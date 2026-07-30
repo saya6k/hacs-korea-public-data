@@ -1,11 +1,12 @@
 """GasApp API client for Home Assistant integration."""
 
-from typing import Dict, Any, Optional
+import logging
+from typing import Any
 
 import aiohttp
 
 from .exceptions import GasAppAuthError, GasAppConnectionError, GasAppDataError
-import logging
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -25,7 +26,7 @@ class GasAppApiClient:
         self._member_id = member_id
         self._use_contract_num = use_contract_num
 
-    def _get_headers(self) -> Dict[str, str]:
+    def _get_headers(self) -> dict[str, str]:
         """Get request headers with authentication."""
         if not self._token or not self._member_id:
             raise GasAppAuthError("Credentials not set")
@@ -48,7 +49,7 @@ class GasAppApiClient:
             _LOGGER.error(f"Credential validation failed: {e}")
             return False
 
-    async def _request(self, method: str, endpoint: str, **kwargs) -> Dict[str, Any]:
+    async def _request(self, method: str, endpoint: str, **kwargs) -> dict[str, Any]:
         """Make an authenticated request to the GasApp API."""
         url = f"{self._base_url}/{endpoint}"
         headers = self._get_headers()
@@ -73,12 +74,12 @@ class GasAppApiClient:
 
         except aiohttp.ClientError as e:
             _LOGGER.error(f"GasApp API request failed: {e}")
-            raise GasAppConnectionError(f"Request failed: {e}")
+            raise GasAppConnectionError(f"Request failed: {e}") from e
         except Exception as e:
             _LOGGER.error(f"Unexpected error in GasApp API request: {e}")
-            raise GasAppDataError(f"Unexpected error: {e}")
+            raise GasAppDataError(f"Unexpected error: {e}") from e
 
-    async def async_get_home_data(self) -> Dict[str, Any]:
+    async def async_get_home_data(self) -> dict[str, Any]:
         """Get home dashboard data including bill information."""
         if not self._use_contract_num:
             raise GasAppAuthError("Use contract number not set")
@@ -91,7 +92,7 @@ class GasAppApiClient:
 
         return await self._request("GET", "home", params=params)
 
-    async def async_get_bill_history(self) -> Optional[list]:
+    async def async_get_bill_history(self) -> list | None:
         """Get bill payment history."""
         try:
             home_data = await self.async_get_home_data()
@@ -100,9 +101,9 @@ class GasAppApiClient:
             return None
         except Exception as e:
             _LOGGER.error(f"Failed to get bill history: {e}")
-            raise GasAppDataError(f"Failed to get bill history: {e}")
+            raise GasAppDataError(f"Failed to get bill history: {e}") from e
 
-    async def async_get_current_bill(self) -> Optional[Dict[str, Any]]:
+    async def async_get_current_bill(self) -> dict[str, Any] | None:
         """Get current month's bill information."""
         try:
             home_data = await self.async_get_home_data()
@@ -111,4 +112,4 @@ class GasAppApiClient:
             return None
         except Exception as e:
             _LOGGER.error(f"Failed to get current bill: {e}")
-            raise GasAppDataError(f"Failed to get current bill: {e}")
+            raise GasAppDataError(f"Failed to get current bill: {e}") from e

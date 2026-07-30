@@ -1,12 +1,16 @@
 """Safety alert: binary_sensor + event + text sensor."""
 from __future__ import annotations
+
 from typing import Any
-from homeassistant.components.binary_sensor import BinarySensorEntity, BinarySensorDeviceClass
+
+from homeassistant.components.binary_sensor import BinarySensorDeviceClass, BinarySensorEntity
 from homeassistant.components.event import EventEntity
 from homeassistant.components.sensor import SensorEntity
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.core import callback
-from ..const import DOMAIN
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
+
+from custom_components.kr_public_data.const import DOMAIN
+
 from .coordinator import SafetyAlertCoordinator
 from .device import safety_alert_device
 
@@ -76,7 +80,7 @@ class SafetyAlertTextSensor(CoordinatorEntity[SafetyAlertCoordinator], SensorEnt
 class SafetyAlertEvent(CoordinatorEntity[SafetyAlertCoordinator], EventEntity):
     _attr_has_entity_name = True
     # "safety_alert" stays as the fallback so pre-existing automations keep firing.
-    _attr_event_types = ["emergency", "urgent", "safety", "safety_alert"]
+    _attr_event_types = ["emergency", "urgent", "safety", "safety_alert"]  # noqa: RUF012
     _attr_icon = "mdi:alert-circle"
 
     def __init__(self, coordinator, area_code, area_name):

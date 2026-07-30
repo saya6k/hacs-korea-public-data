@@ -1,9 +1,11 @@
 """Pharmacy open-now binary sensor."""
 from __future__ import annotations
-from homeassistant.components.binary_sensor import BinarySensorEntity, BinarySensorDeviceClass
+
+from homeassistant.components.binary_sensor import BinarySensorDeviceClass, BinarySensorEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
-from ..const import DOMAIN
+
+from custom_components.kr_public_data.const import DOMAIN
 
 _DAY_NAMES = ["월", "화", "수", "목", "금", "토", "일"]  # datetime.weekday() 순서
 
