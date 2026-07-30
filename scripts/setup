@@ -2,13 +2,10 @@
 # Wire this checkout into the devcontainer's baked-in Home Assistant install.
 #
 # The devcontainer base image (see .devcontainer/devcontainer.json) is the
-# official homeassistant/home-assistant image, pinned to a dev-branch
-# nightly. hacs.json's `homeassistant` floor is 2026.8.0b0 (the LLM tools
-# platform, see llm_api.py) — not on PyPI as a release yet, and HA doesn't
-# publish dev-branch nightlies to PyPI at all, only as Docker Hub image
-# tags. Pinning the devcontainer image to a nightly tag (verified against
-# real homeassistant.components.llm) is how we get 2026.8 today; move the
-# image tag to a release tag once 2026.8.0b0 ships.
+# official home-assistant image, pinned to the 2026.8.0b0 beta that hacs.json
+# declares as the floor (the LLM tools platform, see llm_api.py). It comes
+# from ghcr.io because Docker Hub carries no 2026.8 beta tag — only the
+# dev-branch nightlies this pin used to track.
 #
 # Unlike a generic Python devcontainer, the image already bundles HA core,
 # the frontend, and every native/runtime dependency default_config needs
