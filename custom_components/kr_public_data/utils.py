@@ -21,21 +21,21 @@ def sido_short_name(name: str) -> str:
 
 class RSAKey:
     """RSA encryption for KEPCO login (matching rsa.js)."""
-    def __init__(self):
+    def __init__(self) -> None:
         self.n = None
         self.e = 0
 
-    def set_public(self, modulus_hex, exponent_hex):
+    def set_public(self, modulus_hex: str, exponent_hex: str) -> None:
         if modulus_hex and exponent_hex:
             self.n = int(modulus_hex, 16)
             self.e = int(exponent_hex, 16)
         else:
             raise ValueError("Invalid RSA public key")
 
-    def do_public(self, x):
+    def do_public(self, x: int) -> int:
         return pow(x, self.e, self.n)
 
-    def encrypt(self, text):
+    def encrypt(self, text: str) -> str | None:
         key_size = (self.n.bit_length() + 7) // 8
         m = _pkcs1pad2(text, key_size)
         if m is None:
@@ -47,7 +47,7 @@ class RSAKey:
         return h
 
 
-def _pkcs1pad2(s, n):
+def _pkcs1pad2(s: str, n: int) -> int:
     s_bytes = s.encode("utf-8")
     s_len = len(s_bytes)
     if n < s_len + 11:

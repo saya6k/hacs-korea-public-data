@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 import xml.etree.ElementTree as ET
+from typing import Any
 
 import aiohttp
 
@@ -12,7 +13,8 @@ from . import PHARMACY_URL
 
 _LOGGER = logging.getLogger(__name__)
 
-async def fetch_pharmacies(session, api_key, q0, q1="", page=1, num=20):
+async def fetch_pharmacies(session: aiohttp.ClientSession, api_key: str, q0: str, q1: str = "",
+                            page: int = 1, num: int = 20) -> list[dict[str, Any]]:
     """Search pharmacies by region. q0=시도, q1=시군구."""
     params = {"serviceKey": api_key, "Q0": q0, "Q1": q1,
               "ORD": "NAME", "pageNo": str(page), "numOfRows": str(num)}
@@ -44,7 +46,7 @@ async def fetch_pharmacies(session, api_key, q0, q1="", page=1, num=20):
         })
     return results
 
-async def validate_pharmacy_api(api_key):
+async def validate_pharmacy_api(api_key: str) -> bool:
     try:
         async with aiohttp.ClientSession() as s:
             r = await fetch_pharmacies(s, api_key, "서울특별시", num=1)

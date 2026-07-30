@@ -4,8 +4,10 @@ from __future__ import annotations
 import contextlib
 import logging
 from datetime import date, datetime, timedelta
+from typing import Any
 from zoneinfo import ZoneInfo
 
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from custom_components.kr_public_data.const import DOMAIN
@@ -17,7 +19,7 @@ from .parser import parse_lunch_menu, parse_school_calendar, parse_timetable
 _LOGGER = logging.getLogger(__name__)
 KST = ZoneInfo("Asia/Seoul")
 
-def _school_year_mondays(ref=None):
+def _school_year_mondays(ref: date | None = None) -> list[date]:
     ref = ref or datetime.now(KST).date()
     start = date(ref.year - 1, 3, 1) if ref.month <= 2 else date(ref.year, 3, 1)
     end = date(start.year + 1, 2, 28)
@@ -34,7 +36,8 @@ def _school_year_mondays(ref=None):
 class SchoolCoordinator(ResilientCoordinator):
     stale_tolerance = 2  # 6h interval: two misses already cover half a day
 
-    def __init__(self, hass, api_key, data, coordinator_id):
+    def __init__(self, hass: HomeAssistant, api_key: str, data: dict[str, Any],
+                 coordinator_id: str) -> None:
         self.data_source = data
         self.client = NeisApiClient(async_get_clientsession(hass), api_key)
         self.rc = data["region_code"]
@@ -51,7 +54,7 @@ class SchoolCoordinator(ResilientCoordinator):
         super().__init__(hass, _LOGGER, name=f"{DOMAIN}_school_{coordinator_id}",
                          update_interval=timedelta(hours=6))
 
-    async def _fetch(self):
+    async def _fetch(self) -> dict[str, Any]:
         mondays = _school_year_mondays()
         sy_start = mondays[0]
         sy_end = mondays[-1] + timedelta(days=6)

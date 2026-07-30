@@ -22,14 +22,6 @@ ignore = [
   "ANN401",  # Any allowed in narrow places
   "PLR2004", # magic numbers in tests are fine
 
-  # ── Waived for this repo only; the sibling ha-* integrations enforce both.
-  #
-  # ANN: 575 unannotated signatures across 66 files. This integration has no
-  # test suite, so annotating them wholesale would be a large unverifiable
-  # diff landed alongside the lint rollout. Kept in `select` so the intent is
-  # recorded, and lifted in a follow-up that does the annotating on its own.
-  "ANN",
-
   # PLC0415: 168 function-level imports, and they are the architecture, not
   # an oversight. This integration fans out to 17 independent public-data
   # domains (bus, pharmacy, fuel, kepco, …); config_flow.py and __init__.py

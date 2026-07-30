@@ -5,7 +5,9 @@ import asyncio
 import logging
 import random
 from datetime import timedelta
+from typing import Any
 
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from custom_components.kr_public_data.exceptions import KrTransientError
@@ -25,9 +27,9 @@ _REQUEST_JITTER = (0.2, 0.5)
 class KMAWeatherCoordinator(ResilientCoordinator):
     stale_tolerance = 4
 
-    def __init__(self, hass, api_key, regions,
-                 air_api_key="", air_station="",
-                 living_api_key="", area_no=""):
+    def __init__(self, hass: HomeAssistant, api_key: str, regions: list[dict[str, Any]],
+                 air_api_key: str = "", air_station: str = "",
+                 living_api_key: str = "", area_no: str = "") -> None:
         super().__init__(hass, _LOGGER, name="kma_weather",
                          update_interval=timedelta(seconds=KMA_SCAN_INTERVAL))
         self._api_key = api_key
@@ -38,7 +40,7 @@ class KMAWeatherCoordinator(ResilientCoordinator):
         self._area_no = area_no
         self._session = async_get_clientsession(hass)
 
-    async def _fetch(self):
+    async def _fetch(self) -> dict[str, Any]:
         result = {}
         previous = self.data or {}
         region_failures = 0

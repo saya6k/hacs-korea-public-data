@@ -1,6 +1,8 @@
 """Disaster sensors + event entity."""
 from __future__ import annotations
 
+from typing import Any
+
 from homeassistant.components.event import EventEntity
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.core import callback
@@ -16,7 +18,8 @@ class DisasterRegionEntity(CoordinatorEntity[DisasterCoordinator]):
     """Shared region filtering. region=legacy substring, sido+sgg=subentry."""
     _attr_has_entity_name = True
 
-    def __init__(self, coordinator, region="", sido="", sgg=""):
+    def __init__(self, coordinator: DisasterCoordinator, region: str = "", sido: str = "",
+                 sgg: str = "") -> None:
         super().__init__(coordinator)
         self._region = region
         self._sido = sido
@@ -27,25 +30,26 @@ class DisasterRegionEntity(CoordinatorEntity[DisasterCoordinator]):
         self._attr_device_info = disaster_device(label)
 
     @property
-    def _messages(self):
+    def _messages(self) -> list[dict[str, Any]]:
         return filter_messages(self.coordinator.data or [],
                                self._sido, self._sgg, self._region)
 
 
 class DisasterMessageSensor(DisasterRegionEntity, SensorEntity):
     _attr_icon = "mdi:alert-octagram"
-    def __init__(self, coordinator, region="", sido="", sgg=""):
+    def __init__(self, coordinator: DisasterCoordinator, region: str = "", sido: str = "",
+                 sgg: str = "") -> None:
         super().__init__(coordinator, region, sido, sgg)
         self._attr_unique_id = f"{DOMAIN}_disaster_latest{self._suffix}"
         self._attr_name = "최신 재난문자"
     @property
-    def native_value(self):
+    def native_value(self) -> str:
         msgs = self._messages
         if not msgs:
             return "없음"
         return msgs[0].get("message", "")[:255]
     @property
-    def extra_state_attributes(self):
+    def extra_state_attributes(self) -> dict[str, Any]:
         msgs = self._messages
         if not msgs:
             return {}
@@ -54,25 +58,27 @@ class DisasterMessageSensor(DisasterRegionEntity, SensorEntity):
 
 class DisasterCountSensor(DisasterRegionEntity, SensorEntity):
     _attr_icon = "mdi:counter"
-    def __init__(self, coordinator, region="", sido="", sgg=""):
+    def __init__(self, coordinator: DisasterCoordinator, region: str = "", sido: str = "",
+                 sgg: str = "") -> None:
         super().__init__(coordinator, region, sido, sgg)
         self._attr_unique_id = f"{DOMAIN}_disaster_count{self._suffix}"
         self._attr_name = "재난문자 수"
     @property
-    def native_value(self):
+    def native_value(self) -> int:
         return len(self._messages)
 
 class DisasterEvent(DisasterRegionEntity, EventEntity):
     _attr_event_types = ["emergency", "urgent", "safety", "disaster_info"]  # noqa: RUF012
     _attr_icon = "mdi:alert-circle"
-    def __init__(self, coordinator, region="", sido="", sgg=""):
+    def __init__(self, coordinator: DisasterCoordinator, region: str = "", sido: str = "",
+                 sgg: str = "") -> None:
         super().__init__(coordinator, region, sido, sgg)
         self._attr_unique_id = f"{DOMAIN}_disaster_event{self._suffix}"
         self._attr_name = "재난문자 이벤트"
         self._last_id = None
 
     @callback
-    def _handle_coordinator_update(self):
+    def _handle_coordinator_update(self) -> None:
         data = self._messages
         if not data:
             return

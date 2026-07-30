@@ -25,7 +25,7 @@ class WeatherWarningBinarySensor(CoordinatorEntity[WeatherWarningCoordinator], B
     _attr_device_class = BinarySensorDeviceClass.SAFETY
     _attr_icon = "mdi:weather-hurricane"
 
-    def __init__(self, coordinator, area_code):
+    def __init__(self, coordinator: WeatherWarningCoordinator, area_code: str) -> None:
         super().__init__(coordinator)
         self._area_code = area_code
         self._attr_unique_id = f"{DOMAIN}_weather_alert_{area_code}"

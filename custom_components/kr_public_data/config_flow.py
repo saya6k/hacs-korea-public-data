@@ -2,12 +2,14 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Mapping
 from typing import Any
 
+import aiohttp
 import voluptuous as vol
 from homeassistant import config_entries
-from homeassistant.core import callback
-from homeassistant.data_entry_flow import FlowResult
+from homeassistant.config_entries import ConfigEntry, ConfigFlowResult, SubentryFlowResult
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import (
     BooleanSelector,
@@ -104,17 +106,17 @@ async def _async_fetch_sgg_names(sido_name: str) -> list[str]:
     return sorted(SIDO_LIST.get(sido_name, {}).keys())
 
 
-def _sido_selector():
+def _sido_selector() -> SelectSelector:
     opts = [SelectOptionDict(value=k, label=k) for k in SIDO_CODES]
     return SelectSelector(SelectSelectorConfig(options=opts,
                                                mode=SelectSelectorMode.DROPDOWN))
 
 
-def _password_selector():
+def _password_selector() -> TextSelector:
     return TextSelector(TextSelectorConfig(type=TextSelectorType.PASSWORD))
 
 
-def _pharmacy_location_fields(hass, region: dict | None = None):
+def _pharmacy_location_fields(hass: HomeAssistant, region: dict | None = None) -> dict[str, Any]:
     """지도에서 직접 찍은 위치 기준 반경 내 약국을 개별 위치 센서로 만들지 여부 + 위치/반경.
 
     zone.home으로 고정하지 않고 LocationSelector로 위치를 직접 지정하게 한다.
@@ -145,7 +147,8 @@ def _bus_city_options(city_codes: dict) -> list[SelectOptionDict]:
     return opts
 
 
-async def _search_bus_stops(session, api_key: str, city_code: str, name: str) -> list[dict]:
+async def _search_bus_stops(session: aiohttp.ClientSession, api_key: str, city_code: str,
+                            name: str) -> list[dict]:
     """정류소 검색 → 공용 후보 형태: {id, name, hint}."""
     from .bus import SEOUL_CITY_CODE
     if city_code == SEOUL_CITY_CODE:
@@ -159,7 +162,8 @@ async def _search_bus_stops(session, api_key: str, city_code: str, name: str) ->
             for c in candidates]
 
 
-async def _bus_stop_routes(session, api_key: str, city_code: str, node_id: str) -> list[dict]:
+async def _bus_stop_routes(session: aiohttp.ClientSession, api_key: str, city_code: str,
+                           node_id: str) -> list[dict]:
     """경유노선 검색(자동 감지) → 공용 형태: {id, routeNo, label}."""
     from .bus import SEOUL_CITY_CODE
     if city_code == SEOUL_CITY_CODE:
@@ -184,8 +188,8 @@ async def _bus_stop_routes(session, api_key: str, city_code: str, node_id: str) 
 # 오늘부터 며칠간 하루씩 조회해 자료가 있는 첫날을 채택하고, 그래도 특정
 # 학년 자료가 없으면 그 학년만 1~20반 풀레인지로 폴백한다.
 
-async def _school_class_options(session, api_key: str, region_code: str, school_code: str,
-                                 school_level: str, max_g: int) -> dict[str, str]:
+async def _school_class_options(session: aiohttp.ClientSession, api_key: str, region_code: str,
+                                school_code: str, school_level: str, max_g: int) -> dict[str, str]:
     from datetime import datetime, timedelta
 
     from .school.api import KST, NeisApiClient
@@ -241,10 +245,10 @@ _REGION_GRID = {
 class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._data: dict[str, Any] = {}
 
-    async def async_step_user(self, user_input=None) -> FlowResult:
+    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         return self.async_show_menu(
             step_id="user",
             menu_options=["weather_warning", "transit", "bus", "fuel", "school",
@@ -254,7 +258,9 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     # ══════════ 기상특보 ══════════
 
-    async def async_step_weather_warning(self, user_input=None) -> FlowResult:
+    async def async_step_weather_warning(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         from .weather import AREA_CODES
         from .weather.api import validate_kma_api
         errors: dict[str, str] = {}
@@ -292,7 +298,9 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     # ══════════ 지하철 ══════════
 
-    async def async_step_transit(self, user_input=None) -> FlowResult:
+    async def async_step_transit(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """Step 1: 서울 열린데이터광장 키."""
         from .transit.subway_api import validate_seoul_api
         errors: dict[str, str] = {}
@@ -312,7 +320,9 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             }),
             errors=errors)
 
-    async def async_step_transit_station(self, user_input=None) -> FlowResult:
+    async def async_step_transit_station(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """Step 2: 역 이름 입력 → 운행 노선 자동 감지."""
         from .transit.subway_api import discover_lines
         if user_input is not None:
@@ -329,7 +339,9 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="transit_station",
             data_schema=vol.Schema({vol.Required("station"): str}))
 
-    async def async_step_transit_lines(self, user_input=None) -> FlowResult:
+    async def async_step_transit_lines(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """Step 3: 호선 선택 (감지된 노선이 기본값) → 역 subentry."""
         import homeassistant.helpers.config_validation as cv
 
@@ -359,7 +371,7 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     # ══════════ 버스 ══════════
 
-    async def async_step_bus(self, user_input=None) -> FlowResult:
+    async def async_step_bus(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Step 1: TAGO(국토교통부) 공공데이터포털 서비스키."""
         from .bus.api import validate_bus_api
         errors: dict[str, str] = {}
@@ -380,7 +392,9 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             }),
             errors=errors)
 
-    async def async_step_bus_stop_search(self, user_input=None) -> FlowResult:
+    async def async_step_bus_stop_search(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """Step 2: 도시 선택(서울 포함) + 정류소명 검색."""
         from .bus import CITY_CODES
         errors: dict[str, str] = {}
@@ -409,7 +423,9 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             }),
             errors=errors)
 
-    async def async_step_bus_stop_select(self, user_input=None) -> FlowResult:
+    async def async_step_bus_stop_select(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """Step 3: 검색 결과에서 정류소 선택 → 경유노선 자동 감지."""
         if user_input is not None:
             node_id = user_input["node_id"]
@@ -434,7 +450,9 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     SelectSelectorConfig(options=stop_opts, mode=SelectSelectorMode.DROPDOWN)),
             }))
 
-    async def async_step_bus_routes(self, user_input=None) -> FlowResult:
+    async def async_step_bus_routes(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """Step 4: 노선 선택 (감지된 노선이 기본값) → 정류장 subentry."""
         import homeassistant.helpers.config_validation as cv
 
@@ -468,7 +486,7 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     # ══════════ 유가정보 ══════════
 
-    async def async_step_fuel(self, user_input=None) -> FlowResult:
+    async def async_step_fuel(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         from .fuel import FUEL_TYPES, SIDO_CODES
         from .fuel.api import validate_opinet
         errors: dict[str, str] = {}
@@ -518,7 +536,7 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     # ══════════ 학교정보 ══════════
 
-    async def async_step_school(self, user_input=None) -> FlowResult:
+    async def async_step_school(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         from .school import SCHOOL_LEVELS
         errors: dict[str, str] = {}
         if user_input is not None:
@@ -543,7 +561,9 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             }),
             errors=errors)
 
-    async def async_step_school_search(self, user_input=None) -> FlowResult:
+    async def async_step_school_search(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         from .school import SCHOOL_LEVELS
         errors: dict[str, str] = {}
         if user_input is not None:
@@ -575,7 +595,9 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema({vol.Required("school_search"): str}),
             errors=errors)
 
-    async def async_step_school_class(self, user_input=None) -> FlowResult:
+    async def async_step_school_class(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         import homeassistant.helpers.config_validation as cv
         if user_input is not None:
             # Parse "G-C" format selections into list
@@ -597,7 +619,9 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Required("grade_classes"): cv.multi_select(combo_opts),
         }))
 
-    async def async_step_school_periods(self, user_input=None) -> FlowResult:
+    async def async_step_school_periods(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         defaults = {1:"09:00-09:50",2:"10:00-10:50",3:"11:00-11:50",
                      4:"12:00-12:50",5:"13:40-14:30",6:"14:40-15:30",7:"15:40-16:30"}
         if user_input is not None:
@@ -624,7 +648,9 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     # ══════════ 재난정보 ══════════
 
-    async def async_step_disaster(self, user_input=None) -> FlowResult:
+    async def async_step_disaster(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """Step 1: API key + 광역자치단체 선택."""
         from .disaster.api import validate_disaster_api
         errors: dict[str, str] = {}
@@ -647,7 +673,9 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             }),
             errors=errors)
 
-    async def async_step_disaster_sgg(self, user_input=None) -> FlowResult:
+    async def async_step_disaster_sgg(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """Step 2: 기초자치단체 체크리스트 → 시군구별 subentry."""
         import homeassistant.helpers.config_validation as cv
         errors: dict[str, str] = {}
@@ -677,7 +705,9 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     # ══════════ 안전알림 ══════════
 
-    async def async_step_safety_alert(self, user_input=None) -> FlowResult:
+    async def async_step_safety_alert(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """Select regions for safety alerts (시도 + 시군구)."""
         errors: dict[str, str] = {}
         region_opts = [SelectOptionDict(value=k, label=v) for k, v in SAFETY_ALERT_REGIONS.items()]
@@ -700,7 +730,7 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     # ══════════ 한전 (KEPCO) ══════════
 
-    async def async_step_kepco(self, user_input=None) -> FlowResult:
+    async def async_step_kepco(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         errors: dict[str, str] = {}
         if user_input is not None:
             return self.async_create_entry(
@@ -715,7 +745,7 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     # ══════════ 가스앱 ══════════
 
-    async def async_step_gasapp(self, user_input=None) -> FlowResult:
+    async def async_step_gasapp(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         errors: dict[str, str] = {}
         if user_input is not None:
             return self.async_create_entry(
@@ -732,7 +762,7 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     # ══════════ 아리수 (서울 상수도) ══════════
 
-    async def async_step_arisu(self, user_input=None) -> FlowResult:
+    async def async_step_arisu(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         errors: dict[str, str] = {}
         if user_input is not None:
             return self.async_create_entry(
@@ -747,7 +777,9 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     # ══════════ 약국 ══════════
 
-    async def async_step_pharmacy(self, user_input=None) -> FlowResult:
+    async def async_step_pharmacy(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """Step 1: API key + 광역자치단체 선택."""
         errors: dict[str, str] = {}
         if user_input is not None:
@@ -769,7 +801,9 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
-    async def async_step_pharmacy_sgg(self, user_input=None) -> FlowResult:
+    async def async_step_pharmacy_sgg(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """Step 2: 기초자치단체 체크리스트 → regions 리스트.
 
         (subentry 없이 entry.data에 flat 저장)
@@ -805,7 +839,9 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 # 기상청 예보구역 격자 좌표
 
     # ══════════ 에어코리아 ══════════
-    async def async_step_airkorea(self, user_input=None) -> FlowResult:
+    async def async_step_airkorea(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """Step 1: API key + 광역시도 선택."""
         from .airkorea import STATIONS_BY_SIDO
         air_sido = list(STATIONS_BY_SIDO.keys())
@@ -824,7 +860,9 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 SelectSelectorConfig(options=sido_opts, mode=SelectSelectorMode.DROPDOWN)),
         }), errors=errors)
 
-    async def async_step_airkorea_select(self, user_input=None) -> FlowResult:
+    async def async_step_airkorea_select(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """Step 2: 측정소(시군구) 복수 선택."""
         import homeassistant.helpers.config_validation as cv
 
@@ -848,7 +886,9 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         }))
 
     # ══════════ 기상청 날씨예보 ══════════
-    async def async_step_kma_weather(self, user_input=None) -> FlowResult:
+    async def async_step_kma_weather(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """Step 1: API key + 광역시도 선택."""
         from .kma_weather import SIDO_LIST
         errors: dict[str, str] = {}
@@ -865,7 +905,9 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                                      mode=SelectSelectorMode.DROPDOWN)),
         }), errors=errors)
 
-    async def async_step_kma_weather_sgg(self, user_input=None) -> FlowResult:
+    async def async_step_kma_weather_sgg(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """Step 2: 기초자치단체 + O3/UV 측정소 선택."""
         import homeassistant.helpers.config_validation as cv
 
@@ -905,7 +947,9 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         }))
 
     # ══════════ 지진 정보 ══════════
-    async def async_step_earthquake(self, user_input=None) -> FlowResult:
+    async def async_step_earthquake(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         errors: dict[str, str] = {}
         if user_input is not None:
             loc = user_input["location"]
@@ -928,7 +972,7 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     # ══════════ 재인증 (reauth) ══════════
 
-    async def async_step_reauth(self, entry_data) -> FlowResult:
+    async def async_step_reauth(self, entry_data: Mapping[str, Any]) -> ConfigFlowResult:
         etype = entry_data.get(CONF_ENTRY_TYPE)
         if etype == ENTRY_KEPCO:
             return await self.async_step_reauth_kepco()
@@ -936,7 +980,9 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return await self.async_step_reauth_gasapp()
         return self.async_abort(reason="reauth_not_supported")
 
-    async def async_step_reauth_kepco(self, user_input=None) -> FlowResult:
+    async def async_step_reauth_kepco(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         if user_input is not None:
             return self.async_update_reload_and_abort(
                 self._get_reauth_entry(),
@@ -947,7 +993,9 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Required("password"): _password_selector(),
         }))
 
-    async def async_step_reauth_gasapp(self, user_input=None) -> FlowResult:
+    async def async_step_reauth_gasapp(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         if user_input is not None:
             return self.async_update_reload_and_abort(
                 self._get_reauth_entry(),
@@ -963,12 +1011,12 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         # ══════════ Options Flow =════════
 
     @staticmethod
-    def async_get_options_flow(config_entry):
+    def async_get_options_flow(config_entry: ConfigEntry) -> KRPublicDataOptionsFlow:
         return KRPublicDataOptionsFlow(config_entry)
 
     @classmethod
     @callback
-    def async_get_supported_subentry_types(cls, config_entry):
+    def async_get_supported_subentry_types(cls, config_entry: ConfigEntry) -> dict[str, Any]:
         etype = config_entry.data.get(CONF_ENTRY_TYPE)
         if etype == ENTRY_FUEL:
             return {"fuel_region": FuelRegionSubentryFlowHandler}
@@ -993,7 +1041,7 @@ class KRPublicDataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 class FuelRegionSubentryFlowHandler(config_entries.ConfigSubentryFlow):
     """Add one 시도 region (+ 유종 목록) to a fuel entry."""
 
-    async def async_step_user(self, user_input=None):
+    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
         from .fuel import FUEL_TYPES, SIDO_CODES
         errors: dict[str, str] = {}
         sido_options = [SelectOptionDict(value=k, label=v) for k, v in SIDO_CODES.items()]
@@ -1020,7 +1068,9 @@ class FuelRegionSubentryFlowHandler(config_entries.ConfigSubentryFlow):
                                      mode=SelectSelectorMode.DROPDOWN)),
         }), errors=errors)
 
-    async def async_step_reconfigure(self, user_input=None):
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
         """이미 등록된 지역의 유종 목록을 수정.
 
         (지역을 다시 추가하면 already_configured로 막히므로)
@@ -1047,11 +1097,11 @@ class FuelRegionSubentryFlowHandler(config_entries.ConfigSubentryFlow):
 class DisasterRegionSubentryFlowHandler(config_entries.ConfigSubentryFlow):
     """Add one 기초자치단체 region — or a whole 광역자치단체 — to a disaster entry."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._sido = ""
         self._sgg_names: list[str] = []
 
-    async def async_step_user(self, user_input=None):
+    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
         errors: dict[str, str] = {}
         if user_input is not None:
             self._sido = user_input["sido"]
@@ -1064,7 +1114,7 @@ class DisasterRegionSubentryFlowHandler(config_entries.ConfigSubentryFlow):
             vol.Required("sido", default="서울특별시"): _sido_selector(),
         }), errors=errors)
 
-    async def async_step_sgg(self, user_input=None):
+    async def async_step_sgg(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
         if user_input is not None:
             sgg = user_input["sgg"]
             whole = sgg == "전체"
@@ -1091,10 +1141,10 @@ class DisasterRegionSubentryFlowHandler(config_entries.ConfigSubentryFlow):
 class KmaRegionSubentryFlowHandler(config_entries.ConfigSubentryFlow):
     """Add one 시군구 forecast region to a kma_weather entry."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._sido = ""
 
-    async def async_step_user(self, user_input=None):
+    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
         from .kma_weather import SIDO_LIST
         if user_input is not None:
             self._sido = user_input["sido"]
@@ -1106,7 +1156,7 @@ class KmaRegionSubentryFlowHandler(config_entries.ConfigSubentryFlow):
                                      mode=SelectSelectorMode.DROPDOWN)),
         }))
 
-    async def async_step_sgg(self, user_input=None):
+    async def async_step_sgg(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
         from .kma_weather import SIDO_LIST
         sgg_map = SIDO_LIST.get(self._sido, {})
         if user_input is not None:
@@ -1132,7 +1182,7 @@ class KmaRegionSubentryFlowHandler(config_entries.ConfigSubentryFlow):
 class WarningAreaSubentryFlowHandler(config_entries.ConfigSubentryFlow):
     """Add one 특보구역 to a weather_warning entry."""
 
-    async def async_step_user(self, user_input=None):
+    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
         from .weather import AREA_CODES
         if user_input is not None:
             code = user_input["area_code"]
@@ -1156,10 +1206,10 @@ class WarningAreaSubentryFlowHandler(config_entries.ConfigSubentryFlow):
 class StationSubentryFlowHandler(config_entries.ConfigSubentryFlow):
     """Add one 측정소 to an airkorea entry."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._sido = ""
 
-    async def async_step_user(self, user_input=None):
+    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
         from .airkorea import STATIONS_BY_SIDO
         if user_input is not None:
             self._sido = user_input["sido"]
@@ -1171,7 +1221,9 @@ class StationSubentryFlowHandler(config_entries.ConfigSubentryFlow):
                                      mode=SelectSelectorMode.DROPDOWN)),
         }))
 
-    async def async_step_station(self, user_input=None):
+    async def async_step_station(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
         from .airkorea import STATIONS_BY_SIDO
         if user_input is not None:
             station = user_input["station"]
@@ -1195,11 +1247,11 @@ class StationSubentryFlowHandler(config_entries.ConfigSubentryFlow):
 class SubwayStationSubentryFlowHandler(config_entries.ConfigSubentryFlow):
     """Add one 역 to a subway entry."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._station = ""
         self._lines_found: list[str] = []
 
-    async def async_step_user(self, user_input=None):
+    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
         from .transit.subway_api import discover_lines
         if user_input is not None:
             station = user_input["station"].strip()
@@ -1220,7 +1272,9 @@ class SubwayStationSubentryFlowHandler(config_entries.ConfigSubentryFlow):
             vol.Required("station"): str,
         }))
 
-    async def async_step_lines(self, user_input=None):
+    async def async_step_lines(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
         import homeassistant.helpers.config_validation as cv
 
         from .transit import SUBWAY_LINES
@@ -1243,14 +1297,14 @@ class SubwayStationSubentryFlowHandler(config_entries.ConfigSubentryFlow):
 class CityBusStopSubentryFlowHandler(config_entries.ConfigSubentryFlow):
     """Add one 정류장 to a bus entry (TAGO 전국 또는 서울, 한 흐름에서 도시로 구분)."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._city_code: str = ""
         self._candidates: list[dict] = []
         self._node_id = ""
         self._node_name = ""
         self._routes_found: list[dict] = []
 
-    async def async_step_user(self, user_input=None):
+    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
         from .bus import CITY_CODES
         errors: dict[str, str] = {}
         if user_input is not None:
@@ -1277,7 +1331,9 @@ class CityBusStopSubentryFlowHandler(config_entries.ConfigSubentryFlow):
             vol.Required("name"): str,
         }), errors=errors)
 
-    async def async_step_select(self, user_input=None):
+    async def async_step_select(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
         if user_input is not None:
             node_id = user_input["node_id"]
             match = next((c for c in self._candidates if c["id"] == node_id), None)
@@ -1304,7 +1360,9 @@ class CityBusStopSubentryFlowHandler(config_entries.ConfigSubentryFlow):
                 SelectSelectorConfig(options=stop_opts, mode=SelectSelectorMode.DROPDOWN)),
         }))
 
-    async def async_step_routes(self, user_input=None):
+    async def async_step_routes(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
         import homeassistant.helpers.config_validation as cv
 
         from .bus import SEOUL_CITY_CODE
@@ -1338,7 +1396,7 @@ class IntercityBusRouteSubentryFlowHandler(config_entries.ConfigSubentryFlow):
     사용자는 그 차이를 알 필요가 없다는 피드백 반영).
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._dep_names: list[str] = []
         self._arr_names: list[str] = []
         self._dep_name = ""
@@ -1347,7 +1405,7 @@ class IntercityBusRouteSubentryFlowHandler(config_entries.ConfigSubentryFlow):
         self._grades_found: list[str] = []
         self._retry_error: str | None = None
 
-    async def async_step_user(self, user_input=None):
+    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
         """출발터미널 검색 (고속/시외 구분 없이 양쪽 다 검색)."""
         from .bus.intercity_api import search_terminals
         errors: dict[str, str] = {}
@@ -1373,7 +1431,9 @@ class IntercityBusRouteSubentryFlowHandler(config_entries.ConfigSubentryFlow):
             vol.Required("dep_name"): str,
         }), errors=errors)
 
-    async def async_step_dep_select(self, user_input=None):
+    async def async_step_dep_select(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
         """출발터미널 선택 → 도착터미널 검색."""
         errors: dict[str, str] = {}
         if user_input is not None:
@@ -1388,7 +1448,9 @@ class IntercityBusRouteSubentryFlowHandler(config_entries.ConfigSubentryFlow):
                 SelectSelectorConfig(options=opts, mode=SelectSelectorMode.DROPDOWN)),
         }), errors=errors)
 
-    async def async_step_arr_search(self, user_input=None):
+    async def async_step_arr_search(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
         """도착터미널 검색 (고속/시외 구분 없이 양쪽 다 검색)."""
         from .bus.intercity_api import search_terminals
         errors: dict[str, str] = {}
@@ -1417,7 +1479,9 @@ class IntercityBusRouteSubentryFlowHandler(config_entries.ConfigSubentryFlow):
             vol.Required("arr_name"): str,
         }), errors=errors)
 
-    async def async_step_arr_select(self, user_input=None):
+    async def async_step_arr_select(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
         """도착터미널 선택 → 고속/시외 양쪽에서 실제 배차·등급 자동 감지."""
         from .bus.intercity_api import discover_queries
         if user_input is not None:
@@ -1453,7 +1517,9 @@ class IntercityBusRouteSubentryFlowHandler(config_entries.ConfigSubentryFlow):
                 SelectSelectorConfig(options=opts, mode=SelectSelectorMode.DROPDOWN)),
         }))
 
-    async def async_step_grades(self, user_input=None):
+    async def async_step_grades(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
         """등급 선택 (당일 실제 배차에서 감지된 등급이 기본값, 고속/시외 표시) → 구간 subentry."""
         import homeassistant.helpers.config_validation as cv
         errors: dict[str, str] = {}
@@ -1481,10 +1547,10 @@ class IntercityBusRouteSubentryFlowHandler(config_entries.ConfigSubentryFlow):
 class SchoolSubentryFlowHandler(config_entries.ConfigSubentryFlow):
     """Add another school to a school entry, or edit an existing one's 학년/반."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._data: dict = {}
 
-    async def async_step_user(self, user_input=None):
+    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
         from .school import SCHOOL_LEVELS
         if user_input is not None:
             self._data = {"school_level": user_input["school_level"]}
@@ -1493,7 +1559,9 @@ class SchoolSubentryFlowHandler(config_entries.ConfigSubentryFlow):
             vol.Required("school_level", default="elementary"): vol.In(SCHOOL_LEVELS),
         }))
 
-    async def async_step_search(self, user_input=None):
+    async def async_step_search(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
         from .school import SCHOOL_LEVELS
         errors: dict[str, str] = {}
         if user_input is not None:
@@ -1530,7 +1598,9 @@ class SchoolSubentryFlowHandler(config_entries.ConfigSubentryFlow):
             data_schema=vol.Schema({vol.Required("school_search"): str}),
             errors=errors)
 
-    async def async_step_class(self, user_input=None):
+    async def async_step_class(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
         import homeassistant.helpers.config_validation as cv
         if user_input is not None:
             selected = user_input.get("grade_classes", [])
@@ -1552,7 +1622,9 @@ class SchoolSubentryFlowHandler(config_entries.ConfigSubentryFlow):
             vol.Required("grade_classes"): cv.multi_select(combo_opts),
         }))
 
-    async def async_step_periods(self, user_input=None):
+    async def async_step_periods(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
         defaults = {1: "09:00-09:50", 2: "10:00-10:50", 3: "11:00-11:50",
                     4: "12:00-12:50", 5: "13:40-14:30", 6: "14:40-15:30", 7: "15:40-16:30"}
         if user_input is not None:
@@ -1568,7 +1640,9 @@ class SchoolSubentryFlowHandler(config_entries.ConfigSubentryFlow):
         schema[vol.Optional("lunch_end", default="13:40")] = str
         return self.async_show_form(step_id="periods", data_schema=vol.Schema(schema))
 
-    async def async_step_reconfigure(self, user_input=None):
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
         """Edit an existing school's 학년/반 selection."""
         import homeassistant.helpers.config_validation as cv
         subentry = self._get_reconfigure_subentry()
@@ -1599,11 +1673,11 @@ class SchoolSubentryFlowHandler(config_entries.ConfigSubentryFlow):
 class KRPublicDataOptionsFlow(config_entries.OptionsFlow):
     """Handle options for reconfiguration."""
 
-    def __init__(self, config_entry):
+    def __init__(self, config_entry: ConfigEntry) -> None:
         self._entry = config_entry
         self._pharmacy_region_idx: int | None = None
 
-    async def async_step_init(self, user_input=None):
+    async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Main options step - show editable fields based on entry type."""
         etype = self._entry.data.get(CONF_ENTRY_TYPE)
 
@@ -1633,7 +1707,9 @@ class KRPublicDataOptionsFlow(config_entries.OptionsFlow):
 
         return self.async_show_form(step_id="init", data_schema=schema)
 
-    async def async_step_pharmacy_options(self, user_input=None):
+    async def async_step_pharmacy_options(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """약국: API 키 편집. 지역이 하나면 그 지역의 위치 센서 설정도 같은 화면에서 편집."""
         d = self._entry.data
         regions = d.get("regions", [])
@@ -1661,7 +1737,9 @@ class KRPublicDataOptionsFlow(config_entries.OptionsFlow):
                 SelectSelectorConfig(options=region_opts, mode=SelectSelectorMode.DROPDOWN))
         return self.async_show_form(step_id="pharmacy_options", data_schema=vol.Schema(schema))
 
-    async def async_step_pharmacy_region_edit(self, user_input=None):
+    async def async_step_pharmacy_region_edit(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """다중 지역 엔트리에서, 고른 지역의 위치 센서 설정(location_sensors/radius) 편집."""
         regions = self._entry.data.get("regions", [])
         idx = self._pharmacy_region_idx
@@ -1678,7 +1756,7 @@ class KRPublicDataOptionsFlow(config_entries.OptionsFlow):
             step_id="pharmacy_region_edit",
             data_schema=vol.Schema(_pharmacy_location_fields(self.hass, region)))
 
-    async def _build_schema(self, etype):
+    async def _build_schema(self, etype: str | None) -> vol.Schema | None:
         d = self._entry.data
 
         if etype == ENTRY_WEATHER:

@@ -1,9 +1,16 @@
 """Geolocation platform dispatcher."""
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import CONF_ENTRY_TYPE, DOMAIN, ENTRY_DISASTER
+
+if TYPE_CHECKING:
+    from homeassistant.helpers.entity import Entity
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
@@ -21,7 +28,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
             sgg = r.get("sgg", "")
             label = region_label(sido=sido, sgg=sgg)
 
-            def add(ents, sub_id=sub_id):
+            def add(ents: list[Entity], sub_id: str = sub_id) -> None:
                 async_add_entities(ents, config_subentry_id=sub_id)
 
             manager = DisasterGeoLocationManager(c, sido, sgg, label, add)

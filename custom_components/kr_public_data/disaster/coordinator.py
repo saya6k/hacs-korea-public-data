@@ -3,6 +3,9 @@ from __future__ import annotations
 
 import logging
 from datetime import timedelta
+from typing import Any
+
+from homeassistant.core import HomeAssistant
 
 from custom_components.kr_public_data.resilience import ResilientCoordinator
 
@@ -12,7 +15,8 @@ from .api import fetch_disaster_messages
 _LOGGER = logging.getLogger(__name__)
 
 
-def filter_messages(msgs, sido="", sgg="", legacy=""):
+def filter_messages(msgs: list[dict[str, Any]], sido: str = "", sgg: str = "",
+                    legacy: str = "") -> list[dict[str, Any]]:
     """Filter messages by region.
 
     sido+sgg: match parts like "서울특별시 종로구"; sido-wide ("서울특별시 전체")
@@ -38,14 +42,14 @@ def filter_messages(msgs, sido="", sgg="", legacy=""):
     return msgs
 
 
-class DisasterCoordinator(ResilientCoordinator):
+class DisasterCoordinator(ResilientCoordinator[list[dict[str, Any]]]):
     # safetydata.go.kr flaps often; a blip must not read as "no alerts".
     stale_tolerance = 5
 
-    def __init__(self, hass, api_key):
+    def __init__(self, hass: HomeAssistant, api_key: str) -> None:
         super().__init__(hass, _LOGGER, name="disaster",
                          update_interval=timedelta(seconds=DISASTER_SCAN_INTERVAL))
         self._api_key = api_key
 
-    async def _fetch(self):
+    async def _fetch(self) -> list[dict[str, Any]]:
         return await fetch_disaster_messages(self._api_key, count=30)

@@ -5,6 +5,7 @@ import json
 import logging
 import math
 import xml.etree.ElementTree as ET
+from typing import Any
 
 import aiohttp
 
@@ -15,7 +16,9 @@ from . import EQ_URL
 _LOGGER = logging.getLogger(__name__)
 
 
-async def fetch_earthquakes(session, api_key, count=20) -> list[dict]:
+async def fetch_earthquakes(
+    session: aiohttp.ClientSession, api_key: str, count: int = 20
+) -> list[dict]:
     from datetime import datetime, timedelta
     end = datetime.now()
     start = end - timedelta(days=30)
@@ -49,26 +52,27 @@ async def fetch_earthquakes(session, api_key, count=20) -> list[dict]:
     return []
 
 
-def _parse(i):
+def _parse(i: dict[str, Any]) -> dict[str, Any]:
     return {"latitude": _f(i.get("lat")), "longitude": _f(i.get("lon")),
             "magnitude": _f(i.get("mt")), "location": i.get("loc", ""),
             "datetime": i.get("tmEqk", ""), "depth": i.get("dep", "")}
 
 
-def _parse_xml(item):
+def _parse_xml(item: ET.Element) -> dict[str, Any]:
     return {"latitude": _f(item.findtext("lat")), "longitude": _f(item.findtext("lon")),
             "magnitude": _f(item.findtext("mt")), "location": item.findtext("loc", ""),
             "datetime": item.findtext("tmEqk", ""), "depth": item.findtext("dep", "")}
 
 
-def _f(v):
+def _f(v: Any) -> float | None:
     try:
         return float(v) if v else None
     except (ValueError, TypeError):
         return None
 
 
-def haversine_km(lat1, lon1, lat2, lon2):
+def haversine_km(lat1: float | None, lon1: float | None,
+                 lat2: float | None, lon2: float | None) -> float:
     R = 6371
     dlat = math.radians((lat2 or 0) - (lat1 or 0))
     dlon = math.radians((lon2 or 0) - (lon1 or 0))

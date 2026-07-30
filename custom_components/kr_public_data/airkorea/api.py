@@ -17,7 +17,9 @@ _LOGGER = logging.getLogger(__name__)
 KST = ZoneInfo("Asia/Seoul")
 
 
-async def search_stations(session, api_key, addr="") -> list[dict]:
+async def search_stations(
+    session: aiohttp.ClientSession, api_key: str, addr: str = ""
+) -> list[dict]:
     params = {"serviceKey": api_key, "returnType": "json",
               "numOfRows": "100", "pageNo": "1"}
     if addr:
@@ -39,7 +41,9 @@ async def search_stations(session, api_key, addr="") -> list[dict]:
             for i in items if i.get("stationName")]
 
 
-async def fetch_realtime(session, api_key, station_name) -> dict[str, Any]:
+async def fetch_realtime(
+    session: aiohttp.ClientSession, api_key: str, station_name: str
+) -> dict[str, Any]:
     params = {"serviceKey": api_key, "returnType": "json", "numOfRows": "1",
               "pageNo": "1", "stationName": station_name, "dataTerm": "DAILY",
               "ver": "1.5"}
@@ -66,7 +70,7 @@ async def fetch_realtime(session, api_key, station_name) -> dict[str, Any]:
     return items[0] if items else {}
 
 
-async def fetch_forecast(session, api_key) -> list[dict]:
+async def fetch_forecast(session: aiohttp.ClientSession, api_key: str) -> list[dict]:
     params = {"serviceKey": api_key, "returnType": "json", "numOfRows": "10",
               "pageNo": "1", "searchDate": datetime.now(KST).strftime("%Y-%m-%d")}
     async with session.get(FORECAST_URL, params=params,
@@ -92,7 +96,9 @@ async def fetch_forecast(session, api_key) -> list[dict]:
     return items
 
 
-async def _fetch_living_v4(session, api_key, url, area_no) -> dict[str, Any]:
+async def _fetch_living_v4(
+    session: aiohttp.ClientSession, api_key: str, url: str, area_no: str
+) -> dict[str, Any]:
     """Fetch V4 living index. time = YYYYMMDDHH, issued at 06/18 KST."""
     now = datetime.now(KST)
     # Try current issue time, then previous
@@ -137,11 +143,15 @@ async def _fetch_living_v4(session, api_key, url, area_no) -> dict[str, Any]:
     return {}
 
 
-async def fetch_uv_index(session, api_key, area_code) -> dict[str, Any]:
+async def fetch_uv_index(
+    session: aiohttp.ClientSession, api_key: str, area_code: str
+) -> dict[str, Any]:
     from . import UV_IDX_URL
     return await _fetch_living_v4(session, api_key, UV_IDX_URL, area_code)
 
 
-async def fetch_air_stagnation(session, api_key, area_code) -> dict[str, Any]:
+async def fetch_air_stagnation(
+    session: aiohttp.ClientSession, api_key: str, area_code: str
+) -> dict[str, Any]:
     from . import AIR_STAG_URL
     return await _fetch_living_v4(session, api_key, AIR_STAG_URL, area_code)

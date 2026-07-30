@@ -28,7 +28,7 @@ class FuelCoordinator(ResilientCoordinator):
         self._configs = configs  # [{"sido_code": ..., "fuel_code": ...}, ...]
         self._session = async_get_clientsession(hass)
 
-    async def _fetch(self):
+    async def _fetch(self) -> dict[str, Any]:
         result: dict[str, Any] = {}
         previous = self.data or {}
         failures = 0

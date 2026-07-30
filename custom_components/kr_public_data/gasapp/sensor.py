@@ -1,21 +1,29 @@
 """GasApp sensors."""
-from homeassistant.components.sensor import SensorEntity
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+from homeassistant.components.sensor import SensorEntity, SensorStateClass
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from custom_components.kr_public_data.const import DOMAIN
 from custom_components.kr_public_data.utils import get_value_from_path
 
+if TYPE_CHECKING:
+    from .coordinator import GasAppCoordinator
 
-def gasapp_device(contract_num):
+
+def gasapp_device(contract_num: str) -> DeviceInfo:
     return DeviceInfo(identifiers={(DOMAIN, f"gasapp_{contract_num}")},
                       name=f"가스앱 ({contract_num})", manufacturer="한국가스공사",
                       model="가스앱", entry_type=DeviceEntryType.SERVICE)
 
 class GasAppSensor(CoordinatorEntity, SensorEntity):
     _attr_has_entity_name = True
-    def __init__(self, coordinator, contract_num, data_key, path, name,
-                 unit=None, icon=None, state_class=None):
+    def __init__(self, coordinator: GasAppCoordinator, contract_num: str, data_key: str,
+                 path: str, name: str, unit: str | None = None, icon: str | None = None,
+                 state_class: SensorStateClass | None = None) -> None:
         super().__init__(coordinator)
         self._data_key = data_key
         self._path = path
@@ -27,6 +35,6 @@ class GasAppSensor(CoordinatorEntity, SensorEntity):
         self._attr_device_info = gasapp_device(contract_num)
 
     @property
-    def native_value(self):
+    def native_value(self) -> Any:
         data = (self.coordinator.data or {}).get(self._data_key, {})
         return get_value_from_path(data, self._path)

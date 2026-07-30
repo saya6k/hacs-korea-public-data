@@ -1,4 +1,10 @@
 """Weather warning sub-module."""
+from __future__ import annotations
+
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+
 KMA_API_BASE = "http://apis.data.go.kr/1360000/WthrWrnInfoService/getPwnCd"
 WARNING_SCAN_SEC = 900  # Renamed to avoid HA platform SCAN_INTERVAL conflict
 
@@ -48,7 +54,8 @@ EVENT_TYPE_KO = {
 }
 
 # ===== Weather Platform handler (for KMA Weather Forecast) =====
-async def async_setup_entry(hass, entry, async_add_entities):
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
+                            async_add_entities: AddEntitiesCallback) -> None:
     """Set up weather platform entities for KMA Weather Forecast."""
     from custom_components.kr_public_data.const import CONF_ENTRY_TYPE, DOMAIN, ENTRY_KMA_WEATHER
     if entry.data.get(CONF_ENTRY_TYPE) != ENTRY_KMA_WEATHER:

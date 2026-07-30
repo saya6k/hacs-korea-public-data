@@ -2,11 +2,16 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from custom_components.kr_public_data.const import DOMAIN
+
+if TYPE_CHECKING:
+    from .city_coordinator import CityBusCoordinator
 
 KST = timezone(timedelta(hours=9))
 
@@ -16,7 +21,8 @@ class CityBusArrivalSensor(CoordinatorEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.TIMESTAMP
     _attr_icon = "mdi:bus-clock"
 
-    def __init__(self, coordinator, node_id: str, route_id: str, index: int, device_info):
+    def __init__(self, coordinator: CityBusCoordinator, node_id: str, route_id: str, index: int,
+                 device_info: DeviceInfo) -> None:
         super().__init__(coordinator)
         self._route_id = route_id
         self._idx = index
@@ -43,7 +49,7 @@ class CityBusArrivalSensor(CoordinatorEntity, SensorEntity):
         return datetime.now(KST) + timedelta(seconds=int(arrtime))
 
     @property
-    def extra_state_attributes(self):
+    def extra_state_attributes(self) -> dict[str, Any]:
         item = self._item
         if item is None:
             return {}

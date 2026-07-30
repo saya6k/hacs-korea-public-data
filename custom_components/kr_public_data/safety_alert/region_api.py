@@ -17,6 +17,7 @@ from __future__ import annotations
 import logging
 import re
 
+import aiohttp
 from curl_cffi import requests as cffi_requests
 
 _LOGGER = logging.getLogger(__name__)
@@ -30,7 +31,7 @@ _PAGE_URL = f"{_BASE}/calamitySms.do?menuSn=34"
 class SafetyAlertRegionApiClient:
     """API client for Safety Alert region code retrieval."""
 
-    def __init__(self, session=None) -> None:
+    def __init__(self, session: aiohttp.ClientSession | None = None) -> None:
         # session arg kept for backward compatibility; curl_cffi creates its own.
         self._session = session
 

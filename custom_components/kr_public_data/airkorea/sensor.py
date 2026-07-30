@@ -2,21 +2,25 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta
+from typing import TYPE_CHECKING, Any
 from zoneinfo import ZoneInfo
 
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass, BinarySensorEntity
 from homeassistant.components.calendar import CalendarEntity, CalendarEvent
 from homeassistant.components.event import EventEntity
 from homeassistant.components.sensor import SensorEntity, SensorStateClass
-from homeassistant.core import callback
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from custom_components.kr_public_data.const import DOMAIN
 
+if TYPE_CHECKING:
+    from .coordinator import AirKoreaCoordinator
+
 KST = ZoneInfo("Asia/Seoul")
 
-def air_device(station_name):
+def air_device(station_name: str) -> DeviceInfo:
     return DeviceInfo(identifiers={(DOMAIN, f"air_{station_name}")},
                       name=f"에어코리아 - {station_name}",
                       manufacturer="한국환경공단", model="에어코리아",
@@ -72,7 +76,8 @@ def _parse_forecast_alerts(forecasts: list[dict], sido_filter: str = "") -> list
 class AirQualitySensor(CoordinatorEntity, SensorEntity):
     _attr_has_entity_name = True
     _attr_state_class = SensorStateClass.MEASUREMENT
-    def __init__(self, coordinator, station_name, field, name, unit):
+    def __init__(self, coordinator: AirKoreaCoordinator, station_name: str, field: str,
+                 name: str, unit: str | None) -> None:
         super().__init__(coordinator)
         self._station = station_name
         self._field = field
@@ -82,7 +87,7 @@ class AirQualitySensor(CoordinatorEntity, SensorEntity):
         self._attr_icon = "mdi:air-filter"
         self._attr_device_info = air_device(station_name)
     @property
-    def native_value(self):
+    def native_value(self) -> float | None:
         data = (self.coordinator.data or {}).get("stations", {}).get(self._station, {})
         val = data.get(self._field, "")
         if val in {"-", ""}:
@@ -92,7 +97,7 @@ class AirQualitySensor(CoordinatorEntity, SensorEntity):
         except (ValueError, TypeError):
             return None
     @property
-    def extra_state_attributes(self):
+    def extra_state_attributes(self) -> dict[str, Any]:
         data = (self.coordinator.data or {}).get("stations", {}).get(self._station, {})
         grade_field = self._field.replace("Value", "Grade")
         grade = data.get(grade_field, "")
@@ -107,7 +112,8 @@ class AirAlertBinarySensor(CoordinatorEntity, BinarySensorEntity):
     _attr_has_entity_name = True
     _attr_device_class = BinarySensorDeviceClass.SAFETY
     _attr_icon = "mdi:alert-decagram"
-    def __init__(self, coordinator, station_name, sido=""):
+    def __init__(self, coordinator: AirKoreaCoordinator, station_name: str,
+                 sido: str = "") -> None:
         super().__init__(coordinator)
         self._station = station_name
         self._sido = sido
@@ -115,12 +121,12 @@ class AirAlertBinarySensor(CoordinatorEntity, BinarySensorEntity):
         self._attr_name = "대기질 경보"
         self._attr_device_info = air_device(station_name)
     @property
-    def is_on(self):
+    def is_on(self) -> bool:
         alerts = _parse_forecast_alerts(
             (self.coordinator.data or {}).get("forecast", []), self._sido)
         return len(alerts) > 0
     @property
-    def extra_state_attributes(self):
+    def extra_state_attributes(self) -> dict[str, Any]:
         alerts = _parse_forecast_alerts(
             (self.coordinator.data or {}).get("forecast", []), self._sido)
         if not alerts:
@@ -135,7 +141,8 @@ class AirAlertEvent(CoordinatorEntity, EventEntity):
     _attr_has_entity_name = True
     _attr_event_types = ["air_quality_alert"]  # noqa: RUF012  HA entity-attribute convention; the base class owns the name
     _attr_icon = "mdi:smog"
-    def __init__(self, coordinator, station_name, sido=""):
+    def __init__(self, coordinator: AirKoreaCoordinator, station_name: str,
+                 sido: str = "") -> None:
         super().__init__(coordinator)
         self._station = station_name
         self._sido = sido
@@ -144,7 +151,7 @@ class AirAlertEvent(CoordinatorEntity, EventEntity):
         self._attr_device_info = air_device(station_name)
         self._last_hash = None
     @callback
-    def _handle_coordinator_update(self):
+    def _handle_coordinator_update(self) -> None:
         alerts = _parse_forecast_alerts(
             (self.coordinator.data or {}).get("forecast", []), self._sido)
         cur_hash = str([(a["pollutant"], a["region"], a["grade"]) for a in alerts[:5]])
@@ -162,7 +169,8 @@ class AirForecastCalendar(CoordinatorEntity, CalendarEntity):
     _attr_has_entity_name = True
     _attr_icon = "mdi:calendar-alert"
 
-    def __init__(self, coordinator, station_name, sido=""):
+    def __init__(self, coordinator: AirKoreaCoordinator, station_name: str,
+                 sido: str = "") -> None:
         super().__init__(coordinator)
         self._station = station_name
         self._sido = sido
@@ -185,7 +193,8 @@ class AirForecastCalendar(CoordinatorEntity, CalendarEntity):
             description=a.get("cause", ""),
         )
 
-    async def async_get_events(self, hass, start_date, end_date) -> list[CalendarEvent]:
+    async def async_get_events(self, hass: HomeAssistant, start_date: datetime,
+                               end_date: datetime) -> list[CalendarEvent]:
         forecasts = (self.coordinator.data or {}).get("forecast", [])
         events = []
         for fc in forecasts:
@@ -226,7 +235,7 @@ class AirForecastCalendar(CoordinatorEntity, CalendarEntity):
 
 # ===== Living Weather Index Sensors =====
 
-def _uv_grade(val):
+def _uv_grade(val: int | None) -> str | None:
     if val is None:
         return None
     from . import UV_GRADES
@@ -235,7 +244,7 @@ def _uv_grade(val):
             return label
     return "위험"
 
-def _stag_grade(val):
+def _stag_grade(val: int | None) -> str | None:
     if val is None:
         return None
     from . import STAG_GRADES
@@ -291,19 +300,19 @@ class UVIndexSensor(CoordinatorEntity, SensorEntity):
     _attr_icon = "mdi:sun-wireless"
     _attr_state_class = SensorStateClass.MEASUREMENT
 
-    def __init__(self, coordinator, station_name):
+    def __init__(self, coordinator: AirKoreaCoordinator, station_name: str) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{DOMAIN}_air_uv_{station_name}"
         self._attr_name = "자외선지수"
         self._attr_device_info = air_device(station_name)
 
     @property
-    def native_value(self):
+    def native_value(self) -> int | None:
         uv = (self.coordinator.data or {}).get("uv", {})
         return _get_current_index_value(uv)
 
     @property
-    def extra_state_attributes(self):
+    def extra_state_attributes(self) -> dict[str, Any]:
         uv = (self.coordinator.data or {}).get("uv", {})
         val = self.native_value
         attrs = {"grade": _uv_grade(val)}
@@ -317,19 +326,19 @@ class AirStagnationSensor(CoordinatorEntity, SensorEntity):
     _attr_icon = "mdi:weather-hazy"
     _attr_state_class = SensorStateClass.MEASUREMENT
 
-    def __init__(self, coordinator, station_name):
+    def __init__(self, coordinator: AirKoreaCoordinator, station_name: str) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{DOMAIN}_air_stag_{station_name}"
         self._attr_name = "대기정체지수"
         self._attr_device_info = air_device(station_name)
 
     @property
-    def native_value(self):
+    def native_value(self) -> int | None:
         stag = (self.coordinator.data or {}).get("stagnation", {})
         return _get_current_index_value(stag)
 
     @property
-    def extra_state_attributes(self):
+    def extra_state_attributes(self) -> dict[str, Any]:
         stag = (self.coordinator.data or {}).get("stagnation", {})
         val = self.native_value
         attrs = {"grade": _stag_grade(val)}

@@ -1,7 +1,7 @@
 """KMA Weather entity - full attributes."""
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.weather import (
     Forecast,
@@ -12,6 +12,9 @@ from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from custom_components.kr_public_data.const import DOMAIN
+
+if TYPE_CHECKING:
+    from .coordinator import KMAWeatherCoordinator
 
 CONDITION_MAP = {
     "sunny": "sunny", "partlycloudy": "partlycloudy", "cloudy": "cloudy",
@@ -29,7 +32,7 @@ class KMAWeather(CoordinatorEntity, WeatherEntity):
         WeatherEntityFeature.FORECAST_HOURLY | WeatherEntityFeature.FORECAST_DAILY
     )
 
-    def __init__(self, coordinator, region_name):
+    def __init__(self, coordinator: KMAWeatherCoordinator, region_name: str) -> None:
         super().__init__(coordinator)
         self._region = region_name
         self._attr_unique_id = f"{DOMAIN}_weather_{region_name}"
@@ -44,11 +47,11 @@ class KMAWeather(CoordinatorEntity, WeatherEntity):
         return (self.coordinator.data or {}).get(self._region, {})
 
     @property
-    def condition(self):
+    def condition(self) -> str | None:
         return CONDITION_MAP.get(self._data().get("condition"))
 
     @property
-    def native_temperature(self):
+    def native_temperature(self) -> float | None:
         return self._data().get("temperature")
 
     @property
@@ -60,19 +63,19 @@ class KMAWeather(CoordinatorEntity, WeatherEntity):
         return self._data().get("dew_point")
 
     @property
-    def humidity(self):
+    def humidity(self) -> float | None:
         return self._data().get("humidity")
 
     @property
-    def native_wind_speed(self):
+    def native_wind_speed(self) -> float | None:
         return self._data().get("wind_speed")
 
     @property
-    def wind_bearing(self):
+    def wind_bearing(self) -> float | str | None:
         return self._data().get("wind_bearing")
 
     @property
-    def native_precipitation(self):
+    def native_precipitation(self) -> float | None:
         return self._data().get("precipitation")
 
     @property

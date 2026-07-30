@@ -25,13 +25,13 @@ PTY_MAP_SHORT = {0: None, 1: "rainy", 2: "snowy", 3: "snowy", 4: "pouring"}
 WIND_DIR_16 = ["N","NNE","NE","ENE","E","ESE","SE","SSE",
                "S","SSW","SW","WSW","W","WNW","NW","NNW","N"]
 
-def _wind_direction_str(vec):
+def _wind_direction_str(vec: float | None) -> str | None:
     if vec is None:
         return None
     idx = int((vec + 22.5 * 0.5) / 22.5)
     return WIND_DIR_16[min(idx, 16)]
 
-def _base_time_vilage():
+def _base_time_vilage() -> tuple[str, str]:
     now = datetime.now(KST)
     bases = [2, 5, 8, 11, 14, 17, 20, 23]
     hour = now.hour
@@ -43,7 +43,7 @@ def _base_time_vilage():
         dt -= timedelta(days=1)
     return dt.strftime("%Y%m%d"), f"{base:02d}00"
 
-def _float(v):
+def _float(v: Any) -> float | None:
     if v is None or v in {"", "강수없음", "적설없음"}:
         return None
     try:
@@ -52,10 +52,10 @@ def _float(v):
     except ValueError:
         return None
 
-def _condition(sky, pty):
+def _condition(sky: int, pty: int) -> str:
     return PTY_MAP_SHORT.get(pty) or SKY_MAP.get(sky, "cloudy")
 
-def _dew_point(temp, humidity):
+def _dew_point(temp: float | None, humidity: float | None) -> float | None:
     """Approximate dew point using Magnus formula."""
     if temp is None or humidity is None or humidity <= 0:
         return None
@@ -63,7 +63,8 @@ def _dew_point(temp, humidity):
     alpha = (a * temp / (b + temp)) + math.log(humidity / 100.0)
     return round(b * alpha / (a - alpha), 1)
 
-def _apparent_temp(temp, wind_speed, humidity):
+def _apparent_temp(temp: float | None, wind_speed: float | None,
+                   humidity: float | None) -> float | None:
     """Approximate apparent (feels-like) temperature.
     Uses wind chill for T<10°C, heat index for T>27°C, otherwise T itself."""
     if temp is None:
@@ -84,7 +85,9 @@ def _apparent_temp(temp, wind_speed, humidity):
     return round(temp, 1)
 
 
-async def fetch_vilage_forecast(session, api_key, nx, ny) -> list[dict]:
+async def fetch_vilage_forecast(
+    session: aiohttp.ClientSession, api_key: str, nx: int, ny: int
+) -> list[dict]:
     base_date, base_time = _base_time_vilage()
     params = {"serviceKey": api_key, "numOfRows": "1000", "pageNo": "1",
               "dataType": "JSON", "base_date": base_date, "base_time": base_time,

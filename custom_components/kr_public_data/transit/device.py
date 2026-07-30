@@ -1,4 +1,6 @@
 """Subway device helpers."""
+from __future__ import annotations
+
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 
 from custom_components.kr_public_data.const import DOMAIN
@@ -6,7 +8,7 @@ from custom_components.kr_public_data.const import DOMAIN
 from . import SUBWAY_LINES
 
 
-def subway_device(station, direction, line_id=""):
+def subway_device(station: str, direction: str, line_id: str = "") -> DeviceInfo:
     """Legacy per-(station, direction, line) device."""
     ln = SUBWAY_LINES.get(line_id, "")
     label = f"지하철 - {station}역 {ln} {direction}".strip()
@@ -16,7 +18,7 @@ def subway_device(station, direction, line_id=""):
                       entry_type=DeviceEntryType.SERVICE)
 
 
-def subway_line_device(station, line_id):
+def subway_line_device(station: str, line_id: str) -> DeviceInfo:
     """One device per (station, line); both directions live under it."""
     ln = SUBWAY_LINES.get(line_id, line_id)
     return DeviceInfo(

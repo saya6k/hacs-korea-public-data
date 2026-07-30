@@ -3,6 +3,9 @@ from __future__ import annotations
 
 import logging
 from datetime import timedelta
+from typing import Any
+
+from homeassistant.core import HomeAssistant
 
 from custom_components.kr_public_data.resilience import ResilientCoordinator
 
@@ -17,12 +20,12 @@ class SafetyAlertCoordinator(ResilientCoordinator):
     # "all clear"), but surface sustained failure honestly.
     stale_tolerance = 4
 
-    def __init__(self, hass, area_code):
+    def __init__(self, hass: HomeAssistant, area_code: str) -> None:
         super().__init__(hass, _LOGGER, name=f"safety_alert_{area_code}",
                          update_interval=timedelta(seconds=SAFETY_SCAN_INTERVAL))
         self._area_code = area_code
 
-    async def _fetch(self):
+    async def _fetch(self) -> dict[str, Any]:
         client = SafetyAlertApiClient()
         result = await client.async_get_safety_alerts(self._area_code)
         alerts = result.get("disasterSmsList", [])

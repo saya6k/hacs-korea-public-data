@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 from datetime import timedelta
+from typing import Any
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -27,7 +28,7 @@ class SubwayCoordinator(ResilientCoordinator):
         self._session = async_get_clientsession(hass)
         self.subscriptions = subscriptions  # [{"direction": ..., "line_id": ...}, ...]
 
-    async def _fetch(self):
+    async def _fetch(self) -> dict[str, Any]:
         raw = await fetch_bulk_arrivals(self._session, self._api_key, self._station)
         result = {}
         for sub in self.subscriptions:
