@@ -5,7 +5,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-KMA_API_BASE = "http://apis.data.go.kr/1360000/WthrWrnInfoService/getPwnCd"
+KMA_API_BASE = "https://apis.data.go.kr/1360000/WthrWrnInfoService/getPwnCd"
 WARNING_SCAN_SEC = 900  # Renamed to avoid HA platform SCAN_INTERVAL conflict
 
 WARNING_TYPES: dict[int, tuple[str, str, str]] = {
