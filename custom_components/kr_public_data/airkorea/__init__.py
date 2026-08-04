@@ -1,13 +1,13 @@
 """AirKorea (에어코리아) sub-module."""
 # 대기오염정보 조회 서비스 (15073861) - v1
-STATION_URL = "http://apis.data.go.kr/B552584/MsrstnInfoInqireSvc/getMsrstnList"
-REALTIME_URL = "http://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getMsrstnAcctoRltmMesureDnsty"
-FORECAST_URL = "http://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getMinuDustFrcstDspth"
+STATION_URL = "https://apis.data.go.kr/B552584/MsrstnInfoInqireSvc/getMsrstnList"
+REALTIME_URL = "https://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getMsrstnAcctoRltmMesureDnsty"
+FORECAST_URL = "https://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getMinuDustFrcstDspth"
 SCAN_INTERVAL = 1800
 
 # 생활기상지수 조회서비스 V4 (15085288)
-UV_IDX_URL = "http://apis.data.go.kr/1360000/LivingWthrIdxServiceV4/getUVIdxV4"
-AIR_STAG_URL = "http://apis.data.go.kr/1360000/LivingWthrIdxServiceV4/getAirDiffusionIdxV4"
+UV_IDX_URL = "https://apis.data.go.kr/1360000/LivingWthrIdxServiceV4/getUVIdxV4"
+AIR_STAG_URL = "https://apis.data.go.kr/1360000/LivingWthrIdxServiceV4/getAirDiffusionIdxV4"
 
 # 시도 → 행정구역코드 (생활기상지수용 areaNo)
 SIDO_AREA_CODE = {
