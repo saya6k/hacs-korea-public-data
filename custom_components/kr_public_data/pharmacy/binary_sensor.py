@@ -44,13 +44,13 @@ class PharmacyOpenBinarySensor(CoordinatorEntity[PharmacyCoordinator], BinarySen
     _attr_has_entity_name = True
     _attr_device_class = BinarySensorDeviceClass.RUNNING
     _attr_icon = "mdi:pharmacy"
+    _attr_translation_key = "pharmacy_open"
 
-    def __init__(self, coordinator: PharmacyCoordinator, hpid: str, name: str,
+    def __init__(self, coordinator: PharmacyCoordinator, hpid: str,
                  device_info: DeviceInfo) -> None:
         super().__init__(coordinator)
         self._hpid = hpid
         self._attr_unique_id = f"{DOMAIN}_pharmacy_open_{hpid}"
-        self._attr_name = f"{name} 운영 중"
         self._attr_device_info = device_info
 
     def _find(self) -> dict[str, Any] | None:

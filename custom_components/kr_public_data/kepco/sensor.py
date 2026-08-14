@@ -16,20 +16,22 @@ if TYPE_CHECKING:
 
 def kepco_device(username: str) -> DeviceInfo:
     return DeviceInfo(identifiers={(DOMAIN, f"kepco_{username}")},
-                      name=f"한전 ({username})", manufacturer="한국전력공사",
+                      translation_key="kepco",
+                      translation_placeholders={"username": username},
+                      manufacturer="한국전력공사",
                       model="KEPCO", entry_type=DeviceEntryType.SERVICE)
 
 class KepcoSensor(CoordinatorEntity, SensorEntity):
     _attr_has_entity_name = True
     def __init__(self, coordinator: KepcoCoordinator, username: str, data_key: str, path: str,
-                 name: str, device_class: SensorDeviceClass | None = None,
+                 translation_key: str, device_class: SensorDeviceClass | None = None,
                  state_class: SensorStateClass | None = None, unit: str | None = None,
                  icon: str | None = None) -> None:
         super().__init__(coordinator)
         self._data_key = data_key
         self._path = path
         self._attr_unique_id = f"{DOMAIN}_kepco_{username}_{path}"
-        self._attr_name = name
+        self._attr_translation_key = translation_key
         self._attr_device_class = device_class
         self._attr_state_class = state_class
         self._attr_native_unit_of_measurement = unit

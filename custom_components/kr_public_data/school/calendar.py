@@ -119,7 +119,9 @@ class SchoolClassCalendar(CoordinatorEntity, CalendarEntity):
         self._attr_unique_id = (
             f"{DOMAIN}_class_{data['region_code']}_{data['school_code']}"
             f"_{self._gc}_schedule")
-        self._attr_name = f"{self._grade}학년 {self._cls}반 시간표"
+        # Grade/class are data, so they ride in as placeholders. _attr_name must
+        # stay unset — it would shadow the translation entirely (see AGENTS.md).
+        self._attr_translation_placeholders = {"grade": self._grade, "class": self._cls}
 
     @property
     def device_info(self) -> DeviceInfo:

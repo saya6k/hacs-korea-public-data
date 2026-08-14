@@ -41,7 +41,7 @@ class DisasterMessageSensor(DisasterRegionEntity, SensorEntity):
                  sgg: str = "") -> None:
         super().__init__(coordinator, region, sido, sgg)
         self._attr_unique_id = f"{DOMAIN}_disaster_latest{self._suffix}"
-        self._attr_name = "최신 재난문자"
+        self._attr_translation_key = "disaster_message"
     @property
     def native_value(self) -> str:
         msgs = self._messages
@@ -62,7 +62,7 @@ class DisasterCountSensor(DisasterRegionEntity, SensorEntity):
                  sgg: str = "") -> None:
         super().__init__(coordinator, region, sido, sgg)
         self._attr_unique_id = f"{DOMAIN}_disaster_count{self._suffix}"
-        self._attr_name = "재난문자 수"
+        self._attr_translation_key = "disaster_count"
     @property
     def native_value(self) -> int:
         return len(self._messages)

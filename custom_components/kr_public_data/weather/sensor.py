@@ -29,7 +29,7 @@ class WeatherWarningBinarySensor(CoordinatorEntity[WeatherWarningCoordinator], B
         super().__init__(coordinator)
         self._area_code = area_code
         self._attr_unique_id = f"{DOMAIN}_weather_alert_{area_code}"
-        self._attr_name = "기상특보 발령"
+        self._attr_translation_key = "weather_warning"
         self._attr_device_info = weather_device(area_code)
 
     @property

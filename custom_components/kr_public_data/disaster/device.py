@@ -6,9 +6,10 @@ from custom_components.kr_public_data.const import DOMAIN
 
 
 def disaster_device(region: str = "") -> DeviceInfo:
-    label = f"재난문자 - {region}" if region else "재난문자"
     did = f"disaster_{region}" if region else "disaster"
-    return DeviceInfo(identifiers={(DOMAIN, did)}, name=label,
+    return DeviceInfo(identifiers={(DOMAIN, did)},
+                      translation_key="disaster_region" if region else "disaster",
+                      translation_placeholders={"region": region},
                       manufacturer="행정안전부", model="재난안전데이터",
                       entry_type=DeviceEntryType.SERVICE)
 

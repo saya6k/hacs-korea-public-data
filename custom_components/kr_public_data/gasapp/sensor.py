@@ -16,19 +16,22 @@ if TYPE_CHECKING:
 
 def gasapp_device(contract_num: str) -> DeviceInfo:
     return DeviceInfo(identifiers={(DOMAIN, f"gasapp_{contract_num}")},
-                      name=f"가스앱 ({contract_num})", manufacturer="한국가스공사",
+                      translation_key="gasapp",
+                      translation_placeholders={"contract_number": contract_num},
+                      manufacturer="한국가스공사",
                       model="가스앱", entry_type=DeviceEntryType.SERVICE)
 
 class GasAppSensor(CoordinatorEntity, SensorEntity):
     _attr_has_entity_name = True
     def __init__(self, coordinator: GasAppCoordinator, contract_num: str, data_key: str,
-                 path: str, name: str, unit: str | None = None, icon: str | None = None,
+                 path: str, translation_key: str, unit: str | None = None,
+                 icon: str | None = None,
                  state_class: SensorStateClass | None = None) -> None:
         super().__init__(coordinator)
         self._data_key = data_key
         self._path = path
         self._attr_unique_id = f"{DOMAIN}_gasapp_{contract_num}_{path}"
-        self._attr_name = name
+        self._attr_translation_key = translation_key
         self._attr_native_unit_of_measurement = unit
         self._attr_icon = icon or "mdi:gas-burner"
         self._attr_state_class = state_class

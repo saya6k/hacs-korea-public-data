@@ -15,18 +15,21 @@ if TYPE_CHECKING:
 
 def arisu_device(customer_number: str) -> DeviceInfo:
     return DeviceInfo(identifiers={(DOMAIN, f"arisu_{customer_number}")},
-                      name=f"아리수 ({customer_number})", manufacturer="서울시",
+                      translation_key="arisu",
+                      translation_placeholders={"customer_number": customer_number},
+                      manufacturer="서울시",
                       model="아리수 상수도", entry_type=DeviceEntryType.SERVICE)
 
 class ArisuSensor(CoordinatorEntity, SensorEntity):
     _attr_has_entity_name = True
     _attr_icon = "mdi:water"
-    def __init__(self, coordinator: ArisuCoordinator, customer_number: str, name: str, key: str,
+    def __init__(self, coordinator: ArisuCoordinator, customer_number: str,
+                 translation_key: str, key: str,
                  unit: str | None = None, state_class: SensorStateClass | None = None) -> None:
         super().__init__(coordinator)
         self._key = key
         self._attr_unique_id = f"{DOMAIN}_arisu_{customer_number}_{key}"
-        self._attr_name = name
+        self._attr_translation_key = translation_key
         self._attr_native_unit_of_measurement = unit
         self._attr_state_class = state_class
         self._attr_device_info = arisu_device(customer_number)

@@ -724,23 +724,225 @@
       }
     },
     "sensor": {
+      "air_pm10": {
+        "name": "PM10 particulates"
+      },
+      "air_pm25": {
+        "name": "PM2.5 particulates"
+      },
+      "air_so2": {
+        "name": "SO₂ sulfur dioxide"
+      },
+      "air_co": {
+        "name": "CO carbon monoxide"
+      },
+      "air_o3": {
+        "name": "O₃ ozone"
+      },
+      "air_no2": {
+        "name": "NO₂ nitrogen dioxide"
+      },
+      "air_khai": {
+        "name": "Air quality index"
+      },
+      "air_uv_index": {
+        "name": "UV index"
+      },
+      "air_stagnation": {
+        "name": "Air stagnation index"
+      },
+      "arisu_bill": {
+        "name": "Water bill"
+      },
+      "arisu_usage": {
+        "name": "Usage"
+      },
+      "arisu_billing_month": {
+        "name": "Billing month"
+      },
+      "bus_arrival": {
+        "name": "Next arrival"
+      },
+      "bus_arrival_next": {
+        "name": "Second arrival"
+      },
+      "bus_departure": {
+        "name": "Next departure"
+      },
+      "bus_departure_next": {
+        "name": "Second departure"
+      },
+      "bus_fare": {
+        "name": "Next fare"
+      },
+      "bus_fare_next": {
+        "name": "Second fare"
+      },
+      "disaster_message": {
+        "name": "Latest alert"
+      },
+      "disaster_count": {
+        "name": "Alert count"
+      },
+      "fuel_average": {
+        "name": "National average price"
+      },
+      "fuel_lowest": {
+        "name": "Lowest price"
+      },
+      "fuel_lowest_station": {
+        "name": "Cheapest station"
+      },
+      "gas_bill_title": {
+        "name": "Bill title"
+      },
+      "gas_bill_total": {
+        "name": "Total charge"
+      },
+      "kepco_customer_number": {
+        "name": "Customer number"
+      },
+      "kepco_contract_type": {
+        "name": "Contract type"
+      },
+      "kepco_bill_last_month": {
+        "name": "Last month's bill"
+      },
+      "kepco_bill_predicted": {
+        "name": "Predicted bill"
+      },
+      "kepco_usage_current": {
+        "name": "Current usage"
+      },
+      "pharmacy_open_count": {
+        "name": "Open pharmacies"
+      },
+      "pharmacy_location": {
+        "name": "Location"
+      },
+      "safety_alert_latest": {
+        "name": "Latest alert"
+      },
+      "safety_alert_count": {
+        "name": "Active alerts"
+      },
       "school_lunch": {
         "name": "Lunch"
       },
       "school_info": {
         "name": "Info"
       },
-      "disaster_message": {
-        "name": "Alert"
+      "subway_now": {
+        "name": "Next train"
+      },
+      "subway_next": {
+        "name": "Second train"
+      },
+      "subway_up_now": {
+        "name": "Next train, up"
+      },
+      "subway_up_next": {
+        "name": "Second train, up"
+      },
+      "subway_down_now": {
+        "name": "Next train, down"
+      },
+      "subway_down_next": {
+        "name": "Second train, down"
+      },
+      "subway_inner_now": {
+        "name": "Next train, inner loop"
+      },
+      "subway_inner_next": {
+        "name": "Second train, inner loop"
+      },
+      "subway_outer_now": {
+        "name": "Next train, outer loop"
+      },
+      "subway_outer_next": {
+        "name": "Second train, outer loop"
+      }
+    },
+    "binary_sensor": {
+      "air_quality_alert": {
+        "name": "Air quality alert"
+      },
+      "pharmacy_open": {
+        "name": "Open now"
+      },
+      "safety_alert_status": {
+        "name": "Alert status"
+      },
+      "weather_warning": {
+        "name": "Warning in effect"
       }
     },
     "calendar": {
+      "air_forecast": {
+        "name": "Air quality forecast"
+      },
+      "weather_warning": {
+        "name": "Weather warnings"
+      },
       "school_academic": {
         "name": "Events"
       },
       "school_class": {
-        "name": "Schedule"
+        "name": "Grade {grade} class {class} schedule"
       }
+    }
+  },
+  "device": {
+    "air_station": {
+      "name": "AirKorea - {station}"
+    },
+    "arisu": {
+      "name": "Arisu ({customer_number})"
+    },
+    "bus_route": {
+      "name": "Bus - route {route} at {stop}"
+    },
+    "express_bus_route": {
+      "name": "Express bus - {departure} → {arrival} {grade}"
+    },
+    "intercity_bus_route": {
+      "name": "Intercity bus - {departure} → {arrival} {grade}"
+    },
+    "disaster": {
+      "name": "Emergency alerts"
+    },
+    "disaster_region": {
+      "name": "Emergency alerts - {region}"
+    },
+    "earthquake": {
+      "name": "Earthquake information"
+    },
+    "fuel": {
+      "name": "Fuel prices - {area} {fuel}"
+    },
+    "gasapp": {
+      "name": "GasApp ({contract_number})"
+    },
+    "kepco": {
+      "name": "KEPCO ({username})"
+    },
+    "kma_weather": {
+      "name": "KMA forecast - {region}"
+    },
+    "pharmacy": {
+      "name": "Pharmacy - {name}"
+    },
+    "safety_alert": {
+      "name": "Safety alerts - {area}"
+    },
+    "subway_line": {
+      "name": "Subway - {station} Station {line}"
+    },
+    "subway_direction": {
+      "name": "Subway - {station} Station {line} {direction}"
+    },
+    "weather_warning": {
+      "name": "Weather warnings - {area}"
     }
   }
 }

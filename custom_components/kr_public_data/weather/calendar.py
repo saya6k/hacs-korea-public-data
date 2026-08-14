@@ -23,7 +23,7 @@ class KMAWeatherCalendar(CoordinatorEntity[WeatherWarningCoordinator], CalendarE
         super().__init__(coordinator)
         self._ac = area_code
         self._attr_unique_id = f"{DOMAIN}_{area_code}_calendar"
-        self._attr_name = "기상특보"
+        self._attr_translation_key = "weather_warning"
         self._attr_icon = "mdi:weather-lightning-rainy"
         self._attr_device_info = weather_device(area_code)
 

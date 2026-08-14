@@ -7,6 +7,15 @@ DIRECTION_DOWN = "하행"
 DIRECTION_INNER = "내선"
 DIRECTION_OUTER = "외선"
 
+# Direction is a fixed 4-value set, so each gets its own translation key slug —
+# a placeholder would keep the Korean label untranslated.
+DIRECTION_SLUGS = {
+    DIRECTION_UP: "up",
+    DIRECTION_DOWN: "down",
+    DIRECTION_INNER: "inner",
+    DIRECTION_OUTER: "outer",
+}
+
 
 def line_directions(line_id: str) -> tuple[str, str]:
     """updnLine values used by a line: 2호선 is a loop (외선/내선)."""
