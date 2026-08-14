@@ -47,8 +47,8 @@ EVENT_TYPES = [EVENT_TYPE_ADVISORY, EVENT_TYPE_WARNING, EVENT_TYPE_PRE_ADVISORY,
 EVENT_TYPE_KO = {
     "advisory": "주의보",
     "warning": "경보",
-    "pre_advisory": "예비 주의보",
-    "pre_warning": "예비 경보",
+    "pre_advisory": "예비주의보",
+    "pre_warning": "예비경보",
     "cancelled": "해제",
     "none": "없음",
 }

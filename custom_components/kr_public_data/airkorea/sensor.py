@@ -139,6 +139,7 @@ class AirAlertBinarySensor(CoordinatorEntity, BinarySensorEntity):
 
 class AirAlertEvent(CoordinatorEntity, EventEntity):
     _attr_has_entity_name = True
+    _attr_translation_key = "air_quality_alert"
     _attr_event_types = ["air_quality_alert"]  # noqa: RUF012  HA entity-attribute convention; the base class owns the name
     _attr_icon = "mdi:smog"
     def __init__(self, coordinator: AirKoreaCoordinator, station_name: str,
@@ -147,7 +148,6 @@ class AirAlertEvent(CoordinatorEntity, EventEntity):
         self._station = station_name
         self._sido = sido
         self._attr_unique_id = f"{DOMAIN}_air_event_{station_name}"
-        self._attr_name = "대기질 경보 이벤트"
         self._attr_device_info = air_device(station_name)
         self._last_hash = None
     @callback

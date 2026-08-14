@@ -68,13 +68,13 @@ class DisasterCountSensor(DisasterRegionEntity, SensorEntity):
         return len(self._messages)
 
 class DisasterEvent(DisasterRegionEntity, EventEntity):
+    _attr_translation_key = "disaster_event"
     _attr_event_types = ["emergency", "urgent", "safety", "disaster_info"]  # noqa: RUF012
     _attr_icon = "mdi:alert-circle"
     def __init__(self, coordinator: DisasterCoordinator, region: str = "", sido: str = "",
                  sgg: str = "") -> None:
         super().__init__(coordinator, region, sido, sgg)
         self._attr_unique_id = f"{DOMAIN}_disaster_event{self._suffix}"
-        self._attr_name = "재난문자 이벤트"
         self._last_id = None
 
     @callback

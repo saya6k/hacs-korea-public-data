@@ -79,6 +79,7 @@ class SafetyAlertTextSensor(CoordinatorEntity[SafetyAlertCoordinator], SensorEnt
 
 class SafetyAlertEvent(CoordinatorEntity[SafetyAlertCoordinator], EventEntity):
     _attr_has_entity_name = True
+    _attr_translation_key = "safety_alert_event"
     # "safety_alert" stays as the fallback so pre-existing automations keep firing.
     _attr_event_types = ["emergency", "urgent", "safety", "safety_alert"]  # noqa: RUF012
     _attr_icon = "mdi:alert-circle"
@@ -86,7 +87,6 @@ class SafetyAlertEvent(CoordinatorEntity[SafetyAlertCoordinator], EventEntity):
     def __init__(self, coordinator: SafetyAlertCoordinator, area_code: str, area_name: str) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{DOMAIN}_safety_event_{area_code}"
-        self._attr_name = "알림 이벤트"
         self._attr_device_info = safety_alert_device(area_code, area_name)
         self._last_id = None
 
