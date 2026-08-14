@@ -527,15 +527,62 @@
   "entity": {
     "event": {
       "weather_warning": {
+        "name": "{warning_type} 특보",
         "state_attributes": {
           "event_type": {
             "state": {
               "advisory": "주의보",
               "warning": "경보",
-              "pre_advisory": "곧 주의보",
-              "pre_warning": "곧 경보",
+              "pre_advisory": "예비주의보",
+              "pre_warning": "예비경보",
               "cancelled": "해제",
               "none": "없음"
+            }
+          }
+        }
+      },
+      "earthquake_alert": {
+        "name": "지진 경보",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "earthquake_alert": "지진 경보"
+            }
+          }
+        }
+      },
+      "disaster_event": {
+        "name": "재난문자 이벤트",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "emergency": "위급재난문자",
+              "urgent": "긴급재난문자",
+              "safety": "안전안내문자",
+              "disaster_info": "재난정보"
+            }
+          }
+        }
+      },
+      "safety_alert_event": {
+        "name": "알림 이벤트",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "emergency": "위급재난문자",
+              "urgent": "긴급재난문자",
+              "safety": "안전안내문자",
+              "safety_alert": "안전알림"
+            }
+          }
+        }
+      },
+      "air_quality_alert": {
+        "name": "대기질 경보 이벤트",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "air_quality_alert": "대기질 경보"
             }
           }
         }

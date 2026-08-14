@@ -23,13 +23,13 @@ def eq_device() -> DeviceInfo:
 
 class EarthquakeEvent(CoordinatorEntity, EventEntity):
     _attr_has_entity_name = True
+    _attr_translation_key = "earthquake_alert"
     _attr_event_types = ["earthquake_alert"]  # noqa: RUF012  HA entity-attribute convention; the base class owns the name
     _attr_icon = "mdi:earth-arrow-down"
     def __init__(self, coordinator: EarthquakeCoordinator, home_lat: float, home_lon: float,
                  radius_km: float, min_mag: float) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{DOMAIN}_earthquake_event"
-        self._attr_name = "지진 경보"
         self._attr_device_info = eq_device()
         self._home_lat = home_lat
         self._home_lon = home_lon

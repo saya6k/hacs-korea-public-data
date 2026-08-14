@@ -26,7 +26,7 @@ class KMAWeatherEvent(CoordinatorEntity[WeatherWarningCoordinator], EventEntity)
         self._warning_code = warning_code
         self._warning_name = warning_name
         self._attr_unique_id = f"{DOMAIN}_{area_code}_{warning_id}"
-        self._attr_name = f"{warning_name} 특보"
+        self._attr_translation_placeholders = {"warning_type": warning_name}
         self._attr_icon = icon
         self._attr_device_info = weather_device(area_code)
         self._last: str | None = None
