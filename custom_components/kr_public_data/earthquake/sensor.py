@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 def eq_device() -> DeviceInfo:
     return DeviceInfo(identifiers={(DOMAIN, "earthquake")},
-                      name="지진 정보", manufacturer="기상청",
+                      translation_key="earthquake", manufacturer="기상청",
                       model="지진정보", entry_type=DeviceEntryType.SERVICE)
 
 class EarthquakeEvent(CoordinatorEntity, EventEntity):

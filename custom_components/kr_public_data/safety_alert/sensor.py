@@ -19,11 +19,11 @@ class SafetyAlertBinarySensor(CoordinatorEntity[SafetyAlertCoordinator], BinaryS
     _attr_has_entity_name = True
     _attr_device_class = BinarySensorDeviceClass.SAFETY
     _attr_icon = "mdi:alert"
+    _attr_translation_key = "safety_alert_status"
 
     def __init__(self, coordinator: SafetyAlertCoordinator, area_code: str, area_name: str) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{DOMAIN}_safety_{area_code}"
-        self._attr_name = "알림 상태"
         self._attr_device_info = safety_alert_device(area_code, area_name)
 
     @property
@@ -39,11 +39,11 @@ class SafetyAlertBinarySensor(CoordinatorEntity[SafetyAlertCoordinator], BinaryS
 class SafetyAlertTextSensor(CoordinatorEntity[SafetyAlertCoordinator], SensorEntity):
     _attr_has_entity_name = True
     _attr_icon = "mdi:message-alert"
+    _attr_translation_key = "safety_alert_latest"
 
     def __init__(self, coordinator: SafetyAlertCoordinator, area_code: str, area_name: str) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{DOMAIN}_safety_text_{area_code}"
-        self._attr_name = "최신 알림"
         self._attr_device_info = safety_alert_device(area_code, area_name)
 
     @property
@@ -122,11 +122,11 @@ class SafetyAlertEvent(CoordinatorEntity[SafetyAlertCoordinator], EventEntity):
 class SafetyAlertCountSensor(CoordinatorEntity[SafetyAlertCoordinator], SensorEntity):
     _attr_has_entity_name = True
     _attr_icon = "mdi:counter"
+    _attr_translation_key = "safety_alert_count"
 
     def __init__(self, coordinator: SafetyAlertCoordinator, area_code: str, area_name: str) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{DOMAIN}_safety_count_{area_code}"
-        self._attr_name = "활성 알림 수"
         self._attr_device_info = safety_alert_device(area_code, area_name)
 
     @property

@@ -26,7 +26,7 @@ class IntercityBusDepartureSensor(CoordinatorEntity, SensorEntity):
         self._idx = index
         suffix = "now" if index == 0 else "next"
         self._attr_unique_id = f"{DOMAIN}_intercity_bus_{dep_name}_{arr_name}_{grade_key}_{suffix}"
-        self._attr_name = "다음 출발" if index == 0 else "다다음 출발"
+        self._attr_translation_key = "bus_departure" if index == 0 else "bus_departure_next"
         self._attr_device_info = device_info
 
     @property
@@ -72,7 +72,7 @@ class IntercityBusFareSensor(CoordinatorEntity, SensorEntity):
         suffix = "now" if index == 0 else "next"
         self._attr_unique_id = (
             f"{DOMAIN}_intercity_bus_{dep_name}_{arr_name}_{grade_key}_fare_{suffix}")
-        self._attr_name = "다음 요금" if index == 0 else "다다음 요금"
+        self._attr_translation_key = "bus_fare" if index == 0 else "bus_fare_next"
         self._attr_device_info = device_info
 
     @property

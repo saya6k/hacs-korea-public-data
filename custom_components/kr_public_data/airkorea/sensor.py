@@ -22,18 +22,21 @@ KST = ZoneInfo("Asia/Seoul")
 
 def air_device(station_name: str) -> DeviceInfo:
     return DeviceInfo(identifiers={(DOMAIN, f"air_{station_name}")},
-                      name=f"에어코리아 - {station_name}",
+                      translation_key="air_station",
+                      translation_placeholders={"station": station_name},
                       manufacturer="한국환경공단", model="에어코리아",
                       entry_type=DeviceEntryType.SERVICE)
 
+# (API field, translation key, unit) — the key names entity.sensor.<key> in the
+# translation files, so the pollutant label itself gets localized.
 POLLUTANTS = [
-    ("pm10Value", "PM10 미세먼지", "㎍/㎥"),
-    ("pm25Value", "PM2.5 초미세먼지", "㎍/㎥"),
-    ("so2Value", "SO₂ 아황산가스", "ppm"),
-    ("coValue", "CO 일산화탄소", "ppm"),
-    ("o3Value", "O₃ 오존", "ppm"),
-    ("no2Value", "NO₂ 이산화질소", "ppm"),
-    ("khaiValue", "통합대기질지수", None),
+    ("pm10Value", "air_pm10", "㎍/㎥"),
+    ("pm25Value", "air_pm25", "㎍/㎥"),
+    ("so2Value", "air_so2", "ppm"),
+    ("coValue", "air_co", "ppm"),
+    ("o3Value", "air_o3", "ppm"),
+    ("no2Value", "air_no2", "ppm"),
+    ("khaiValue", "air_khai", None),
 ]
 # 참고: CO(일산화탄소)는 CO₂(이산화탄소)와 다릅니다.
 # CO 0.3~0.5ppm, SO₂ 0.001~0.02ppm, O₃ 0.02~0.05ppm, NO₂ 0.01~0.04ppm이 정상 범위입니다.
@@ -77,12 +80,12 @@ class AirQualitySensor(CoordinatorEntity, SensorEntity):
     _attr_has_entity_name = True
     _attr_state_class = SensorStateClass.MEASUREMENT
     def __init__(self, coordinator: AirKoreaCoordinator, station_name: str, field: str,
-                 name: str, unit: str | None) -> None:
+                 translation_key: str, unit: str | None) -> None:
         super().__init__(coordinator)
         self._station = station_name
         self._field = field
         self._attr_unique_id = f"{DOMAIN}_air_{station_name}_{field}"
-        self._attr_name = name
+        self._attr_translation_key = translation_key
         self._attr_native_unit_of_measurement = unit
         self._attr_icon = "mdi:air-filter"
         self._attr_device_info = air_device(station_name)
@@ -112,13 +115,13 @@ class AirAlertBinarySensor(CoordinatorEntity, BinarySensorEntity):
     _attr_has_entity_name = True
     _attr_device_class = BinarySensorDeviceClass.SAFETY
     _attr_icon = "mdi:alert-decagram"
+    _attr_translation_key = "air_quality_alert"
     def __init__(self, coordinator: AirKoreaCoordinator, station_name: str,
                  sido: str = "") -> None:
         super().__init__(coordinator)
         self._station = station_name
         self._sido = sido
         self._attr_unique_id = f"{DOMAIN}_air_alert_{station_name}"
-        self._attr_name = "대기질 경보"
         self._attr_device_info = air_device(station_name)
     @property
     def is_on(self) -> bool:
@@ -168,6 +171,7 @@ class AirForecastCalendar(CoordinatorEntity, CalendarEntity):
     """Calendar showing air quality forecast alerts filtered by region."""
     _attr_has_entity_name = True
     _attr_icon = "mdi:calendar-alert"
+    _attr_translation_key = "air_forecast"
 
     def __init__(self, coordinator: AirKoreaCoordinator, station_name: str,
                  sido: str = "") -> None:
@@ -175,7 +179,6 @@ class AirForecastCalendar(CoordinatorEntity, CalendarEntity):
         self._station = station_name
         self._sido = sido
         self._attr_unique_id = f"{DOMAIN}_air_cal_{station_name}"
-        self._attr_name = "대기질 예보"
         self._attr_device_info = air_device(station_name)
 
     @property
@@ -299,11 +302,11 @@ class UVIndexSensor(CoordinatorEntity, SensorEntity):
     _attr_has_entity_name = True
     _attr_icon = "mdi:sun-wireless"
     _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_translation_key = "air_uv_index"
 
     def __init__(self, coordinator: AirKoreaCoordinator, station_name: str) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{DOMAIN}_air_uv_{station_name}"
-        self._attr_name = "자외선지수"
         self._attr_device_info = air_device(station_name)
 
     @property
@@ -325,11 +328,11 @@ class AirStagnationSensor(CoordinatorEntity, SensorEntity):
     _attr_has_entity_name = True
     _attr_icon = "mdi:weather-hazy"
     _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_translation_key = "air_stagnation"
 
     def __init__(self, coordinator: AirKoreaCoordinator, station_name: str) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{DOMAIN}_air_stag_{station_name}"
-        self._attr_name = "대기정체지수"
         self._attr_device_info = air_device(station_name)
 
     @property

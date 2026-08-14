@@ -22,7 +22,7 @@ class FuelAvgSensor(CoordinatorEntity[FuelCoordinator], SensorEntity):
         super().__init__(coordinator)
         self._fuel_code = fuel_code
         self._attr_unique_id = f"{DOMAIN}_fuel_avg_{sido}_{fuel_code}"
-        self._attr_name = "전국 평균가"
+        self._attr_translation_key = "fuel_average"
         self._attr_device_info = fuel_device(sido, fuel_code)
 
     @property
@@ -53,7 +53,7 @@ class FuelLowSensor(CoordinatorEntity[FuelCoordinator], SensorEntity):
         super().__init__(coordinator)
         self._key = f"low_{sido}_{fuel_code}"
         self._attr_unique_id = f"{DOMAIN}_fuel_low_{sido}_{fuel_code}"
-        self._attr_name = "최저가"
+        self._attr_translation_key = "fuel_lowest"
         self._attr_device_info = fuel_device(sido, fuel_code)
 
     @property
@@ -93,7 +93,7 @@ class FuelLowLocationSensor(CoordinatorEntity[FuelCoordinator], SensorEntity):
         super().__init__(coordinator)
         self._key = f"low_{sido}_{fuel_code}"
         self._attr_unique_id = f"{DOMAIN}_fuel_low_location_{sido}_{fuel_code}"
-        self._attr_name = "최저가 주유소"
+        self._attr_translation_key = "fuel_lowest_station"
         self._attr_device_info = fuel_device(sido, fuel_code)
 
     @property

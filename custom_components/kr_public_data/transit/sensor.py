@@ -10,6 +10,8 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from custom_components.kr_public_data.const import DOMAIN
 
+from . import DIRECTION_SLUGS
+
 if TYPE_CHECKING:
     from .subway_coordinator import SubwayCoordinator
 
@@ -28,10 +30,12 @@ class SubwayArrivalSensor(CoordinatorEntity, SensorEntity):
         self._idx = index
         suffix = "now" if index == 0 else "next"
         self._attr_unique_id = f"{DOMAIN}_subway_{station}_{direction}_{line_id}_{suffix}"
-        base = "다음 열차" if index == 0 else "다다음 열차"
-        # Per-line devices hold both directions, so the direction goes into
-        # the name; legacy per-direction devices keep the bare name.
-        self._attr_name = f"{name_prefix} {base}".strip()
+        # Per-line devices hold both directions, so the direction goes into the
+        # name; legacy per-direction devices keep the bare name. Direction is a
+        # fixed 4-value set, so it gets folded into the key instead of riding in
+        # as a placeholder — that way it is localized too.
+        slug = DIRECTION_SLUGS.get(name_prefix, "")
+        self._attr_translation_key = f"subway_{slug}_{suffix}" if slug else f"subway_{suffix}"
         self._attr_device_info = device_info
 
     @property

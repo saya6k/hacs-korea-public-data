@@ -724,23 +724,225 @@
       }
     },
     "sensor": {
+      "air_pm10": {
+        "name": "PM10 미세먼지"
+      },
+      "air_pm25": {
+        "name": "PM2.5 초미세먼지"
+      },
+      "air_so2": {
+        "name": "SO₂ 아황산가스"
+      },
+      "air_co": {
+        "name": "CO 일산화탄소"
+      },
+      "air_o3": {
+        "name": "O₃ 오존"
+      },
+      "air_no2": {
+        "name": "NO₂ 이산화질소"
+      },
+      "air_khai": {
+        "name": "통합대기질지수"
+      },
+      "air_uv_index": {
+        "name": "자외선지수"
+      },
+      "air_stagnation": {
+        "name": "대기정체지수"
+      },
+      "arisu_bill": {
+        "name": "수도 요금"
+      },
+      "arisu_usage": {
+        "name": "사용량"
+      },
+      "arisu_billing_month": {
+        "name": "청구월"
+      },
+      "bus_arrival": {
+        "name": "다음 도착"
+      },
+      "bus_arrival_next": {
+        "name": "다다음 도착"
+      },
+      "bus_departure": {
+        "name": "다음 출발"
+      },
+      "bus_departure_next": {
+        "name": "다다음 출발"
+      },
+      "bus_fare": {
+        "name": "다음 요금"
+      },
+      "bus_fare_next": {
+        "name": "다다음 요금"
+      },
+      "disaster_message": {
+        "name": "최신 재난문자"
+      },
+      "disaster_count": {
+        "name": "재난문자 수"
+      },
+      "fuel_average": {
+        "name": "전국 평균가"
+      },
+      "fuel_lowest": {
+        "name": "최저가"
+      },
+      "fuel_lowest_station": {
+        "name": "최저가 주유소"
+      },
+      "gas_bill_title": {
+        "name": "청구 제목"
+      },
+      "gas_bill_total": {
+        "name": "총 요금"
+      },
+      "kepco_customer_number": {
+        "name": "고객번호"
+      },
+      "kepco_contract_type": {
+        "name": "전력구분"
+      },
+      "kepco_bill_last_month": {
+        "name": "지난달 요금"
+      },
+      "kepco_bill_predicted": {
+        "name": "예상 요금"
+      },
+      "kepco_usage_current": {
+        "name": "현재 사용량"
+      },
+      "pharmacy_open_count": {
+        "name": "운영 약국 수"
+      },
+      "pharmacy_location": {
+        "name": "위치"
+      },
+      "safety_alert_latest": {
+        "name": "최신 알림"
+      },
+      "safety_alert_count": {
+        "name": "활성 알림 수"
+      },
       "school_lunch": {
         "name": "급식"
       },
       "school_info": {
         "name": "학교 정보"
       },
-      "disaster_message": {
-        "name": "최신 재난문자"
+      "subway_now": {
+        "name": "다음 열차"
+      },
+      "subway_next": {
+        "name": "다다음 열차"
+      },
+      "subway_up_now": {
+        "name": "상행 다음 열차"
+      },
+      "subway_up_next": {
+        "name": "상행 다다음 열차"
+      },
+      "subway_down_now": {
+        "name": "하행 다음 열차"
+      },
+      "subway_down_next": {
+        "name": "하행 다다음 열차"
+      },
+      "subway_inner_now": {
+        "name": "내선 다음 열차"
+      },
+      "subway_inner_next": {
+        "name": "내선 다다음 열차"
+      },
+      "subway_outer_now": {
+        "name": "외선 다음 열차"
+      },
+      "subway_outer_next": {
+        "name": "외선 다다음 열차"
+      }
+    },
+    "binary_sensor": {
+      "air_quality_alert": {
+        "name": "대기질 경보"
+      },
+      "pharmacy_open": {
+        "name": "운영 중"
+      },
+      "safety_alert_status": {
+        "name": "알림 상태"
+      },
+      "weather_warning": {
+        "name": "기상특보 발령"
       }
     },
     "calendar": {
+      "air_forecast": {
+        "name": "대기질 예보"
+      },
+      "weather_warning": {
+        "name": "기상특보"
+      },
       "school_academic": {
         "name": "학사일정"
       },
       "school_class": {
-        "name": "시간표"
+        "name": "{grade}학년 {class}반 시간표"
       }
+    }
+  },
+  "device": {
+    "air_station": {
+      "name": "에어코리아 - {station}"
+    },
+    "arisu": {
+      "name": "아리수 ({customer_number})"
+    },
+    "bus_route": {
+      "name": "버스 - {stop} {route}번"
+    },
+    "express_bus_route": {
+      "name": "고속버스 - {departure}→{arrival} {grade}"
+    },
+    "intercity_bus_route": {
+      "name": "시외버스 - {departure}→{arrival} {grade}"
+    },
+    "disaster": {
+      "name": "재난문자"
+    },
+    "disaster_region": {
+      "name": "재난문자 - {region}"
+    },
+    "earthquake": {
+      "name": "지진 정보"
+    },
+    "fuel": {
+      "name": "유가정보 - {area} {fuel}"
+    },
+    "gasapp": {
+      "name": "가스앱 ({contract_number})"
+    },
+    "kepco": {
+      "name": "한전 ({username})"
+    },
+    "kma_weather": {
+      "name": "기상청 날씨예보 - {region}"
+    },
+    "pharmacy": {
+      "name": "약국 - {name}"
+    },
+    "safety_alert": {
+      "name": "안전알림 - {area}"
+    },
+    "subway_line": {
+      "name": "지하철 - {station}역 {line}"
+    },
+    "subway_direction": {
+      "name": "지하철 - {station}역 {line} {direction}"
+    },
+    "weather_warning": {
+      "name": "기상특보 - {area}"
     }
   }
 }

@@ -28,7 +28,7 @@ class CityBusArrivalSensor(CoordinatorEntity, SensorEntity):
         self._idx = index
         suffix = "now" if index == 0 else "next"
         self._attr_unique_id = f"{DOMAIN}_city_bus_{node_id}_{route_id}_{suffix}"
-        self._attr_name = "다음 도착" if index == 0 else "다다음 도착"
+        self._attr_translation_key = "bus_arrival" if index == 0 else "bus_arrival_next"
         self._attr_device_info = device_info
 
     @property

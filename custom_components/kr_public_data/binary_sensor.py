@@ -61,7 +61,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
             if not coord:
                 continue
             nearby = region_nearby_pharmacies(hass, region, coord)
-            ents = [PharmacyOpenBinarySensor(coord, p["hpid"], p["name"],
+            ents = [PharmacyOpenBinarySensor(coord, p["hpid"],
                                              pharmacy_device(p["hpid"], p["name"]))
                     for p in nearby if p.get("hpid")]
             sub_id = region.get("subentry_id")

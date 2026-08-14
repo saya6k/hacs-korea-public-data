@@ -117,13 +117,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
         c = store["coordinator"]
         u = entry.data["username"]
         entities = [
-            KepcoSensor(c, u, "usage_info", "result.SESS_CUSTNO", "고객번호"),
-            KepcoSensor(c, u, "usage_info", "result.SESS_CNTR_KND_NM", "전력구분"),
-            KepcoSensor(c, u, "usage_info", "result.BILL_LAST_MONTH", "지난달 요금",
+            KepcoSensor(c, u, "usage_info", "result.SESS_CUSTNO", "kepco_customer_number"),
+            KepcoSensor(c, u, "usage_info", "result.SESS_CNTR_KND_NM", "kepco_contract_type"),
+            KepcoSensor(c, u, "usage_info", "result.BILL_LAST_MONTH", "kepco_bill_last_month",
                         unit="원", state_class=SensorStateClass.TOTAL),
-            KepcoSensor(c, u, "usage_info", "result.PREDICT_TOTAL_CHARGE_REV", "예상 요금",
+            KepcoSensor(c, u, "usage_info", "result.PREDICT_TOTAL_CHARGE_REV",
+                        "kepco_bill_predicted",
                         unit="원", state_class=SensorStateClass.TOTAL),
-            KepcoSensor(c, u, "recent_usage", "result.F_AP_QT", "현재 사용량",
+            KepcoSensor(c, u, "recent_usage", "result.F_AP_QT", "kepco_usage_current",
                         unit="kWh", state_class=SensorStateClass.TOTAL_INCREASING),
         ]
 
@@ -131,16 +132,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
         from .gasapp.sensor import GasAppSensor
         c = store["coordinator"]
         cn = entry.data["contract_num"]
-        entities = [GasAppSensor(c, cn, "current_bill", "title1", "청구 제목"),
-                    GasAppSensor(c, cn, "current_bill", "title2", "총 요금", unit="원")]
+        entities = [GasAppSensor(c, cn, "current_bill", "title1", "gas_bill_title"),
+                    GasAppSensor(c, cn, "current_bill", "title2", "gas_bill_total",
+                                 unit="원")]
 
     elif etype == ENTRY_ARISU:
         from .arisu.sensor import ArisuSensor
         c = store["coordinator"]
         cn = entry.data["customer_number"]
-        entities = [ArisuSensor(c, cn, "수도 요금", "total_amount", unit="원"),
-                    ArisuSensor(c, cn, "사용량", "current_usage", unit="㎥"),
-                    ArisuSensor(c, cn, "청구월", "billing_month")]
+        entities = [ArisuSensor(c, cn, "arisu_bill", "total_amount", unit="원"),
+                    ArisuSensor(c, cn, "arisu_usage", "current_usage", unit="㎥"),
+                    ArisuSensor(c, cn, "arisu_billing_month", "billing_month")]
 
     elif etype == ENTRY_PHARMACY:
         from .pharmacy.device import pharmacy_device
@@ -156,7 +158,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
             ents = [PharmacySensor(coord, region.get("sido", ""), region.get("sgg", ""))]
             if region.get("location_sensors"):
                 nearby = region_nearby_pharmacies(hass, region, coord)
-                ents += [PharmacyLocationSensor(coord, p["hpid"], p["name"],
+                ents += [PharmacyLocationSensor(coord, p["hpid"],
                                                 pharmacy_device(p["hpid"], p["name"]))
                          for p in nearby if p.get("hpid")]
             sub_id = region.get("subentry_id")
@@ -175,8 +177,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
         c = store["coordinator"]
 
         def _station_sensors(name: str) -> list[Entity]:
-            sensors: list[Entity] = [AirQualitySensor(c, name, field, label, unit)
-                                     for field, label, unit in POLLUTANTS]
+            sensors: list[Entity] = [AirQualitySensor(c, name, field, tkey, unit)
+                                     for field, tkey, unit in POLLUTANTS]
             # Living index sensors per station (same data, different device)
             sensors += [UVIndexSensor(c, name), AirStagnationSensor(c, name)]
             return sensors

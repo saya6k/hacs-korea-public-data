@@ -10,7 +10,8 @@ def city_bus_route_device(node_id: str, node_name: str, route_id: str, route_no:
     """One device per (stop, route); both arrival sensors live under it."""
     return DeviceInfo(
         identifiers={(DOMAIN, f"city_bus_{node_id}_{route_id}")},
-        name=f"버스 - {node_name} {route_no}번",
+        translation_key="bus_route",
+        translation_placeholders={"stop": node_name, "route": route_no},
         manufacturer="국토교통부(TAGO)", model="시내버스 도착정보",
         entry_type=DeviceEntryType.SERVICE,
     )
@@ -20,7 +21,8 @@ def seoul_bus_route_device(ars_id: str, stop_name: str, route_id: str, route_no:
     """One device per (Seoul stop, route); both arrival sensors live under it."""
     return DeviceInfo(
         identifiers={(DOMAIN, f"seoul_bus_{ars_id}_{route_id}")},
-        name=f"버스 - {stop_name} {route_no}번",
+        translation_key="bus_route",
+        translation_placeholders={"stop": stop_name, "route": route_no},
         manufacturer="서울시 TOPIS", model="서울 버스 도착정보",
         entry_type=DeviceEntryType.SERVICE,
     )
@@ -37,10 +39,15 @@ def intercity_bus_route_device(dep_name: str, arr_name: str, grade_key: str) -> 
     pick one.
     """
     source, grade = grade_key.split(":", 1)
-    label = "고속버스" if source == "express" else "시외버스"
+    express = source == "express"
+    label = "고속버스" if express else "시외버스"
     return DeviceInfo(
         identifiers={(DOMAIN, f"intercity_bus_{dep_name}_{arr_name}_{grade_key}")},
-        name=f"{label} - {dep_name}→{arr_name} {grade}",
+        # 고속/시외 is a fixed pair, so it gets its own key rather than a
+        # placeholder — a placeholder value would stay Korean.
+        translation_key="express_bus_route" if express else "intercity_bus_route",
+        translation_placeholders={"departure": dep_name, "arrival": arr_name,
+                                  "grade": grade},
         manufacturer="국토교통부(TAGO)", model=f"{label} 배차정보",
         entry_type=DeviceEntryType.SERVICE,
     )

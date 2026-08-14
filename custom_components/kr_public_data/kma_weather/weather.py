@@ -39,7 +39,8 @@ class KMAWeather(CoordinatorEntity, WeatherEntity):
         self._attr_name = None
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, f"weather_{region_name}")},
-            name=f"기상청 날씨예보 - {region_name}",
+            translation_key="kma_weather",
+            translation_placeholders={"region": region_name},
             manufacturer="기상청", model="동네예보",
             entry_type=DeviceEntryType.SERVICE)
 

@@ -47,7 +47,7 @@ class PharmacySensor(CoordinatorEntity[PharmacyCoordinator], SensorEntity):
     def __init__(self, coordinator: PharmacyCoordinator, q0: str, q1: str) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{DOMAIN}_pharmacy_{q0}_{q1}"
-        self._attr_name = "운영 약국 수"
+        self._attr_translation_key = "pharmacy_open_count"
         self._attr_device_info = pharmacy_region_device(q0, q1)
     @property
     def native_value(self) -> int:
@@ -61,13 +61,13 @@ class PharmacyLocationSensor(CoordinatorEntity[PharmacyCoordinator], SensorEntit
     """
     _attr_has_entity_name = True
     _attr_icon = "mdi:map-marker"
+    _attr_translation_key = "pharmacy_location"
 
-    def __init__(self, coordinator: PharmacyCoordinator, hpid: str, name: str,
+    def __init__(self, coordinator: PharmacyCoordinator, hpid: str,
                  device_info: DeviceInfo) -> None:
         super().__init__(coordinator)
         self._hpid = hpid
         self._attr_unique_id = f"{DOMAIN}_pharmacy_location_{hpid}"
-        self._attr_name = f"{name} 위치"
         self._attr_device_info = device_info
 
     def _find(self) -> dict[str, Any] | None:
