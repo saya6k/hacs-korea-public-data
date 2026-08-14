@@ -16,7 +16,6 @@ from .device import weather_device
 
 class KMAWeatherEvent(CoordinatorEntity[WeatherWarningCoordinator], EventEntity):
     _attr_has_entity_name = True
-    _attr_translation_key = "weather_warning"
     _attr_event_types = EVENT_TYPES
 
     def __init__(self, coordinator: WeatherWarningCoordinator, area_code: str,
@@ -26,7 +25,9 @@ class KMAWeatherEvent(CoordinatorEntity[WeatherWarningCoordinator], EventEntity)
         self._warning_code = warning_code
         self._warning_name = warning_name
         self._attr_unique_id = f"{DOMAIN}_{area_code}_{warning_id}"
-        self._attr_translation_placeholders = {"warning_type": warning_name}
+        # One translation key per warning type (the WARNING_TYPES slug), so the
+        # type itself is localized too — a placeholder would keep it Korean.
+        self._attr_translation_key = warning_id
         self._attr_icon = icon
         self._attr_device_info = weather_device(area_code)
         self._last: str | None = None
