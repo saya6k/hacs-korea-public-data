@@ -526,8 +526,143 @@
   },
   "entity": {
     "event": {
-      "weather_warning": {
-        "name": "{warning_type} 특보",
+      "cold": {
+        "name": "한파 특보",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "advisory": "주의보",
+              "warning": "경보",
+              "pre_advisory": "예비주의보",
+              "pre_warning": "예비경보",
+              "cancelled": "해제",
+              "none": "없음"
+            }
+          }
+        }
+      },
+      "drought": {
+        "name": "건조 특보",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "advisory": "주의보",
+              "warning": "경보",
+              "pre_advisory": "예비주의보",
+              "pre_warning": "예비경보",
+              "cancelled": "해제",
+              "none": "없음"
+            }
+          }
+        }
+      },
+      "heat": {
+        "name": "폭염 특보",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "advisory": "주의보",
+              "warning": "경보",
+              "pre_advisory": "예비주의보",
+              "pre_warning": "예비경보",
+              "cancelled": "해제",
+              "none": "없음"
+            }
+          }
+        }
+      },
+      "heavy_snow": {
+        "name": "대설 특보",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "advisory": "주의보",
+              "warning": "경보",
+              "pre_advisory": "예비주의보",
+              "pre_warning": "예비경보",
+              "cancelled": "해제",
+              "none": "없음"
+            }
+          }
+        }
+      },
+      "rain": {
+        "name": "호우 특보",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "advisory": "주의보",
+              "warning": "경보",
+              "pre_advisory": "예비주의보",
+              "pre_warning": "예비경보",
+              "cancelled": "해제",
+              "none": "없음"
+            }
+          }
+        }
+      },
+      "storm_surge": {
+        "name": "폭풍해일 특보",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "advisory": "주의보",
+              "warning": "경보",
+              "pre_advisory": "예비주의보",
+              "pre_warning": "예비경보",
+              "cancelled": "해제",
+              "none": "없음"
+            }
+          }
+        }
+      },
+      "tsunami": {
+        "name": "쓰나미 특보",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "advisory": "주의보",
+              "warning": "경보",
+              "pre_advisory": "예비주의보",
+              "pre_warning": "예비경보",
+              "cancelled": "해제",
+              "none": "없음"
+            }
+          }
+        }
+      },
+      "wind": {
+        "name": "강풍 특보",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "advisory": "주의보",
+              "warning": "경보",
+              "pre_advisory": "예비주의보",
+              "pre_warning": "예비경보",
+              "cancelled": "해제",
+              "none": "없음"
+            }
+          }
+        }
+      },
+      "wind_wave": {
+        "name": "풍랑 특보",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "advisory": "주의보",
+              "warning": "경보",
+              "pre_advisory": "예비주의보",
+              "pre_warning": "예비경보",
+              "cancelled": "해제",
+              "none": "없음"
+            }
+          }
+        }
+      },
+      "yellow_dust": {
+        "name": "황사 특보",
         "state_attributes": {
           "event_type": {
             "state": {

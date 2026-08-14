@@ -526,8 +526,143 @@
   },
   "entity": {
     "event": {
-      "weather_warning": {
-        "name": "{warning_type} warning",
+      "cold": {
+        "name": "Cold wave warning",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "advisory": "Advisory",
+              "warning": "Warning",
+              "pre_advisory": "Preliminary advisory",
+              "pre_warning": "Preliminary warning",
+              "cancelled": "Cancelled",
+              "none": "None"
+            }
+          }
+        }
+      },
+      "drought": {
+        "name": "Dry warning",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "advisory": "Advisory",
+              "warning": "Warning",
+              "pre_advisory": "Preliminary advisory",
+              "pre_warning": "Preliminary warning",
+              "cancelled": "Cancelled",
+              "none": "None"
+            }
+          }
+        }
+      },
+      "heat": {
+        "name": "Heat wave warning",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "advisory": "Advisory",
+              "warning": "Warning",
+              "pre_advisory": "Preliminary advisory",
+              "pre_warning": "Preliminary warning",
+              "cancelled": "Cancelled",
+              "none": "None"
+            }
+          }
+        }
+      },
+      "heavy_snow": {
+        "name": "Heavy snow warning",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "advisory": "Advisory",
+              "warning": "Warning",
+              "pre_advisory": "Preliminary advisory",
+              "pre_warning": "Preliminary warning",
+              "cancelled": "Cancelled",
+              "none": "None"
+            }
+          }
+        }
+      },
+      "rain": {
+        "name": "Heavy rain warning",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "advisory": "Advisory",
+              "warning": "Warning",
+              "pre_advisory": "Preliminary advisory",
+              "pre_warning": "Preliminary warning",
+              "cancelled": "Cancelled",
+              "none": "None"
+            }
+          }
+        }
+      },
+      "storm_surge": {
+        "name": "Storm surge warning",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "advisory": "Advisory",
+              "warning": "Warning",
+              "pre_advisory": "Preliminary advisory",
+              "pre_warning": "Preliminary warning",
+              "cancelled": "Cancelled",
+              "none": "None"
+            }
+          }
+        }
+      },
+      "tsunami": {
+        "name": "Tsunami warning",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "advisory": "Advisory",
+              "warning": "Warning",
+              "pre_advisory": "Preliminary advisory",
+              "pre_warning": "Preliminary warning",
+              "cancelled": "Cancelled",
+              "none": "None"
+            }
+          }
+        }
+      },
+      "wind": {
+        "name": "Strong wind warning",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "advisory": "Advisory",
+              "warning": "Warning",
+              "pre_advisory": "Preliminary advisory",
+              "pre_warning": "Preliminary warning",
+              "cancelled": "Cancelled",
+              "none": "None"
+            }
+          }
+        }
+      },
+      "wind_wave": {
+        "name": "High seas warning",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "advisory": "Advisory",
+              "warning": "Warning",
+              "pre_advisory": "Preliminary advisory",
+              "pre_warning": "Preliminary warning",
+              "cancelled": "Cancelled",
+              "none": "None"
+            }
+          }
+        }
+      },
+      "yellow_dust": {
+        "name": "Yellow dust warning",
         "state_attributes": {
           "event_type": {
             "state": {
