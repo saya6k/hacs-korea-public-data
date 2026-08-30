@@ -873,6 +873,15 @@
       }
     },
     "binary_sensor": {
+      "bus_route_running": {
+        "name": "운행 중"
+      },
+      "intercity_bus_grade_running": {
+        "name": "운행 중"
+      },
+      "subway_line_running": {
+        "name": "운행 중"
+      },
       "air_quality_alert": {
         "name": "대기질 경보"
       },
