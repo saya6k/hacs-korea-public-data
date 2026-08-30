@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
-from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.device_registry import ChildDeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from custom_components.kr_public_data.const import DOMAIN
@@ -22,7 +22,7 @@ class CityBusArrivalSensor(CoordinatorEntity, SensorEntity):
     _attr_icon = "mdi:bus-clock"
 
     def __init__(self, coordinator: CityBusCoordinator, node_id: str, route_id: str, index: int,
-                 device_info: DeviceInfo) -> None:
+                 device_info: ChildDeviceInfo) -> None:
         super().__init__(coordinator)
         self._route_id = route_id
         self._idx = index
