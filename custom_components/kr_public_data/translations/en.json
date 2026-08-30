@@ -760,6 +760,15 @@
       "arisu_billing_month": {
         "name": "Billing month"
       },
+      "bus_stop_routes": {
+        "name": "Routes in service"
+      },
+      "intercity_bus_section_grades": {
+        "name": "Grades in service"
+      },
+      "subway_station_lines": {
+        "name": "Lines in service"
+      },
       "bus_arrival": {
         "name": "Next arrival"
       },
