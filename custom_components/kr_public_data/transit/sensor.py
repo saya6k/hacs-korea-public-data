@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
-from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.device_registry import ChildDeviceInfo, DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from custom_components.kr_public_data.const import DOMAIN
@@ -24,7 +24,7 @@ class SubwayArrivalSensor(CoordinatorEntity, SensorEntity):
 
     def __init__(self, coordinator: SubwayCoordinator, station: str, direction: str,
                  line_id: str, index: int,
-                 device_info: DeviceInfo, name_prefix: str = "") -> None:
+                 device_info: DeviceInfo | ChildDeviceInfo, name_prefix: str = "") -> None:
         super().__init__(coordinator)
         self._key = f"{direction}_{line_id or ''}"
         self._idx = index

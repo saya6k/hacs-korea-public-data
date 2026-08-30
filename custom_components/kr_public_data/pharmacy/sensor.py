@@ -5,7 +5,7 @@ from typing import Any
 
 from homeassistant.components.sensor import SensorEntity, SensorStateClass
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.device_registry import ChildDeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util.location import distance
 
@@ -64,7 +64,7 @@ class PharmacyLocationSensor(CoordinatorEntity[PharmacyCoordinator], SensorEntit
     _attr_translation_key = "pharmacy_location"
 
     def __init__(self, coordinator: PharmacyCoordinator, hpid: str,
-                 device_info: DeviceInfo) -> None:
+                 device_info: ChildDeviceInfo) -> None:
         super().__init__(coordinator)
         self._hpid = hpid
         self._attr_unique_id = f"{DOMAIN}_pharmacy_location_{hpid}"

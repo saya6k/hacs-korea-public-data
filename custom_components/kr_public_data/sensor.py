@@ -42,8 +42,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
             coord = info["coordinator"]
             station = info["station"]
             ents = []
-            # One 역 hub device, one device per line under it; 4 sensors under each
-            # line (2 directions × next/next-next).
+            # One 역 hub device, one child device per line under it; 4 sensors
+            # under each line (2 directions × next/next-next).
             hub_id = subway_station_device_id(hass, entry, sub_id, station)
             for lid in info["lines"]:
                 di = subway_line_device(station, lid, hub_id)
@@ -165,7 +165,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
             ents = [PharmacySensor(coord, sido, sgg)]
             sub_id = region.get("subentry_id")
             if region.get("location_sensors"):
-                # Each nearby pharmacy keeps its own device, nested under the region's.
+                # Each nearby pharmacy keeps its own device, as a child of the region's.
                 hub_id = pharmacy_region_device_id(hass, entry, sub_id, sido, sgg)
                 nearby = region_nearby_pharmacies(hass, region, coord)
                 ents += [PharmacyLocationSensor(
@@ -219,8 +219,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
             node_name = info["nodeName"]
             seoul = info["kind"] == "seoul"
             ents = []
-            # One 정류장 hub device, one device per route under it; 2 sensors under
-            # each route (next/next-next).
+            # One 정류장 hub device, one child device per route under it; 2 sensors
+            # under each route (next/next-next).
             hub_id = bus_stop_device_id(hass, entry, sub_id, info)
             for route in info["routes"]:
                 if seoul:
@@ -241,7 +241,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
             dep_name = info["depTerminalName"]
             arr_name = info["arrTerminalName"]
             ents = []
-            # One 구간 hub device, one device per grade under it; 2 departure
+            # One 구간 hub device, one child device per grade under it; 2 departure
             # sensors + 2 fare sensors under each grade.
             hub_id = intercity_bus_section_device_id(hass, entry, sub_id,
                                                      dep_name, arr_name)

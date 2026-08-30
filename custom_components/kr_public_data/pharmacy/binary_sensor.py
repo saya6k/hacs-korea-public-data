@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Any
 
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass, BinarySensorEntity
-from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.device_registry import ChildDeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
@@ -47,7 +47,7 @@ class PharmacyOpenBinarySensor(CoordinatorEntity[PharmacyCoordinator], BinarySen
     _attr_translation_key = "pharmacy_open"
 
     def __init__(self, coordinator: PharmacyCoordinator, hpid: str,
-                 device_info: DeviceInfo) -> None:
+                 device_info: ChildDeviceInfo) -> None:
         super().__init__(coordinator)
         self._hpid = hpid
         self._attr_unique_id = f"{DOMAIN}_pharmacy_open_{hpid}"

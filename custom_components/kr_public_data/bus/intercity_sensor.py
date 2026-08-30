@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
-from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.device_registry import ChildDeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from custom_components.kr_public_data.const import DOMAIN
@@ -20,7 +20,7 @@ class IntercityBusDepartureSensor(CoordinatorEntity, SensorEntity):
     _attr_icon = "mdi:bus-clock"
 
     def __init__(self, coordinator: IntercityBusCoordinator, dep_name: str, arr_name: str,
-                 grade_key: str, index: int, device_info: DeviceInfo) -> None:
+                 grade_key: str, index: int, device_info: ChildDeviceInfo) -> None:
         super().__init__(coordinator)
         self._grade_key = grade_key  # "source:gradeNm"
         self._idx = index
@@ -65,7 +65,7 @@ class IntercityBusFareSensor(CoordinatorEntity, SensorEntity):
     _attr_native_unit_of_measurement = "원"
 
     def __init__(self, coordinator: IntercityBusCoordinator, dep_name: str, arr_name: str,
-                 grade_key: str, index: int, device_info: DeviceInfo) -> None:
+                 grade_key: str, index: int, device_info: ChildDeviceInfo) -> None:
         super().__init__(coordinator)
         self._grade_key = grade_key
         self._idx = index
