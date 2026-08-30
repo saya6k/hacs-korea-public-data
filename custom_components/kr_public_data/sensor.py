@@ -34,9 +34,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
         from .transit.device import (
             subway_device,
             subway_line_device,
+            subway_station_device,
             subway_station_device_id,
+            subway_station_key,
         )
-        from .transit.sensor import SubwayArrivalSensor
+        from .transit.sensor import SubwayArrivalSensor, SubwayStationLineSensor
         station_subs = store.get("station_subs") or {}
         for sub_id, info in station_subs.items():
             coord = info["coordinator"]
@@ -45,6 +47,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
             # One 역 hub device, one child device per line under it; 4 sensors
             # under each line (2 directions × next/next-next).
             hub_id = subway_station_device_id(hass, entry, sub_id, station)
+            ents.append(SubwayStationLineSensor(
+                coord, subway_station_key(station), info["lines"],
+                subway_station_device(station)))
             for lid in info["lines"]:
                 di = subway_line_device(station, lid, hub_id)
                 for direction in line_directions(lid):
@@ -203,15 +208,24 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
 
     elif etype == ENTRY_BUS:
         from .bus.device import (
+            bus_stop_device,
             bus_stop_device_id,
+            bus_stop_key,
             city_bus_route_device,
             intercity_bus_route_device,
+            intercity_bus_section_device,
             intercity_bus_section_device_id,
+            intercity_bus_section_key,
             seoul_bus_route_device,
         )
-        from .bus.intercity_sensor import IntercityBusDepartureSensor, IntercityBusFareSensor
+        from .bus.intercity_sensor import (
+            IntercityBusDepartureSensor,
+            IntercityBusFareSensor,
+            IntercityBusSectionSensor,
+        )
         from .bus.sensor import CityBusArrivalSensor
         from .bus.seoul_sensor import SeoulBusArrivalSensor
+        from .bus.stop_sensor import BusStopRouteSensor
         stop_subs = store.get("stop_subs") or {}
         for sub_id, info in stop_subs.items():
             coord = info["coordinator"]
@@ -222,6 +236,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
             # One 정류장 hub device, one child device per route under it; 2 sensors
             # under each route (next/next-next).
             hub_id = bus_stop_device_id(hass, entry, sub_id, info)
+            ents.append(BusStopRouteSensor(
+                coord, bus_stop_key(info), info["routes"], bus_stop_device(info),
+                seoul=seoul))
             for route in info["routes"]:
                 if seoul:
                     di = seoul_bus_route_device(node_id, node_name, route["routeId"],
@@ -245,6 +262,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
             # sensors + 2 fare sensors under each grade.
             hub_id = intercity_bus_section_device_id(hass, entry, sub_id,
                                                      dep_name, arr_name)
+            ents.append(IntercityBusSectionSensor(
+                coord, intercity_bus_section_key(dep_name, arr_name), info["grades"],
+                intercity_bus_section_device(dep_name, arr_name)))
             for grade in info["grades"]:
                 di = intercity_bus_route_device(dep_name, arr_name, grade, hub_id)
                 for idx in range(2):

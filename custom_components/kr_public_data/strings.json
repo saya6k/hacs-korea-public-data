@@ -760,6 +760,15 @@
       "arisu_billing_month": {
         "name": "Billing month"
       },
+      "bus_stop_routes": {
+        "name": "Routes in service"
+      },
+      "intercity_bus_section_grades": {
+        "name": "Grades in service"
+      },
+      "subway_station_lines": {
+        "name": "Lines in service"
+      },
       "bus_arrival": {
         "name": "Next arrival"
       },
@@ -864,6 +873,15 @@
       }
     },
     "binary_sensor": {
+      "bus_route_running": {
+        "name": "In service"
+      },
+      "intercity_bus_grade_running": {
+        "name": "In service"
+      },
+      "subway_line_running": {
+        "name": "In service"
+      },
       "air_quality_alert": {
         "name": "Air quality alert"
       },

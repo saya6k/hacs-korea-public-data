@@ -27,7 +27,7 @@ from .llm_api import async_register_llm_api
 
 PLATFORM_MAP = {
     ENTRY_WEATHER: [Platform.EVENT, Platform.CALENDAR, Platform.BINARY_SENSOR],
-    ENTRY_TRANSIT: [Platform.SENSOR],
+    ENTRY_TRANSIT: [Platform.SENSOR, Platform.BINARY_SENSOR],
     ENTRY_FUEL: [Platform.SENSOR],
     ENTRY_SCHOOL: [Platform.SENSOR, Platform.CALENDAR],
     ENTRY_DISASTER: [Platform.SENSOR, Platform.EVENT, Platform.GEO_LOCATION],
@@ -39,7 +39,7 @@ PLATFORM_MAP = {
     ENTRY_AIRKOREA: [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.EVENT, Platform.CALENDAR],
     ENTRY_KMA_WEATHER: [Platform.WEATHER],
     ENTRY_EARTHQUAKE: [Platform.EVENT],
-    ENTRY_BUS: [Platform.SENSOR],
+    ENTRY_BUS: [Platform.SENSOR, Platform.BINARY_SENSOR],
 }
 
 # Globally registered actions, removed when the last entry of the type unloads.

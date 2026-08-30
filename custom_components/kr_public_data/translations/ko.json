@@ -760,6 +760,15 @@
       "arisu_billing_month": {
         "name": "청구월"
       },
+      "bus_stop_routes": {
+        "name": "운행 중인 노선"
+      },
+      "intercity_bus_section_grades": {
+        "name": "운행 중인 등급"
+      },
+      "subway_station_lines": {
+        "name": "운행 중인 호선"
+      },
       "bus_arrival": {
         "name": "다음 도착"
       },
@@ -864,6 +873,15 @@
       }
     },
     "binary_sensor": {
+      "bus_route_running": {
+        "name": "운행 중"
+      },
+      "intercity_bus_grade_running": {
+        "name": "운행 중"
+      },
+      "subway_line_running": {
+        "name": "운행 중"
+      },
       "air_quality_alert": {
         "name": "대기질 경보"
       },

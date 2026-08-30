@@ -4,13 +4,17 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Any
 
-from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
+from homeassistant.components.sensor import (
+    SensorDeviceClass,
+    SensorEntity,
+    SensorStateClass,
+)
 from homeassistant.helpers.device_registry import ChildDeviceInfo, DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from custom_components.kr_public_data.const import DOMAIN
 
-from . import DIRECTION_SLUGS
+from . import DIRECTION_SLUGS, SUBWAY_LINES, line_directions
 
 if TYPE_CHECKING:
     from .subway_coordinator import SubwayCoordinator
@@ -60,3 +64,43 @@ class SubwayArrivalSensor(CoordinatorEntity, SensorEntity):
             elif remaining > 0:
                 attrs["status"] = f"{int(remaining // 60)}분 후"
         return attrs
+
+
+class SubwayStationLineSensor(CoordinatorEntity, SensorEntity):
+    """역 허브의 유일한 엔티티 - 지금 열차가 잡히는 호선 수 + 호선 목록.
+
+    한 호선은 방향별 키(`{direction}_{line_id}`)로 나뉘어 들어오므로,
+    어느 방향이든 도착 데이터가 있으면 그 호선은 운행 중으로 본다.
+    """
+
+    _attr_has_entity_name = True
+    _attr_icon = "mdi:subway-variant"
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_translation_key = "subway_station_lines"
+
+    def __init__(self, coordinator: SubwayCoordinator, station_key: str,
+                 lines: list[str], device_info: DeviceInfo) -> None:
+        super().__init__(coordinator)
+        self._lines = lines
+        self._attr_unique_id = f"{DOMAIN}_{station_key}_lines"
+        self._attr_device_info = device_info
+
+    def _running(self) -> list[str]:
+        """도착 데이터가 실제로 있는 호선명. 운행 종료 후에는 빈 리스트다."""
+        data = self.coordinator.data or {}
+        return sorted(
+            SUBWAY_LINES.get(lid, lid)
+            for lid in self._lines
+            if any(data.get(f"{d}_{lid}") for d in line_directions(lid))
+        )
+
+    @property
+    def native_value(self) -> int:
+        return len(self._running())
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return {
+            "lines": self._running(),
+            "all_lines": sorted(SUBWAY_LINES.get(lid, lid) for lid in self._lines),
+        }

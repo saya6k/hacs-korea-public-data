@@ -4,8 +4,12 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
-from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
-from homeassistant.helpers.device_registry import ChildDeviceInfo
+from homeassistant.components.sensor import (
+    SensorDeviceClass,
+    SensorEntity,
+    SensorStateClass,
+)
+from homeassistant.helpers.device_registry import ChildDeviceInfo, DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from custom_components.kr_public_data.const import DOMAIN
@@ -83,3 +87,43 @@ class IntercityBusFareSensor(CoordinatorEntity, SensorEntity):
         _, raw = items[self._idx]
         charge = raw.get("charge")
         return int(charge) if charge is not None else None
+
+
+class IntercityBusSectionSensor(CoordinatorEntity, SensorEntity):
+    """구간 허브의 유일한 엔티티 - 지금 배차가 있는 등급 수 + 등급 목록.
+
+    grade_key는 "source:gradeNm"이라 라벨로 풀어서 내보낸다 (예: "고속 우등").
+    """
+
+    _attr_has_entity_name = True
+    _attr_icon = "mdi:bus-multiple"
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_translation_key = "intercity_bus_section_grades"
+
+    def __init__(self, coordinator: IntercityBusCoordinator, section_key: str,
+                 grades: list[str], device_info: DeviceInfo) -> None:
+        super().__init__(coordinator)
+        self._grades = grades
+        self._attr_unique_id = f"{DOMAIN}_{section_key}_grades"
+        self._attr_device_info = device_info
+
+    @staticmethod
+    def _label(grade_key: str) -> str:
+        source, grade = grade_key.split(":", 1)
+        return f"{'고속' if source == 'express' else '시외'} {grade}"
+
+    def _running(self) -> list[str]:
+        """남은 배차가 실제로 있는 등급. 막차 이후에는 빈 리스트다."""
+        data = self.coordinator.data or {}
+        return sorted(self._label(g) for g in self._grades if data.get(g))
+
+    @property
+    def native_value(self) -> int:
+        return len(self._running())
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return {
+            "grades": self._running(),
+            "all_grades": sorted(self._label(g) for g in self._grades),
+        }

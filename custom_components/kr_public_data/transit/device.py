@@ -15,24 +15,34 @@ from custom_components.kr_public_data.const import DOMAIN
 from . import SUBWAY_LINES
 
 
+def subway_station_key(station: str) -> str:
+    """Identifier of the 역 hub device, also the prefix of its own entity's unique_id."""
+    return f"subway_station_{station}"
+
+
+def subway_station_device(station: str) -> DeviceInfo:
+    """The 역 hub: main device carrying the station's line child devices."""
+    return DeviceInfo(
+        identifiers={(DOMAIN, subway_station_key(station))},
+        translation_key="subway_station",
+        translation_placeholders={"station": station},
+        manufacturer="서울교통공사", model="지하철역",
+        entry_type=DeviceEntryType.SERVICE,
+    )
+
+
 @callback
 def subway_station_device_id(hass: HomeAssistant, entry: ConfigEntry, sub_id: str | None,
                              station: str) -> str:
     """Register the 역 hub device and return its id, for use as parent_device_id.
 
-    The hub is the *main* device — it holds no entities of its own, it exists so
-    every line at the station nests under it as a child device. It has to be
-    registered here rather than handed to the entity platform as a DeviceInfo,
-    because its id must be known *before* the line devices that reference it.
+    Registered here rather than left to the entity platform because the id must
+    be known *before* the line child devices that reference it are built.
     """
     return dr.async_get(hass).async_get_or_create(
         config_entry_id=entry.entry_id,
         config_subentry_id=sub_id,
-        identifiers={(DOMAIN, f"subway_station_{station}")},
-        translation_key="subway_station",
-        translation_placeholders={"station": station},
-        manufacturer="서울교통공사", model="지하철역",
-        entry_type=DeviceEntryType.SERVICE,
+        **subway_station_device(station),
     ).id
 
 
