@@ -52,7 +52,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
 
     elif etype == ENTRY_PHARMACY:
         from .pharmacy.binary_sensor import PharmacyOpenBinarySensor
-        from .pharmacy.device import pharmacy_device
+        from .pharmacy.device import pharmacy_device, pharmacy_region_device_id
         from .pharmacy.sensor import region_nearby_pharmacies
         for i, region in enumerate(store.get("regions", [])):
             if not region.get("location_sensors"):
@@ -60,11 +60,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
             coord = store["coordinators"].get(i)
             if not coord:
                 continue
-            nearby = region_nearby_pharmacies(hass, region, coord)
-            ents = [PharmacyOpenBinarySensor(coord, p["hpid"],
-                                             pharmacy_device(p["hpid"], p["name"]))
-                    for p in nearby if p.get("hpid")]
             sub_id = region.get("subentry_id")
+            hub_id = pharmacy_region_device_id(hass, entry, sub_id,
+                                               region.get("sido", ""),
+                                               region.get("sgg", ""))
+            nearby = region_nearby_pharmacies(hass, region, coord)
+            ents = [PharmacyOpenBinarySensor(
+                        coord, p["hpid"],
+                        pharmacy_device(p["hpid"], p["name"], hub_id))
+                    for p in nearby if p.get("hpid")]
             if sub_id:
                 async_add_entities(ents, config_subentry_id=sub_id)
             else:

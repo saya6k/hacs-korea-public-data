@@ -899,8 +899,14 @@
     "arisu": {
       "name": "아리수 ({customer_number})"
     },
+    "bus_stop": {
+      "name": "버스 정류장 - {stop}"
+    },
     "bus_route": {
       "name": "버스 - {stop} {route}번"
+    },
+    "intercity_bus_section": {
+      "name": "시외/고속버스 - {departure}→{arrival}"
     },
     "express_bus_route": {
       "name": "고속버스 - {departure}→{arrival} {grade}"
@@ -934,6 +940,9 @@
     },
     "safety_alert": {
       "name": "안전알림 - {area}"
+    },
+    "subway_station": {
+      "name": "지하철 - {station}역"
     },
     "subway_line": {
       "name": "지하철 - {station}역 {line}"

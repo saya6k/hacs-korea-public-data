@@ -31,16 +31,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
 
     if etype == ENTRY_TRANSIT:
         from .transit import line_directions
-        from .transit.device import subway_device, subway_line_device
+        from .transit.device import (
+            subway_device,
+            subway_line_device,
+            subway_station_device_id,
+        )
         from .transit.sensor import SubwayArrivalSensor
         station_subs = store.get("station_subs") or {}
         for sub_id, info in station_subs.items():
             coord = info["coordinator"]
             station = info["station"]
             ents = []
-            # One device per line; 4 sensors under it (2 directions × next/next-next).
+            # One 역 hub device, one device per line under it; 4 sensors under each
+            # line (2 directions × next/next-next).
+            hub_id = subway_station_device_id(hass, entry, sub_id, station)
             for lid in info["lines"]:
-                di = subway_line_device(station, lid)
+                di = subway_line_device(station, lid, hub_id)
                 for direction in line_directions(lid):
                     for idx in range(2):
                         ents.append(SubwayArrivalSensor(
@@ -145,7 +151,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
                     ArisuSensor(c, cn, "arisu_billing_month", "billing_month")]
 
     elif etype == ENTRY_PHARMACY:
-        from .pharmacy.device import pharmacy_device
+        from .pharmacy.device import pharmacy_device, pharmacy_region_device_id
         from .pharmacy.sensor import (
             PharmacyLocationSensor,
             PharmacySensor,
@@ -155,13 +161,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
             coord = store["coordinators"].get(i)
             if not coord:
                 continue
-            ents = [PharmacySensor(coord, region.get("sido", ""), region.get("sgg", ""))]
-            if region.get("location_sensors"):
-                nearby = region_nearby_pharmacies(hass, region, coord)
-                ents += [PharmacyLocationSensor(coord, p["hpid"],
-                                                pharmacy_device(p["hpid"], p["name"]))
-                         for p in nearby if p.get("hpid")]
+            sido, sgg = region.get("sido", ""), region.get("sgg", "")
+            ents = [PharmacySensor(coord, sido, sgg)]
             sub_id = region.get("subentry_id")
+            if region.get("location_sensors"):
+                # Each nearby pharmacy keeps its own device, nested under the region's.
+                hub_id = pharmacy_region_device_id(hass, entry, sub_id, sido, sgg)
+                nearby = region_nearby_pharmacies(hass, region, coord)
+                ents += [PharmacyLocationSensor(
+                            coord, p["hpid"],
+                            pharmacy_device(p["hpid"], p["name"], hub_id))
+                         for p in nearby if p.get("hpid")]
             if sub_id:
                 async_add_entities(ents, config_subentry_id=sub_id)
             else:
@@ -193,8 +203,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
 
     elif etype == ENTRY_BUS:
         from .bus.device import (
+            bus_stop_device_id,
             city_bus_route_device,
             intercity_bus_route_device,
+            intercity_bus_section_device_id,
             seoul_bus_route_device,
         )
         from .bus.intercity_sensor import IntercityBusDepartureSensor, IntercityBusFareSensor
@@ -207,15 +219,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
             node_name = info["nodeName"]
             seoul = info["kind"] == "seoul"
             ents = []
-            # One device per route; 2 sensors under it (next/next-next).
+            # One 정류장 hub device, one device per route under it; 2 sensors under
+            # each route (next/next-next).
+            hub_id = bus_stop_device_id(hass, entry, sub_id, info)
             for route in info["routes"]:
                 if seoul:
-                    di = seoul_bus_route_device(node_id, node_name,
-                                                route["routeId"], route["routeNo"])
+                    di = seoul_bus_route_device(node_id, node_name, route["routeId"],
+                                                route["routeNo"], hub_id)
                     sensor_cls = SeoulBusArrivalSensor
                 else:
-                    di = city_bus_route_device(node_id, node_name,
-                                               route["routeId"], route["routeNo"])
+                    di = city_bus_route_device(node_id, node_name, route["routeId"],
+                                               route["routeNo"], hub_id)
                     sensor_cls = CityBusArrivalSensor
                 for idx in range(2):
                     ents.append(sensor_cls(coord, node_id, route["routeId"], idx, di))
@@ -227,9 +241,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
             dep_name = info["depTerminalName"]
             arr_name = info["arrTerminalName"]
             ents = []
-            # One device per grade; 2 departure sensors + 2 fare sensors under it.
+            # One 구간 hub device, one device per grade under it; 2 departure
+            # sensors + 2 fare sensors under each grade.
+            hub_id = intercity_bus_section_device_id(hass, entry, sub_id,
+                                                     dep_name, arr_name)
             for grade in info["grades"]:
-                di = intercity_bus_route_device(dep_name, arr_name, grade)
+                di = intercity_bus_route_device(dep_name, arr_name, grade, hub_id)
                 for idx in range(2):
                     ents.append(IntercityBusDepartureSensor(
                         coord, dep_name, arr_name, grade, idx, di))

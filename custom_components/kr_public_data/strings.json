@@ -899,8 +899,14 @@
     "arisu": {
       "name": "Arisu ({customer_number})"
     },
+    "bus_stop": {
+      "name": "Bus stop - {stop}"
+    },
     "bus_route": {
       "name": "Bus - route {route} at {stop}"
+    },
+    "intercity_bus_section": {
+      "name": "Intercity bus - {departure} → {arrival}"
     },
     "express_bus_route": {
       "name": "Express bus - {departure} → {arrival} {grade}"
@@ -934,6 +940,9 @@
     },
     "safety_alert": {
       "name": "Safety alerts - {area}"
+    },
+    "subway_station": {
+      "name": "Subway - {station} Station"
     },
     "subway_line": {
       "name": "Subway - {station} Station {line}"
