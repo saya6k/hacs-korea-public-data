@@ -69,7 +69,11 @@ class DisasterGeoLocationManager:
         for key in list(self._active):
             if key not in current_keys:
                 stale = self._active.pop(key)
-                self._coordinator.hass.async_create_task(stale.async_remove())
+                # force_remove: these entities are registered (unique_id +
+                # config_subentry_id), so a plain async_remove() would only
+                # flip the state to unavailable instead of dropping it.
+                self._coordinator.hass.async_create_task(
+                    stale.async_remove(force_remove=True))
         new_entities = []
         for m in msgs:
             key = _msg_key(self._label, m)
