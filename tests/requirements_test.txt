@@ -1,2 +1,2 @@
-homeassistant>=2026.10.0b0
+homeassistant>=2026.10.0.dev202609290227
 pytest

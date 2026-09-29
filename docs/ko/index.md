@@ -1,6 +1,6 @@
 # 한국 공공데이터 — Home Assistant Integration
 
-> Home Assistant **2026.10.0b0 이상**이 필요합니다. LLM 도구는 `llm.ToolResult`를 반환하며 기존 응답 필드는 `data`에 유지됩니다.
+> Home Assistant **2026.10.0.dev202609290227 이상**이 필요합니다. LLM 도구는 `llm.ToolResult`를 반환하며 기존 응답 필드는 `data`에 유지됩니다.
 
 한국 공공데이터 서비스를 하나의 Home Assistant 통합으로 묶었습니다. 기상특보, 대중교통 도착, 유가, 학교 급식, 재난문자, KEPCO 전기요금, 도시가스 사용량, 수도요금, 대기질, 지진 이벤트 등 한국 정부·공공기관 API에서 가져옵니다.
 
