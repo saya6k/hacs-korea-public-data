@@ -30,6 +30,7 @@ def _seconds_to_min(seconds: Any) -> str:
 class GetSubwayArrivalsTool(BaseKRTool):
     service = ENTRY_TRANSIT
     name = "get_subway_arrivals"
+    title = "Get subway arrivals"
     description = (
         "Return upcoming Seoul subway arrivals at a configured station. "
         "Returns the next two trains per direction filter."
@@ -51,7 +52,7 @@ class GetSubwayArrivalsTool(BaseKRTool):
         hass: HomeAssistant,
         tool_input: llm.ToolInput,
         llm_context: llm.LLMContext,
-    ) -> dict[str, Any]:
+    ) -> llm.ToolResult:
         store = self.store
         coords: dict[str, Any] = store.get("subway_coords") or {}
         if not coords:

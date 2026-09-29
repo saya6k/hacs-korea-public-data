@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import voluptuous as vol
 from homeassistant.core import HomeAssistant
@@ -68,6 +68,7 @@ def _resolve_school_coordinator(
 class GetSchoolMealTool(BaseKRTool):
     service = ENTRY_SCHOOL
     name = "get_school_meal"
+    title = "Get school meal"
     description = (
         "Return the school lunch menu (NEIS) for a date. Pass 'today', "
         "'tomorrow', or an ISO date (YYYY-MM-DD)."
@@ -93,7 +94,7 @@ class GetSchoolMealTool(BaseKRTool):
         hass: HomeAssistant,
         tool_input: llm.ToolInput,
         llm_context: llm.LLMContext,
-    ) -> dict[str, Any]:
+    ) -> llm.ToolResult:
         store = self.store
         coord, err = _resolve_school_coordinator(store, tool_input.tool_args.get("school"))
         if err:
@@ -149,6 +150,7 @@ class GetSchoolMealTool(BaseKRTool):
 class GetSchoolTimetableTool(BaseKRTool):
     service = ENTRY_SCHOOL
     name = "get_school_timetable"
+    title = "Get school timetable"
     description = (
         "Return the class timetable for a configured grade-class on a "
         "given date."
@@ -181,7 +183,7 @@ class GetSchoolTimetableTool(BaseKRTool):
         hass: HomeAssistant,
         tool_input: llm.ToolInput,
         llm_context: llm.LLMContext,
-    ) -> dict[str, Any]:
+    ) -> llm.ToolResult:
         store = self.store
         coord, err = _resolve_school_coordinator(store, tool_input.tool_args.get("school"))
         if err:

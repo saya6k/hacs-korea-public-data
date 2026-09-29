@@ -25,6 +25,7 @@ _WARN_ACCENT_INACTIVE = "#64748b"  # slate
 class GetWeatherWarningsTool(BaseKRTool):
     service = ENTRY_WEATHER
     name = "get_weather_warnings"
+    title = "Get weather warnings"
     description = (
         "Return KMA severe weather warnings (호우, 폭염, 한파, 강풍, 태풍, "
         "황사, 대설 등) currently active in the configured area(s)."
@@ -36,7 +37,7 @@ class GetWeatherWarningsTool(BaseKRTool):
         hass: HomeAssistant,
         tool_input: llm.ToolInput,
         llm_context: llm.LLMContext,
-    ) -> dict[str, Any]:
+    ) -> llm.ToolResult:
         store = self.store
         coord = store.get("coordinator")
         area_codes = store.get("area_codes", [])

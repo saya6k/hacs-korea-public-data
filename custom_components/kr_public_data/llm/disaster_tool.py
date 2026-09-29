@@ -18,6 +18,7 @@ _DISASTER_ACCENT = "#f59e0b"  # amber
 class GetDisasterMessagesTool(BaseKRTool):
     service = ENTRY_DISASTER
     name = "get_disaster_messages"
+    title = "Get disaster messages"
     description = (
         "Return the most recent civil-defense disaster messages "
         "(재난문자) issued in Korea, optionally filtered by region."
@@ -36,7 +37,7 @@ class GetDisasterMessagesTool(BaseKRTool):
         hass: HomeAssistant,
         tool_input: llm.ToolInput,
         llm_context: llm.LLMContext,
-    ) -> dict[str, Any]:
+    ) -> llm.ToolResult:
         store = self.store
         coord = store.get("coordinator")
         if coord is None or coord.data is None:

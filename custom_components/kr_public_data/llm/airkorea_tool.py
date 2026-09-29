@@ -33,6 +33,7 @@ def _grade(value: Any, table: list[tuple[int, str]]) -> str | None:
 class GetAirQualityTool(BaseKRTool):
     service = ENTRY_AIRKOREA
     name = "get_air_quality"
+    title = "Get air quality"
     description = (
         "Return realtime air quality (PM10, PM2.5, ozone, NO2, CO, SO2) "
         "for the configured AirKorea stations, plus today's forecast grade, "
@@ -55,7 +56,7 @@ class GetAirQualityTool(BaseKRTool):
         hass: HomeAssistant,
         tool_input: llm.ToolInput,
         llm_context: llm.LLMContext,
-    ) -> dict[str, Any]:
+    ) -> llm.ToolResult:
         store = self.store
         coord = store.get("coordinator")
         if coord is None or coord.data is None:

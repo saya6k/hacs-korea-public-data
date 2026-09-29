@@ -18,6 +18,7 @@ _SAFETY_ACCENT = "#ea580c"   # orange-red
 class GetSafetyAlertsTool(BaseKRTool):
     service = ENTRY_SAFETY_ALERT
     name = "get_safety_alerts"
+    title = "Get safety alerts"
     description = (
         "Return the latest 안전디딤돌 alerts for the configured region(s)."
     )
@@ -35,7 +36,7 @@ class GetSafetyAlertsTool(BaseKRTool):
         hass: HomeAssistant,
         tool_input: llm.ToolInput,
         llm_context: llm.LLMContext,
-    ) -> dict[str, Any]:
+    ) -> llm.ToolResult:
         store = self.store
         coords: dict[str, Any] = store.get("coordinators") or {}
         regions: list[dict[str, str]] = store.get("regions") or []
@@ -105,5 +106,5 @@ class GetSafetyAlertsTool(BaseKRTool):
             ),
         )
         if featured:
-            envelope["featured_image"] = featured
+            envelope.data["featured_image"] = featured
         return envelope

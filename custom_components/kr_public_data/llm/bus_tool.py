@@ -65,6 +65,7 @@ def _seoul_arrivals(info: dict, data: dict) -> list[dict[str, Any]]:
 class GetCityBusArrivalsTool(BaseKRTool):
     service = ENTRY_BUS
     name = "get_city_bus_arrivals"
+    title = "Get city bus arrivals"
     description = (
         "Return upcoming city bus arrivals at a configured stop (nationwide "
         "TAGO data plus Seoul via TOPIS). Returns up to the next two buses "
@@ -87,7 +88,7 @@ class GetCityBusArrivalsTool(BaseKRTool):
         hass: HomeAssistant,
         tool_input: llm.ToolInput,
         llm_context: llm.LLMContext,
-    ) -> dict[str, Any]:
+    ) -> llm.ToolResult:
         store = self.store
         by_name: dict[str, Any] = store.get("city_bus_by_name") or {}
         if not by_name:
@@ -144,6 +145,7 @@ class GetCityBusArrivalsTool(BaseKRTool):
 class GetIntercityBusDeparturesTool(BaseKRTool):
     service = ENTRY_BUS
     name = "get_intercity_bus_departures"
+    title = "Get intercity bus departures"
     description = (
         "Return the next scheduled departures for a configured intercity "
         "or express bus route (고속버스/시외버스), today's dispatch "
@@ -167,7 +169,7 @@ class GetIntercityBusDeparturesTool(BaseKRTool):
         hass: HomeAssistant,
         tool_input: llm.ToolInput,
         llm_context: llm.LLMContext,
-    ) -> dict[str, Any]:
+    ) -> llm.ToolResult:
         store = self.store
         by_name: dict[str, Any] = store.get("intercity_bus_by_name") or {}
         if not by_name:
