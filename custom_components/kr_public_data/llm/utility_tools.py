@@ -30,6 +30,7 @@ def _fmt_krw(v: Any) -> str | None:
 class GetElectricityUsageTool(BaseKRTool):
     service = ENTRY_KEPCO
     name = "get_electricity_usage"
+    title = "Get electricity usage"
     description = (
         "Return the household's recent electricity usage and current "
         "month bill from KEPCO (한국전력)."
@@ -41,7 +42,7 @@ class GetElectricityUsageTool(BaseKRTool):
         hass: HomeAssistant,
         tool_input: llm.ToolInput,
         llm_context: llm.LLMContext,
-    ) -> dict[str, Any]:
+    ) -> llm.ToolResult:
         store = self.store
         coord = store.get("coordinator")
         if coord is None or coord.data is None:
@@ -87,6 +88,7 @@ class GetElectricityUsageTool(BaseKRTool):
 class GetGasBillTool(BaseKRTool):
     service = ENTRY_GASAPP
     name = "get_gas_bill"
+    title = "Get gas bill"
     description = "Return the most recent city-gas bill and meter info."
     parameters = vol.Schema({})
 
@@ -95,7 +97,7 @@ class GetGasBillTool(BaseKRTool):
         hass: HomeAssistant,
         tool_input: llm.ToolInput,
         llm_context: llm.LLMContext,
-    ) -> dict[str, Any]:
+    ) -> llm.ToolResult:
         store = self.store
         coord = store.get("coordinator")
         if coord is None or coord.data is None:
@@ -129,6 +131,7 @@ class GetGasBillTool(BaseKRTool):
 class GetWaterBillTool(BaseKRTool):
     service = ENTRY_ARISU
     name = "get_water_bill"
+    title = "Get water bill"
     description = "Return the most recent Arisu water bill and usage."
     parameters = vol.Schema({})
 
@@ -137,7 +140,7 @@ class GetWaterBillTool(BaseKRTool):
         hass: HomeAssistant,
         tool_input: llm.ToolInput,
         llm_context: llm.LLMContext,
-    ) -> dict[str, Any]:
+    ) -> llm.ToolResult:
         store = self.store
         coord = store.get("coordinator")
         if coord is None or coord.data is None:

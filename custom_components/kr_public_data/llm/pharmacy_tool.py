@@ -49,6 +49,7 @@ def _is_open_now(duty_time: dict[str, str], now: datetime) -> bool:
 class GetOpenPharmaciesTool(BaseKRTool):
     service = ENTRY_PHARMACY
     name = "get_open_pharmacies"
+    title = "Get open pharmacies"
     description = (
         "Return pharmacies in the configured region, marking which are "
         "open right now (based on their duty hours). Useful for "
@@ -72,7 +73,7 @@ class GetOpenPharmaciesTool(BaseKRTool):
         hass: HomeAssistant,
         tool_input: llm.ToolInput,
         llm_context: llm.LLMContext,
-    ) -> dict[str, Any]:
+    ) -> llm.ToolResult:
         store = self.store
         coords = store.get("coordinators") or {}
         if not coords and store.get("coordinator") is not None:

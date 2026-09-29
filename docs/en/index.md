@@ -1,5 +1,7 @@
 # 한국 공공데이터 — Home Assistant Integration
 
+> Requires Home Assistant **2026.10.0b0 or later**. LLM tools return `llm.ToolResult`, preserving existing response fields in `data`.
+
 Korean public data services unified into a single Home Assistant integration. Pulls weather warnings, transit arrivals, fuel prices, school meals, disaster alerts, KEPCO bills, gas usage, water bills, air quality, earthquake events, and more from Korean government / utility APIs.
 
 Configure each service independently from the same integration — every service is a separate config entry under one domain.

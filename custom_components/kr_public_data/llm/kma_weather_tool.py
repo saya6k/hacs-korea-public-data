@@ -91,6 +91,7 @@ class GetKMAWeatherForecastTool(BaseKRTool):
     service = ENTRY_KMA_WEATHER
     source = "kma"  # used by base envelope; voice-satellite ignores the value
     name = "get_weather_forecast"
+    title = "Get weather forecast"
     description = (
         "Get the weather forecast from the Korean Meteorological "
         "Administration (KMA). 'today'/'tomorrow' or a weekday name returns "
@@ -121,7 +122,7 @@ class GetKMAWeatherForecastTool(BaseKRTool):
         hass: HomeAssistant,
         tool_input: llm.ToolInput,
         llm_context: llm.LLMContext,
-    ) -> dict[str, Any]:
+    ) -> llm.ToolResult:
         range_value = tool_input.tool_args["range"]
         wanted_region = tool_input.tool_args.get("region_name")
 
@@ -220,7 +221,7 @@ class GetKMAWeatherForecastTool(BaseKRTool):
             if cur_hum is not None:
                 response["current_humidity"] = f"{round(float(cur_hum))}%"
 
-        return response
+        return llm.ToolResult(data=response)
 
     @staticmethod
     def _format_hourly(entries: list[dict]) -> list[dict]:

@@ -1,8 +1,6 @@
 """Earthquake LLM tool."""
 from __future__ import annotations
 
-from typing import Any
-
 import voluptuous as vol
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import llm
@@ -18,6 +16,7 @@ _EQ_ACCENT = "#7c3aed"  # violet
 class GetRecentEarthquakesTool(BaseKRTool):
     service = ENTRY_EARTHQUAKE
     name = "get_recent_earthquakes"
+    title = "Get recent earthquakes"
     description = (
         "Return earthquakes recently observed in/around Korea (KMA "
         "earthquake database, last ~30 days)."
@@ -40,7 +39,7 @@ class GetRecentEarthquakesTool(BaseKRTool):
         hass: HomeAssistant,
         tool_input: llm.ToolInput,
         llm_context: llm.LLMContext,
-    ) -> dict[str, Any]:
+    ) -> llm.ToolResult:
         store = self.store
         coord = store.get("coordinator")
         if coord is None or coord.data is None:

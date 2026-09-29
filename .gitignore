@@ -9,6 +9,7 @@
 !/custom_components/
 !/docs/
 !/scripts/
+!/tests/
 
 # Tracked top-level files
 !/.gitattributes

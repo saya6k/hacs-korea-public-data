@@ -34,6 +34,7 @@ def _fmt_diff(d: Any) -> str:
 class GetFuelPricesTool(BaseKRTool):
     service = ENTRY_FUEL
     name = "get_fuel_prices"
+    title = "Get fuel prices"
     description = (
         "Return the latest national average price and the lowest-price "
         "stations for each configured (sido, fuel) combination. Prices "
@@ -46,7 +47,7 @@ class GetFuelPricesTool(BaseKRTool):
         hass: HomeAssistant,
         tool_input: llm.ToolInput,
         llm_context: llm.LLMContext,
-    ) -> dict[str, Any]:
+    ) -> llm.ToolResult:
         store = self.store
         coord = store.get("coordinator")
         if coord is None or coord.data is None:
