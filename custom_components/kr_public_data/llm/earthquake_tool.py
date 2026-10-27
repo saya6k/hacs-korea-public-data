@@ -15,7 +15,7 @@ _EQ_ACCENT = "#7c3aed"  # violet
 
 class GetRecentEarthquakesTool(BaseKRTool):
     service = ENTRY_EARTHQUAKE
-    name = "get_recent_earthquakes"
+    name = "kr_public_data__get_recent_earthquakes"
     title = "Get recent earthquakes"
     description = (
         "Return earthquakes recently observed in/around Korea (KMA "

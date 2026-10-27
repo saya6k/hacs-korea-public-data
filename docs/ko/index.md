@@ -68,19 +68,19 @@ config flow가 각 서비스에 필요한 키를 안내합니다.
 
 | 서비스 | 도구 | UI 표시 |
 | --- | --- | --- |
-| `kma_weather` | `get_weather_forecast` | 네이티브 날씨 카드 (예보 행) |
-| `weather_warning` | `get_weather_warnings` | 활성 특보 테이블 / "안전" 카드 |
-| `airkorea` | `get_air_quality` | 측정소 + 자외선 / 정체 테이블 |
-| `transit` | `get_subway_arrivals`, `get_bus_arrivals` | 역/정류장별 도착 테이블 |
-| `fuel` | `get_fuel_prices` | 가격표 (평균 + 최저가 주유소) |
-| `school` | `get_school_meal`, `get_school_timetable` | 메뉴 카드 / 시간표 |
-| `disaster` | `get_disaster_messages` | 메시지 카드 그리드 |
-| `safety_alert` | `get_safety_alerts` | 알림 카드 그리드 |
-| `kepco` | `get_electricity_usage` | kWh + 요금 사용량 카드 |
-| `gasapp` | `get_gas_bill` | 청구서 카드 |
-| `arisu` | `get_water_bill` | 사용량 포함 청구서 카드 |
-| `pharmacy` | `get_open_pharmacies` | 약국 카드 그리드 (영업/마감) |
-| `earthquake` | `get_recent_earthquakes` | 최근 이벤트 테이블 |
+| `kma_weather` | `kr_public_data__get_weather_forecast` | 네이티브 날씨 카드 (예보 행) |
+| `weather_warning` | `kr_public_data__get_weather_warnings` | 활성 특보 테이블 / "안전" 카드 |
+| `airkorea` | `kr_public_data__get_air_quality` | 측정소 + 자외선 / 정체 테이블 |
+| `transit` | `kr_public_data__get_subway_arrivals`, `kr_public_data__get_bus_arrivals` | 역/정류장별 도착 테이블 |
+| `fuel` | `kr_public_data__get_fuel_prices` | 가격표 (평균 + 최저가 주유소) |
+| `school` | `kr_public_data__get_school_meal`, `kr_public_data__get_school_timetable` | 메뉴 카드 / 시간표 |
+| `disaster` | `kr_public_data__get_disaster_messages` | 메시지 카드 그리드 |
+| `safety_alert` | `kr_public_data__get_safety_alerts` | 알림 카드 그리드 |
+| `kepco` | `kr_public_data__get_electricity_usage` | kWh + 요금 사용량 카드 |
+| `gasapp` | `kr_public_data__get_gas_bill` | 청구서 카드 |
+| `arisu` | `kr_public_data__get_water_bill` | 사용량 포함 청구서 카드 |
+| `pharmacy` | `kr_public_data__get_open_pharmacies` | 약국 카드 그리드 (영업/마감) |
+| `earthquake` | `kr_public_data__get_recent_earthquakes` | 최근 이벤트 테이블 |
 
 결과 스키마는 [voice-satellite-card-llm-tools](https://github.com/jxlarrea/voice-satellite-card-llm-tools)를 따르므로, [voice-satellite card](https://github.com/jxlarrea/voice-satellite-card-integration)가 시각 패널을 자동 렌더링합니다 (`kma_weather`는 날씨 카드; 나머지는 `featured_image`와 `results[]`를 통한 SVG 테이블 / 카드). 일반 대화 에이전트도 구조화된 JSON을 받아 설명에 사용합니다.
 

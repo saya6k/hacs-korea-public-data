@@ -26,6 +26,7 @@ def test_all_tools_report_missing_data_as_errors():
             assert isinstance(result, llm.ToolResult), tool.name
             assert result.error, tool.name
             assert result.data["error"], tool.name
+            assert tool.name.startswith(f"{DOMAIN}__"), tool.name
             assert tool.integration == DOMAIN
             assert tool.title
             assert tool.annotations == llm.ToolAnnotations(

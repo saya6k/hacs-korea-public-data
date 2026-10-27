@@ -48,7 +48,7 @@ def _is_open_now(duty_time: dict[str, str], now: datetime) -> bool:
 
 class GetOpenPharmaciesTool(BaseKRTool):
     service = ENTRY_PHARMACY
-    name = "get_open_pharmacies"
+    name = "kr_public_data__get_open_pharmacies"
     title = "Get open pharmacies"
     description = (
         "Return pharmacies in the configured region, marking which are "

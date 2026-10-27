@@ -68,19 +68,19 @@ Pick the API in **Settings → Voice assistants → [your agent] → LLM API** (
 
 | Service | Tools | UI shown |
 | --- | --- | --- |
-| `kma_weather` | `get_weather_forecast` | Native weather card (forecast rows) |
-| `weather_warning` | `get_weather_warnings` | Table of active 특보 / "안전" card |
-| `airkorea` | `get_air_quality` | Table of stations + UV / 정체 |
-| `transit` | `get_subway_arrivals`, `get_bus_arrivals` | Arrival table per station / stop |
-| `fuel` | `get_fuel_prices` | Price table (avg + cheapest stations) |
-| `school` | `get_school_meal`, `get_school_timetable` | Menu card / timetable |
-| `disaster` | `get_disaster_messages` | Grid of message cards |
-| `safety_alert` | `get_safety_alerts` | Grid of alert cards |
-| `kepco` | `get_electricity_usage` | Usage card with kWh + bill |
-| `gasapp` | `get_gas_bill` | Bill card |
-| `arisu` | `get_water_bill` | Bill card with usage |
-| `pharmacy` | `get_open_pharmacies` | Grid of pharmacy cards (open/closed) |
-| `earthquake` | `get_recent_earthquakes` | Recent events table |
+| `kma_weather` | `kr_public_data__get_weather_forecast` | Native weather card (forecast rows) |
+| `weather_warning` | `kr_public_data__get_weather_warnings` | Table of active 특보 / "안전" card |
+| `airkorea` | `kr_public_data__get_air_quality` | Table of stations + UV / 정체 |
+| `transit` | `kr_public_data__get_subway_arrivals`, `kr_public_data__get_bus_arrivals` | Arrival table per station / stop |
+| `fuel` | `kr_public_data__get_fuel_prices` | Price table (avg + cheapest stations) |
+| `school` | `kr_public_data__get_school_meal`, `kr_public_data__get_school_timetable` | Menu card / timetable |
+| `disaster` | `kr_public_data__get_disaster_messages` | Grid of message cards |
+| `safety_alert` | `kr_public_data__get_safety_alerts` | Grid of alert cards |
+| `kepco` | `kr_public_data__get_electricity_usage` | Usage card with kWh + bill |
+| `gasapp` | `kr_public_data__get_gas_bill` | Bill card |
+| `arisu` | `kr_public_data__get_water_bill` | Bill card with usage |
+| `pharmacy` | `kr_public_data__get_open_pharmacies` | Grid of pharmacy cards (open/closed) |
+| `earthquake` | `kr_public_data__get_recent_earthquakes` | Recent events table |
 
 The result schema follows [voice-satellite-card-llm-tools](https://github.com/jxlarrea/voice-satellite-card-llm-tools), so the [voice-satellite card](https://github.com/jxlarrea/voice-satellite-card-integration) automatically renders the visual panels (weather card for `kma_weather`; SVG tables / cards for everything else via `featured_image` and `results[]`). Plain conversation agents still get the structured JSON for narration.
 

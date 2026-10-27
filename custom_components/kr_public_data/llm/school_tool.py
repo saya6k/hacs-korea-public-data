@@ -67,7 +67,7 @@ def _resolve_school_coordinator(
 
 class GetSchoolMealTool(BaseKRTool):
     service = ENTRY_SCHOOL
-    name = "get_school_meal"
+    name = "kr_public_data__get_school_meal"
     title = "Get school meal"
     description = (
         "Return the school lunch menu (NEIS) for a date. Pass 'today', "
@@ -149,7 +149,7 @@ class GetSchoolMealTool(BaseKRTool):
 
 class GetSchoolTimetableTool(BaseKRTool):
     service = ENTRY_SCHOOL
-    name = "get_school_timetable"
+    name = "kr_public_data__get_school_timetable"
     title = "Get school timetable"
     description = (
         "Return the class timetable for a configured grade-class on a "

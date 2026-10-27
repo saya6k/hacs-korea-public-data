@@ -29,7 +29,7 @@ def _seconds_to_min(seconds: Any) -> str:
 
 class GetSubwayArrivalsTool(BaseKRTool):
     service = ENTRY_TRANSIT
-    name = "get_subway_arrivals"
+    name = "kr_public_data__get_subway_arrivals"
     title = "Get subway arrivals"
     description = (
         "Return upcoming Seoul subway arrivals at a configured station. "

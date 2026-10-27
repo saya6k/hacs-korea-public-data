@@ -29,7 +29,7 @@ def _fmt_krw(v: Any) -> str | None:
 
 class GetElectricityUsageTool(BaseKRTool):
     service = ENTRY_KEPCO
-    name = "get_electricity_usage"
+    name = "kr_public_data__get_electricity_usage"
     title = "Get electricity usage"
     description = (
         "Return the household's recent electricity usage and current "
@@ -87,7 +87,7 @@ class GetElectricityUsageTool(BaseKRTool):
 
 class GetGasBillTool(BaseKRTool):
     service = ENTRY_GASAPP
-    name = "get_gas_bill"
+    name = "kr_public_data__get_gas_bill"
     title = "Get gas bill"
     description = "Return the most recent city-gas bill and meter info."
     parameters = vol.Schema({})
@@ -130,7 +130,7 @@ class GetGasBillTool(BaseKRTool):
 
 class GetWaterBillTool(BaseKRTool):
     service = ENTRY_ARISU
-    name = "get_water_bill"
+    name = "kr_public_data__get_water_bill"
     title = "Get water bill"
     description = "Return the most recent Arisu water bill and usage."
     parameters = vol.Schema({})
