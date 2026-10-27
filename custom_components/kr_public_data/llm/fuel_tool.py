@@ -33,7 +33,7 @@ def _fmt_diff(d: Any) -> str:
 
 class GetFuelPricesTool(BaseKRTool):
     service = ENTRY_FUEL
-    name = "get_fuel_prices"
+    name = "kr_public_data__get_fuel_prices"
     title = "Get fuel prices"
     description = (
         "Return the latest national average price and the lowest-price "

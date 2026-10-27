@@ -17,7 +17,7 @@ _DISASTER_ACCENT = "#f59e0b"  # amber
 
 class GetDisasterMessagesTool(BaseKRTool):
     service = ENTRY_DISASTER
-    name = "get_disaster_messages"
+    name = "kr_public_data__get_disaster_messages"
     title = "Get disaster messages"
     description = (
         "Return the most recent civil-defense disaster messages "

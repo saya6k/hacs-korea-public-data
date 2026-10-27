@@ -17,7 +17,7 @@ _SAFETY_ACCENT = "#ea580c"   # orange-red
 
 class GetSafetyAlertsTool(BaseKRTool):
     service = ENTRY_SAFETY_ALERT
-    name = "get_safety_alerts"
+    name = "kr_public_data__get_safety_alerts"
     title = "Get safety alerts"
     description = (
         "Return the latest 안전디딤돌 alerts for the configured region(s)."

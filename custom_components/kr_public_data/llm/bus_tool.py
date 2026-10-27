@@ -64,7 +64,7 @@ def _seoul_arrivals(info: dict, data: dict) -> list[dict[str, Any]]:
 
 class GetCityBusArrivalsTool(BaseKRTool):
     service = ENTRY_BUS
-    name = "get_city_bus_arrivals"
+    name = "kr_public_data__get_city_bus_arrivals"
     title = "Get city bus arrivals"
     description = (
         "Return upcoming city bus arrivals at a configured stop (nationwide "
@@ -144,7 +144,7 @@ class GetCityBusArrivalsTool(BaseKRTool):
 
 class GetIntercityBusDeparturesTool(BaseKRTool):
     service = ENTRY_BUS
-    name = "get_intercity_bus_departures"
+    name = "kr_public_data__get_intercity_bus_departures"
     title = "Get intercity bus departures"
     description = (
         "Return the next scheduled departures for a configured intercity "

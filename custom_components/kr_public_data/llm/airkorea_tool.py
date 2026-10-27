@@ -32,7 +32,7 @@ def _grade(value: Any, table: list[tuple[int, str]]) -> str | None:
 
 class GetAirQualityTool(BaseKRTool):
     service = ENTRY_AIRKOREA
-    name = "get_air_quality"
+    name = "kr_public_data__get_air_quality"
     title = "Get air quality"
     description = (
         "Return realtime air quality (PM10, PM2.5, ozone, NO2, CO, SO2) "

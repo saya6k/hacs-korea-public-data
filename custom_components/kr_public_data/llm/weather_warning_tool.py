@@ -24,7 +24,7 @@ _WARN_ACCENT_INACTIVE = "#64748b"  # slate
 
 class GetWeatherWarningsTool(BaseKRTool):
     service = ENTRY_WEATHER
-    name = "get_weather_warnings"
+    name = "kr_public_data__get_weather_warnings"
     title = "Get weather warnings"
     description = (
         "Return KMA severe weather warnings (호우, 폭염, 한파, 강풍, 태풍, "

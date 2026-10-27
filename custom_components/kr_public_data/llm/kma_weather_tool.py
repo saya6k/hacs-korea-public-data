@@ -90,7 +90,7 @@ class GetKMAWeatherForecastTool(BaseKRTool):
 
     service = ENTRY_KMA_WEATHER
     source = "kma"  # used by base envelope; voice-satellite ignores the value
-    name = "get_weather_forecast"
+    name = "kr_public_data__get_weather_forecast"
     title = "Get weather forecast"
     description = (
         "Get the weather forecast from the Korean Meteorological "
