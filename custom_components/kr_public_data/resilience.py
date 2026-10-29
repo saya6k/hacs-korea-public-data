@@ -100,6 +100,8 @@ class ResilientCoordinator[DataT](DataUpdateCoordinator[DataT]):
         if active:
             ir.async_create_issue(
                 self.hass, DOMAIN, issue_id,
+                # Linked so HA drops the issue when the entry is removed.
+                config_entry_id=self.config_entry.entry_id if self.config_entry else None,
                 is_fixable=False,
                 severity=ir.IssueSeverity.WARNING,
                 translation_key="quota_exceeded",
