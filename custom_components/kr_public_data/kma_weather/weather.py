@@ -80,6 +80,11 @@ class KMAWeather(CoordinatorEntity, WeatherEntity):
         return self._data().get("precipitation")
 
     @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        # WeatherEntity has no current-precipitation attribute; expose it directly.
+        return {"precipitation": self.native_precipitation}
+
+    @property
     def cloud_coverage(self) -> int | None:
         return self._data().get("cloud_coverage")
 
@@ -114,6 +119,7 @@ class KMAWeather(CoordinatorEntity, WeatherEntity):
             native_temperature=f.get("temphigh"),
             native_templow=f.get("templow"),
             precipitation_probability=f.get("precipitation_probability"),
+            native_precipitation=f.get("precipitation"),
             humidity=f.get("humidity"),
             native_wind_speed=f.get("wind_speed"),
         ) for f in self._data().get("daily_forecasts", [])]

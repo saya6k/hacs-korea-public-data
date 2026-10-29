@@ -52,6 +52,22 @@ def _float(v: Any) -> float | None:
     except ValueError:
         return None
 
+def _precip(v: Any) -> float | None:
+    """Parse KMA PCP/RN1 text: "강수없음", "1mm 미만", "1.0mm", "30.0~50.0mm", "50.0mm 이상"."""
+    if v is None or v == "":
+        return None
+    if v == "강수없음":
+        return 0.0
+    s = str(v).replace("mm", "").strip()
+    if s.endswith("미만"):
+        return 0.5
+    s = s.replace("이상", "").strip()
+    try:
+        nums = [float(x) for x in s.split("~")]
+    except ValueError:
+        return None
+    return round(sum(nums) / len(nums), 1)
+
 def _condition(sky: int, pty: int) -> str:
     return PTY_MAP_SHORT.get(pty) or SKY_MAP.get(sky, "cloudy")
 
@@ -140,7 +156,7 @@ def parse_weather(items: list[dict]) -> dict[str, Any]:
         "wind_speed": wind_speed,
         "wind_bearing": vec,
         "wind_bearing_str": _wind_direction_str(vec),
-        "precipitation": _float(cur.get("PCP") or cur.get("RN1")),
+        "precipitation": _precip(cur.get("PCP") or cur.get("RN1")),
         "sky_code": sky,
         "cloud_coverage": SKY_CLOUD_PCT.get(sky),
         "dew_point": _dew_point(temp, humidity),
@@ -167,7 +183,7 @@ def parse_weather(items: list[dict]) -> dict[str, Any]:
             "condition": _condition(s, p),
             "temperature": t_val,
             "precipitation_probability": _float(fc.get("POP")),
-            "precipitation": _float(fc.get("PCP") or fc.get("RN1")),
+            "precipitation": _precip(fc.get("PCP") or fc.get("RN1")),
             "humidity": h_val,
             "wind_speed": w_val,
             "wind_bearing": v,
@@ -189,6 +205,7 @@ def parse_weather(items: list[dict]) -> dict[str, Any]:
                 if e["precipitation_probability"] is not None]
         humids = [e["humidity"] for e in entries if e["humidity"] is not None]
         winds = [e["wind_speed"] for e in entries if e["wind_speed"] is not None]
+        precips = [e["precipitation"] for e in entries if e["precipitation"] is not None]
 
         tmn = tmx = None
         for tt in times:
@@ -215,6 +232,7 @@ def parse_weather(items: list[dict]) -> dict[str, Any]:
             "templow": tmn if tmn is not None else (round(min(temps), 1) if temps else None),
             "temphigh": tmx if tmx is not None else (round(max(temps), 1) if temps else None),
             "precipitation_probability": round(max(pops)) if pops else None,
+            "precipitation": round(sum(precips), 1) if precips else None,
             "humidity": round(sum(humids) / len(humids)) if humids else None,
             "wind_speed": round(sum(winds) / len(winds), 1) if winds else None,
         })
