@@ -1,4 +1,5 @@
 {
+  "title": "한국 공공데이터",
   "issues": {
     "quota_exceeded": {
       "title": "일일 API 호출 한도 초과",
