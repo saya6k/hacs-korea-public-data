@@ -230,7 +230,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
         for sub_id, info in stop_subs.items():
             coord = info["coordinator"]
             node_id = info["nodeId"]
-            node_name = info["nodeName"]
             seoul = info["kind"] == "seoul"
             ents = []
             # One 정류장 hub device, one child device per route under it; 2 sensors
@@ -241,11 +240,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
                 seoul=seoul))
             for route in info["routes"]:
                 if seoul:
-                    di = seoul_bus_route_device(node_id, node_name, route["routeId"],
+                    di = seoul_bus_route_device(node_id, route["routeId"],
                                                 route["routeNo"], hub_id)
                     sensor_cls = SeoulBusArrivalSensor
                 else:
-                    di = city_bus_route_device(node_id, node_name, route["routeId"],
+                    di = city_bus_route_device(node_id, route["routeId"],
                                                route["routeNo"], hub_id)
                     sensor_cls = CityBusArrivalSensor
                 for idx in range(2):

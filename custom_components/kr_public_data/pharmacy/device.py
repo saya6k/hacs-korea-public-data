@@ -45,6 +45,6 @@ def pharmacy_device(hpid: str, name: str, parent_device_id: str) -> ChildDeviceI
     manufacturer/model/entry_type — those live on the region device.
     """
     return ChildDeviceInfo(identifiers={(DOMAIN, f"pharmacy_hpid_{hpid}")},
-                           translation_key="pharmacy",
+                           translation_key="pharmacy_store",
                            translation_placeholders={"name": name},
                            parent_device_id=parent_device_id)
