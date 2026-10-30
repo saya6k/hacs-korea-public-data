@@ -922,16 +922,16 @@
       "name": "버스 정류장 - {stop}"
     },
     "bus_route": {
-      "name": "버스 - {stop} {route}번"
+      "name": "{route}번"
     },
     "intercity_bus_section": {
       "name": "시외/고속버스 - {departure}→{arrival}"
     },
     "express_bus_route": {
-      "name": "고속버스 - {departure}→{arrival} {grade}"
+      "name": "고속 {grade}"
     },
     "intercity_bus_route": {
-      "name": "시외버스 - {departure}→{arrival} {grade}"
+      "name": "시외 {grade}"
     },
     "disaster": {
       "name": "재난문자"
@@ -957,6 +957,9 @@
     "pharmacy": {
       "name": "약국 - {name}"
     },
+    "pharmacy_store": {
+      "name": "{name}"
+    },
     "safety_alert": {
       "name": "안전알림 - {area}"
     },
@@ -964,7 +967,7 @@
       "name": "지하철 - {station}역"
     },
     "subway_line": {
-      "name": "지하철 - {station}역 {line}"
+      "name": "{line}"
     },
     "subway_direction": {
       "name": "지하철 - {station}역 {line} {direction}"

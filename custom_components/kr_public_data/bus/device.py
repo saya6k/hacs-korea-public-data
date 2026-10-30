@@ -91,7 +91,7 @@ def intercity_bus_section_device_id(hass: HomeAssistant, entry: ConfigEntry,
     ).id
 
 
-def city_bus_route_device(node_id: str, node_name: str, route_id: str, route_no: str,
+def city_bus_route_device(node_id: str, route_id: str, route_no: str,
                           parent_device_id: str) -> ChildDeviceInfo:
     """One child device per (stop, route); both arrival sensors live under it.
 
@@ -102,18 +102,18 @@ def city_bus_route_device(node_id: str, node_name: str, route_id: str, route_no:
     return ChildDeviceInfo(
         identifiers={(DOMAIN, f"city_bus_{node_id}_{route_id}")},
         translation_key="bus_route",
-        translation_placeholders={"stop": node_name, "route": route_no},
+        translation_placeholders={"route": route_no},
         parent_device_id=parent_device_id,
     )
 
 
-def seoul_bus_route_device(ars_id: str, stop_name: str, route_id: str, route_no: str,
+def seoul_bus_route_device(ars_id: str, route_id: str, route_no: str,
                            parent_device_id: str) -> ChildDeviceInfo:
     """One child device per (Seoul stop, route); both arrival sensors live under it."""
     return ChildDeviceInfo(
         identifiers={(DOMAIN, f"seoul_bus_{ars_id}_{route_id}")},
         translation_key="bus_route",
-        translation_placeholders={"stop": stop_name, "route": route_no},
+        translation_placeholders={"route": route_no},
         parent_device_id=parent_device_id,
     )
 
@@ -136,7 +136,6 @@ def intercity_bus_route_device(dep_name: str, arr_name: str, grade_key: str,
         # 고속/시외 is a fixed pair, so it gets its own key rather than a
         # placeholder — a placeholder value would stay Korean.
         translation_key="express_bus_route" if express else "intercity_bus_route",
-        translation_placeholders={"departure": dep_name, "arrival": arr_name,
-                                  "grade": grade},
+        translation_placeholders={"grade": grade},
         parent_device_id=parent_device_id,
     )

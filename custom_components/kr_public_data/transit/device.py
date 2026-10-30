@@ -71,6 +71,6 @@ def subway_line_device(station: str, line_id: str,
     return ChildDeviceInfo(
         identifiers={(DOMAIN, f"subway_{station}_{line_id}")},
         translation_key="subway_line",
-        translation_placeholders={"station": station, "line": ln},
+        translation_placeholders={"line": ln},
         parent_device_id=parent_device_id,
     )

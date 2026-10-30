@@ -922,16 +922,16 @@
       "name": "Bus stop - {stop}"
     },
     "bus_route": {
-      "name": "Bus - route {route} at {stop}"
+      "name": "Route {route}"
     },
     "intercity_bus_section": {
       "name": "Intercity bus - {departure} → {arrival}"
     },
     "express_bus_route": {
-      "name": "Express bus - {departure} → {arrival} {grade}"
+      "name": "Express {grade}"
     },
     "intercity_bus_route": {
-      "name": "Intercity bus - {departure} → {arrival} {grade}"
+      "name": "Intercity {grade}"
     },
     "disaster": {
       "name": "Emergency alerts"
@@ -957,6 +957,9 @@
     "pharmacy": {
       "name": "Pharmacy - {name}"
     },
+    "pharmacy_store": {
+      "name": "{name}"
+    },
     "safety_alert": {
       "name": "Safety alerts - {area}"
     },
@@ -964,7 +967,7 @@
       "name": "Subway - {station} Station"
     },
     "subway_line": {
-      "name": "Subway - {station} Station {line}"
+      "name": "{line}"
     },
     "subway_direction": {
       "name": "Subway - {station} Station {line} {direction}"
